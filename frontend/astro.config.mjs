@@ -3,15 +3,10 @@ import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
   srcDir: './src',
-  output: 'server',
+  output: 'static',
   integrations: [tailwind()],
   server: {
     port: 4321,
-  },
-  vite: {
-    ssr: {
-      noExternal: ['@supabase/supabase-js'],
-    },
   },
 });
 

@@ -2,8 +2,8 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { supabaseClient } from '../../lib/supabase/client';
 
-export const prerender = false;
-
+// Esta página se renderiza estáticamente y usa JavaScript del lado del cliente
+// para manejar la confirmación del pago
 const { orderId, token_ws } = Astro.url.searchParams;
 ---
 

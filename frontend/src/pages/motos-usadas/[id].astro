@@ -2,6 +2,22 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { supabaseClient } from '../../lib/supabase/client';
 
+export async function getStaticPaths() {
+  // Obtener todas las motos activas para generar las rutas estáticas
+  const { data: motos = [], error } = await supabaseClient
+    .from('used_motorcycles')
+    .select('id')
+    .eq('status', 'active');
+
+  if (error || !motos || motos.length === 0) {
+    return [];
+  }
+
+  return motos.map((moto) => ({
+    params: { id: moto.id.toString() },
+  }));
+}
+
 const { id } = Astro.params;
 
 if (!id) {
