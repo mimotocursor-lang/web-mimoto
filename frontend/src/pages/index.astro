@@ -619,11 +619,15 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
         </a>
       </div>
       <div class="relative">
-        <div
-          class="aspect-[4/3] bg-cover bg-center "
-          style="background-image: url('https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=800&q=80');"
-        ></div>
-        <div class="absolute -bottom-6 -right-6 bg-ktm-accent p-6 border-2 border-white">
+        <div class="aspect-[4/3] relative overflow-hidden motos-usadas-slider">
+          <div class="absolute inset-0 bg-cover bg-center motos-usadas-slide active" style="background-image: url('/MOTOS/KTM1090-PORTADA.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center motos-usadas-slide" style="background-image: url('/MOTOS/YAMAHAP7-PORTADA.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center motos-usadas-slide" style="background-image: url('/MOTOS/BONNEVILLETRIUMP-PORTADA.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center motos-usadas-slide" style="background-image: url('/MOTOS/VOGEDS800RALLY-PORTADA.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center motos-usadas-slide" style="background-image: url('/MOTOS/KTM1090-LATERAL.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center motos-usadas-slide" style="background-image: url('/MOTOS/yamahap7-lateral.png');"></div>
+        </div>
+        <div class="absolute -bottom-6 -right-6 bg-ktm-accent p-6 border-2 border-white z-10">
           <div class="text-3xl font-black text-ktm-light-text dark:text-ktm-text mb-1">100%</div>
           <div class="text-ktm-light-text dark:text-ktm-text/90 text-xs uppercase tracking-wider">Revisadas</div>
         </div>
@@ -1040,7 +1044,8 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
     .frenos-slide,
     .suspension-slide,
     .mantencion-slide,
-    .sobre-nosotros-slide {
+    .sobre-nosotros-slide,
+    .motos-usadas-slide {
       opacity: 0;
       transition: opacity 1s ease-in-out;
     }
@@ -1049,7 +1054,8 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
     .frenos-slide.active,
     .suspension-slide.active,
     .mantencion-slide.active,
-    .sobre-nosotros-slide.active {
+    .sobre-nosotros-slide.active,
+    .motos-usadas-slide.active {
       opacity: 1;
     }
   </style>
