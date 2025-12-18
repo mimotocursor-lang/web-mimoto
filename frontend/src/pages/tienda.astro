@@ -33,19 +33,37 @@ const { data: repuestos = [], error: repuestosError } = await supabaseClient
 
 
 // Cargar banners de sección
-const { data: bannerAccesorios = null } = await supabaseClient
-  .from('banners')
-  .select('*')
-  .eq('banner_type', 'accessories')
-  .eq('active', true)
-  .single();
+let bannerAccesorios: any = null;
+try {
+  const { data, error } = await supabaseClient
+    .from('banners')
+    .select('*')
+    .eq('banner_type', 'accessories')
+    .eq('active', true)
+    .maybeSingle();
+  
+  if (!error && data) {
+    bannerAccesorios = data;
+  }
+} catch (err) {
+  bannerAccesorios = null;
+}
 
-const { data: bannerRepuestos = null } = await supabaseClient
-  .from('banners')
-  .select('*')
-  .eq('banner_type', 'spare_parts')
-  .eq('active', true)
-  .single();
+let bannerRepuestos: any = null;
+try {
+  const { data, error } = await supabaseClient
+    .from('banners')
+    .select('*')
+    .eq('banner_type', 'spare_parts')
+    .eq('active', true)
+    .maybeSingle();
+  
+  if (!error && data) {
+    bannerRepuestos = data;
+  }
+} catch (err) {
+  bannerRepuestos = null;
+}
 ---
 
 <BaseLayout title="Tienda - Mimoto">
@@ -231,7 +249,7 @@ const { data: bannerRepuestos = null } = await supabaseClient
         <div class="relative w-full min-h-[50vh] md:min-h-[60vh] overflow-hidden mb-16">
           <div
             class="absolute inset-0 bg-cover bg-center"
-            style="background-image: url('https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=1920&q=80');"
+            style="background-image: url('/bannerRepuestos.png');"
           ></div>
           <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/40 via-ktm-bg/30 to-ktm-bg/50"></div>
           <div class="relative z-10 min-h-[50vh] md:min-h-[60vh] flex flex-col justify-end pb-8 md:pb-12 lg:pb-16">

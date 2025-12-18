@@ -408,12 +408,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           throw new Error('Debes seleccionar una imagen');
         }
 
+        const bannerType = (form.querySelector('#banner-type') as HTMLSelectElement).value;
+        
+        if (!bannerType || (bannerType !== 'hero' && bannerType !== 'accessories' && bannerType !== 'spare_parts')) {
+          throw new Error('Tipo de banner inválido. Debe ser: hero, accessories o spare_parts');
+        }
+
         const data = {
           title: (form.querySelector('#banner-title') as HTMLInputElement).value || null,
           subtitle: (form.querySelector('#banner-subtitle') as HTMLInputElement).value || null,
           image_url: imageUrl,
           link_url: (form.querySelector('#banner-link-url') as HTMLInputElement).value || null,
-          banner_type: (form.querySelector('#banner-type') as HTMLSelectElement).value,
+          banner_type: bannerType,
           position: Number((form.querySelector('#banner-position') as HTMLInputElement).value),
           active: (form.querySelector('#banner-active') as HTMLSelectElement).value === 'true',
         };
