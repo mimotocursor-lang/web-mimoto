@@ -15,7 +15,7 @@ const { title = 'Mimoto', description = '' } = Astro.props;
       // Inicializar tema ANTES de renderizar para evitar flash
       (function() {
         try {
-          const theme = localStorage.getItem('theme') || 'dark';
+          const theme = localStorage.getItem('theme') || 'light';
           const html = document.documentElement;
           if (theme === 'dark') {
             html.classList.add('dark');
@@ -23,7 +23,7 @@ const { title = 'Mimoto', description = '' } = Astro.props;
             html.classList.remove('dark');
           }
         } catch (e) {
-          document.documentElement.classList.add('dark');
+          document.documentElement.classList.remove('dark');
         }
       })();
     </script>
@@ -101,14 +101,15 @@ const { title = 'Mimoto', description = '' } = Astro.props;
               <a href="/login" id="auth-link" class="nav-link text-ktm-light-text/70 dark:text-white/80 hover:text-ktm-accent transition-colors">Iniciar sesión</a>
             </div>
             <!-- Botón de toggle de tema - Switch visual -->
-            <button
-              type="button"
-              id="theme-toggle"
-              class="relative inline-flex items-center w-14 h-7 rounded-full bg-ktm-light-border dark:bg-ktm-border transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-ktm-accent focus:ring-offset-2"
-              aria-label="Cambiar tema"
-              role="switch"
-              aria-checked="true"
-            >
+            <div class="relative">
+              <button
+                type="button"
+                id="theme-toggle"
+                class="relative inline-flex items-center w-14 h-7 rounded-full bg-ktm-light-border dark:bg-ktm-border transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-ktm-accent focus:ring-offset-2"
+                aria-label="Cambiar tema"
+                role="switch"
+                aria-checked="true"
+              >
               <span
                 id="theme-toggle-slider"
                 class="absolute left-1 top-1 w-5 h-5 bg-white dark:bg-ktm-accent rounded-full shadow-md transform transition-transform duration-500 ease-in-out translate-x-0 dark:translate-x-7 z-10"
@@ -133,7 +134,18 @@ const { title = 'Mimoto', description = '' } = Astro.props;
                   <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
                 </svg>
               </span>
-            </button>
+              </button>
+              <!-- Tooltip informativo -->
+              <div
+                id="theme-tooltip"
+                class="hidden absolute right-0 top-full mt-2 w-64 p-3 bg-ktm-accent text-white text-sm rounded-lg shadow-xl z-50 pointer-events-none"
+                style="transform: translateX(calc(100% - 3.5rem));"
+              >
+                <p class="font-semibold mb-1">💡 Modo Oscuro Disponible</p>
+                <p class="text-xs opacity-90">Puedes cambiar a modo oscuro haciendo clic en este botón</p>
+                <div class="absolute -top-2 right-6 w-0 h-0 border-l-8 border-r-8 border-b-8 border-transparent border-b-ktm-accent"></div>
+              </div>
+            </div>
             <button
               type="button"
               class="relative inline-flex items-center justify-center w-10 h-10 rounded-full bg-ktm-accent hover:bg-ktm-accentSoft text-black transition-colors shadow-lg"
@@ -301,7 +313,7 @@ const { title = 'Mimoto', description = '' } = Astro.props;
       // Toggle de tema - FUNCIÓN PRINCIPAL
       function initTheme() {
         try {
-          const theme = localStorage.getItem('theme') || 'dark';
+          const theme = localStorage.getItem('theme') || 'light';
           const html = document.documentElement;
           const body = document.body;
           
@@ -322,6 +334,7 @@ const { title = 'Mimoto', description = '' } = Astro.props;
           
           updateThemeIcon();
           updateLogo();
+          showThemeTooltip();
           
           // Forzar re-renderizado
           setTimeout(() => {
@@ -329,7 +342,39 @@ const { title = 'Mimoto', description = '' } = Astro.props;
           }, 50);
         } catch (e) {
           console.error('❌ Error inicializando tema:', e);
-          document.documentElement.classList.add('dark');
+          document.documentElement.classList.remove('dark');
+        }
+      }
+      
+      function showThemeTooltip() {
+        const theme = localStorage.getItem('theme') || 'light';
+        if (theme === 'light') {
+          // Mostrar tooltip solo si no se ha mostrado antes o si pasó mucho tiempo
+          const lastShown = localStorage.getItem('theme-tooltip-shown');
+          const now = Date.now();
+          const oneDay = 24 * 60 * 60 * 1000; // 24 horas
+          
+          if (!lastShown || (now - parseInt(lastShown)) > oneDay) {
+            setTimeout(() => {
+              const tooltip = document.getElementById('theme-tooltip');
+              if (tooltip) {
+                tooltip.classList.remove('hidden');
+                tooltip.classList.add('animate-fade-in');
+                
+                // Ocultar después de 5 segundos
+                setTimeout(() => {
+                  tooltip.classList.add('animate-fade-out');
+                  setTimeout(() => {
+                    tooltip.classList.add('hidden');
+                    tooltip.classList.remove('animate-fade-in', 'animate-fade-out');
+                  }, 300);
+                }, 5000);
+                
+                // Guardar que se mostró
+                localStorage.setItem('theme-tooltip-shown', now.toString());
+              }
+            }, 1000);
+          }
         }
       }
 
@@ -384,6 +429,14 @@ const { title = 'Mimoto', description = '' } = Astro.props;
           // Actualizar iconos y logo
           updateThemeIcon();
           updateLogo();
+          
+          // Ocultar tooltip si cambia a dark mode
+          if (!isDark) {
+            const tooltip = document.getElementById('theme-tooltip');
+            if (tooltip) {
+              tooltip.classList.add('hidden');
+            }
+          }
           
           // Forzar actualización del navbar
           setTimeout(() => {
