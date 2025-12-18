@@ -87,11 +87,6 @@ const title = moto.title || `${brand} ${model}`;
             <div>
               <span class="text-ktm-light-text dark:text-ktm-text/70">Kilometraje:</span> <span class="font-bold">{mileage}</span>
             </div>
-            {price > 0 && (
-              <div>
-                <span class="text-ktm-light-text dark:text-ktm-text/70">Precio:</span> <span class="font-bold text-ktm-accent">${price.toLocaleString('es-CL')}</span>
-              </div>
-            )}
           </div>
           <a
             href={PUBLIC_WHATSAPP_URL}
@@ -125,12 +120,6 @@ const title = moto.title || `${brand} ${model}`;
           <span class="text-ktm-light-text dark:text-ktm-text/50 uppercase tracking-wider text-xs block mb-2">Kilometraje</span>
           <p class="text-ktm-light-text dark:text-ktm-text font-black text-xl">{mileage}</p>
         </div>
-        {price > 0 && (
-          <div class="md:col-span-2 lg:col-span-4">
-            <span class="text-ktm-light-text dark:text-ktm-text/50 uppercase tracking-wider text-xs block mb-2">Precio</span>
-            <p class="text-ktm-accent font-black text-3xl">${price.toLocaleString('es-CL')}</p>
-          </div>
-        )}
       </div>
       {moto.description && (
         <div class="mt-8 pt-8 border-t border-ktm-light-border dark:border-ktm-border">

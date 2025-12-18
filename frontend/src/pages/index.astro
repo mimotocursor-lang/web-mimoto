@@ -490,13 +490,7 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
           )}
           <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Destacado</span>
           <h3 class="text-xl font-black text-ktm-light-text dark:text-ktm-text mt-2 mb-2 uppercase tracking-tight line-clamp-2">{productosDestacados[0].name}</h3>
-          {Number(productosDestacados[0].price) > 0 ? (
-            <p class="text-ktm-accent font-bold text-2xl mb-4">
-              ${Number(productosDestacados[0].price).toLocaleString('es-CL')}
-            </p>
-          ) : (
-            <p class="text-ktm-light-text dark:text-ktm-text/60 text-sm italic mb-4">Precio a consultar</p>
-          )}
+          <p class="text-ktm-light-text dark:text-ktm-text/60 text-sm italic mb-4">Consultar disponibilidad</p>
           <a
             href="/tienda"
             class="text-ktm-accent font-bold text-xs uppercase tracking-wider hover:gap-2 transition-all inline-flex items-center gap-1"
@@ -580,13 +574,7 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
               {producto.description && (
                 <p class="text-ktm-light-text dark:text-ktm-text/60 text-sm mb-3 line-clamp-2">{producto.description}</p>
               )}
-              {price > 0 ? (
-                <p class="text-ktm-accent font-bold text-xl mb-4">
-                  ${price.toLocaleString('es-CL')}
-                </p>
-              ) : (
-                <p class="text-ktm-light-text dark:text-ktm-text/60 text-sm italic mb-4">Precio a consultar</p>
-              )}
+              <p class="text-ktm-light-text dark:text-ktm-text/60 text-sm italic mb-4">Consultar disponibilidad</p>
               <a
                 href={`/tienda#product-${producto.id}`}
                 class="text-ktm-accent font-bold text-xs uppercase tracking-wider hover:gap-2 transition-all inline-flex items-center gap-1"
