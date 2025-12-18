@@ -40,10 +40,12 @@ Si te pide autenticación, usa un Personal Access Token en lugar de contraseña.
 **IMPORTANTE**: Configura estos valores:
 
 - **Framework Preset**: Astro (o "Other")
-- **Root Directory**: `frontend` ⚠️ **MUY IMPORTANTE**
-- **Build Command**: `npm run build`
-- **Output Directory**: `dist`
-- **Install Command**: `npm install`
+- **Root Directory**: `frontend` ⚠️ **MUY IMPORTANTE - DEBE ESTAR CONFIGURADO**
+- **Build Command**: (dejar vacío o `npm run build`)
+- **Output Directory**: (dejar vacío o `dist`)
+- **Install Command**: (dejar vacío o `npm install`)
+
+**Nota**: Si configuras el Root Directory como `frontend`, Vercel automáticamente usará el `vercel.json` que está en ese directorio.
 
 ### 4. Variables de Entorno
 

@@ -65,12 +65,14 @@ En la configuración del proyecto:
 - Selecciona "Astro" o déjalo en "Other"
 
 **Root Directory**: 
-- Haz clic en "Edit" y cambia a: `frontend`
+- Haz clic en "Edit" y cambia a: `frontend` ⚠️ **ESTO ES CRÍTICO**
 
 **Build and Output Settings**:
-- **Build Command**: `npm run build`
-- **Output Directory**: `dist`
-- **Install Command**: `npm install`
+- **Build Command**: (puedes dejarlo vacío, Vercel detectará Astro automáticamente)
+- **Output Directory**: (puedes dejarlo vacío, Vercel detectará `dist` automáticamente)
+- **Install Command**: (puedes dejarlo vacío, Vercel usará `npm install` automáticamente)
+
+**Nota**: Al configurar el Root Directory como `frontend`, Vercel buscará el `vercel.json` en ese directorio y usará la configuración de Astro automáticamente.
 
 ### 3.4 Configurar Variables de Entorno
 
