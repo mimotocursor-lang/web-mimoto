@@ -1,8 +1,11 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
-// En modo estático, esta página mostrará un mensaje genérico
-// Los detalles del pedido se cargarán en el cliente si es necesario
+// Esta ruta no se pre-renderiza porque los pedidos son dinámicos
+export async function getStaticPaths() {
+  return [];
+}
+
 const { id } = Astro.params;
 ---
 
