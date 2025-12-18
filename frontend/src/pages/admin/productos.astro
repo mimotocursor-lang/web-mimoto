@@ -1,0 +1,535 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Gestión de Productos - Mimoto">
+  <section class="max-w-6xl mx-auto px-4 py-16">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-bold text-ktm-text">Gestión de Productos</h1>
+      <nav class="flex gap-4 text-sm">
+        <a href="/admin" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Dashboard</a>
+        <a href="/admin/productos" class="text-ktm-accent font-bold">Productos</a>
+        <a href="/admin/motos-usadas" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Motos Usadas</a>
+        <a href="/admin/banners" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Banners</a>
+      </nav>
+    </div>
+
+    <div class="mb-6">
+      <button
+        id="new-product-btn"
+        class="px-6 py-3 rounded-lg bg-ktm-accent text-ktm-text font-bold hover:bg-ktm-accent-600 transition-colors shadow-lg"
+      >
+        + Nuevo Producto
+      </button>
+    </div>
+
+    <div id="products-list" class="space-y-4">
+      <p class="text-ktm-text/70">Cargando productos...</p>
+    </div>
+
+    <!-- Modal para crear/editar producto -->
+    <div
+      id="product-modal"
+      class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center backdrop-blur-sm p-4"
+    >
+      <div class="bg-gradient-to-b from-gray-900 to-gray-950 border-2 border-primary rounded-xl p-4 md:p-5 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[85vh] overflow-y-auto shadow-2xl">
+        <div class="flex items-center justify-between mb-3 border-b-2 border-primary pb-2">
+          <h2 id="modal-title" class="text-lg md:text-xl font-bold text-ktm-text">Nuevo Producto</h2>
+          <button id="close-modal" class="text-ktm-text/80 hover:text-ktm-text text-xl md:text-2xl font-bold">✕</button>
+        </div>
+
+                <form id="product-form" class="space-y-3">
+          <input type="hidden" id="product-id" />
+
+          <div>
+            <label for="product-name" class="block text-sm font-bold mb-2 text-ktm-text">Nombre</label>
+            <input
+              type="text"
+              id="product-name"
+              required
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              placeholder="Nombre del producto"
+            />
+          </div>
+
+          <div>
+            <label for="product-description" class="block text-sm font-bold mb-2 text-ktm-text">Descripción</label>
+            <textarea
+              id="product-description"
+              rows="3"
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              placeholder="Descripción del producto"
+            ></textarea>
+          </div>
+
+          <div>
+            <label for="product-image-file" class="block text-sm font-bold mb-2 text-ktm-text">Imagen del Producto</label>
+            <input
+              type="file"
+              id="product-image-file"
+              accept="image/*"
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-ktm-accent file:text-ktm-text hover:file:bg-ktm-accent-600"
+            />
+            <p class="text-xs text-ktm-text/60 mt-1">Selecciona una imagen desde tu dispositivo (opcional al editar - solo si quieres cambiar la imagen)</p>
+            <div id="product-image-preview" class="mt-2 hidden">
+              <img id="product-image-preview-img" src="" alt="Preview" class="max-w-xs rounded-lg border-2 border-primary/30" />
+            </div>
+            <input type="hidden" id="product-image-url" />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="product-price" class="block text-sm font-bold mb-2 text-ktm-text">Precio</label>
+              <input
+                type="number"
+                id="product-price"
+                step="0.01"
+                min="0"
+                required
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="0.00"
+              />
+            </div>
+
+            <div>
+              <label for="product-stock" class="block text-sm font-bold mb-2 text-ktm-text">Stock</label>
+              <input
+                type="number"
+                id="product-stock"
+                min="0"
+                required
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="0"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="product-status" class="block text-sm font-bold mb-2 text-ktm-text">Estado</label>
+              <select
+                id="product-status"
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                <option value="active">Activo</option>
+                <option value="inactive">Inactivo</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="product-category" class="block text-sm font-bold mb-2 text-ktm-text">Tipo</label>
+              <select
+                id="product-category"
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                <option value="accessory">Accesorio</option>
+                <option value="spare_part">Repuesto</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button
+              type="submit"
+              class="flex-1 px-4 py-3 rounded-lg bg-ktm-accent text-ktm-text font-bold hover:bg-ktm-accent-600 transition-colors"
+            >
+              Guardar
+            </button>
+            <button
+              type="button"
+              id="cancel-form"
+              class="flex-1 px-4 py-3 rounded-lg border-2 border-primary/30 text-ktm-text hover:bg-gray-800 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+
+          <p id="form-error" class="text-xs text-red-400 mt-2"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    import { supabaseClient } from '../../lib/supabase/client.ts';
+    import { uploadImage, deleteImage } from '../../lib/supabase/storage.ts';
+
+    let editingProductId: number | null = null;
+    let selectedImageFile: File | null = null;
+
+    async function checkAdminAccess() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
+        window.location.href = '/login?return=/admin/productos';
+        return false;
+      }
+
+      const { data: profile } = await supabaseClient
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile?.role !== 'admin') {
+        alert('No tienes permisos para acceder a esta página');
+        window.location.href = '/';
+        return false;
+      }
+
+      return true;
+    }
+
+    async function loadProducts() {
+      const hasAccess = await checkAdminAccess();
+      if (!hasAccess) return;
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error cargando productos:', error);
+          throw error;
+        }
+
+        // Debug: Verificar datos
+        console.log('Productos cargados:', data?.length || 0);
+        if (data && data.length > 0) {
+          console.log('Primer producto:', data[0]);
+          console.log('URL imagen primer producto:', data[0]?.main_image_url);
+          console.log('Tipo de main_image_url:', typeof data[0]?.main_image_url);
+        }
+
+        const listEl = document.getElementById('products-list')!;
+        if (!data || data.length === 0) {
+          listEl.innerHTML = '<p class="text-ktm-text/70">No hay productos</p>';
+          return;
+        }
+
+        listEl.innerHTML = data
+          .map(
+            (p) => {
+              // Verificar si tiene imagen de forma más robusta
+              const rawImageUrl = p.main_image_url;
+              const hasImage = !!(rawImageUrl && String(rawImageUrl).trim() !== '' && rawImageUrl !== null && rawImageUrl !== undefined);
+              // No escapar la URL, solo usar directamente
+              const imageUrl = hasImage ? String(rawImageUrl).trim() : '';
+              const productName = (p.name || 'Producto').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+              
+              if (hasImage && imageUrl) {
+                return `
+          <div class="border-2 border-primary/30 rounded-xl p-4 bg-ktm-surface/50 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-lg backdrop-blur-sm">
+            <div class="w-28 h-28 flex-shrink-0 rounded-lg overflow-hidden border-2 border-primary/30 bg-gray-800" style="width: 112px; height: 112px; min-width: 112px; min-height: 112px;">
+              <img 
+                src="${imageUrl}" 
+                alt="${productName}" 
+                class="w-full h-full object-cover"
+                style="width: 100%; height: 100%; object-fit: cover; display: block;"
+                loading="lazy"
+                crossorigin="anonymous"
+                onerror="console.error('Error cargando imagen:', '${imageUrl}'); this.style.display='none'; const next = this.nextElementSibling; if(next) next.style.display='flex';"
+              >
+              <div class="w-full h-full hidden items-center justify-center text-ktm-text/50 text-xs bg-gray-700/50" style="display: none; width: 100%; height: 100%;">
+                Error al cargar
+              </div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold text-ktm-text mb-1">${productName}</h3>
+              <p class="text-sm text-ktm-text/70">$${Number(p.price).toLocaleString('es-CL')} | Stock: ${p.stock} | ${p.status === 'active' ? '<span class="text-green-400">Activo</span>' : '<span class="text-red-400">Inactivo</span>'}</p>
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto">
+              <button class="edit-product flex-1 sm:flex-none px-4 py-2 rounded-lg bg-ktm-accent/20 hover:bg-ktm-accent/30 text-ktm-accent text-sm font-semibold transition-colors shadow-md hover:scale-105" data-id="${p.id}">Editar</button>
+              <button class="delete-product flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-400 font-semibold transition-colors shadow-md hover:scale-105" data-id="${p.id}">Eliminar</button>
+            </div>
+          </div>
+        `;
+              } else {
+                return `
+          <div class="border-2 border-primary/30 rounded-xl p-4 bg-ktm-surface/50 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-lg backdrop-blur-sm">
+            <div class="w-full sm:w-28 h-28 flex-shrink-0 rounded-lg overflow-hidden border-2 border-primary/30 bg-gray-800 flex items-center justify-center">
+              <div class="text-ktm-text/50 text-xs">Sin imagen</div>
+            </div>
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold text-ktm-text mb-1">${productName}</h3>
+              <p class="text-sm text-ktm-text/70">$${Number(p.price).toLocaleString('es-CL')} | Stock: ${p.stock} | ${p.status === 'active' ? '<span class="text-green-400">Activo</span>' : '<span class="text-red-400">Inactivo</span>'}</p>
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto">
+              <button class="edit-product flex-1 sm:flex-none px-4 py-2 rounded-lg bg-ktm-accent/20 hover:bg-ktm-accent/30 text-ktm-accent text-sm font-semibold transition-colors shadow-md hover:scale-105" data-id="${p.id}">Editar</button>
+              <button class="delete-product flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-400 font-semibold transition-colors shadow-md hover:scale-105" data-id="${p.id}">Eliminar</button>
+            </div>
+          </div>
+        `;
+              }
+            }
+          )
+          .join('');
+
+        // Agregar event listeners
+        document.querySelectorAll('.edit-product').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            const id = Number((e.target as HTMLElement).getAttribute('data-id'));
+            editProduct(id, data.find((p) => p.id === id)!);
+          });
+        });
+
+        document.querySelectorAll('.delete-product').forEach((btn) => {
+          btn.addEventListener('click', async (e) => {
+            const id = Number((e.target as HTMLElement).getAttribute('data-id'));
+            if (confirm('¿Estás seguro de eliminar este producto?')) {
+              await deleteProduct(id);
+            }
+          });
+        });
+      } catch (err) {
+        console.error('Error cargando productos:', err);
+      }
+    }
+
+    function openModal(isEdit = false) {
+      const modal = document.getElementById('product-modal')!;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('modal-title')!.textContent = isEdit ? 'Editar Producto' : 'Nuevo Producto';
+      
+      // Solo resetear si NO es edición
+      if (!isEdit) {
+        editingProductId = null;
+        selectedImageFile = null;
+        (document.getElementById('product-form') as HTMLFormElement).reset();
+        document.getElementById('product-image-preview')!.classList.add('hidden');
+      }
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('product-modal')!;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      editingProductId = null;
+      selectedImageFile = null;
+      // Limpiar el formulario al cerrar
+      (document.getElementById('product-form') as HTMLFormElement).reset();
+      document.getElementById('product-image-preview')!.classList.add('hidden');
+    }
+
+    function editProduct(id: number, product: any) {
+      // Primero abrir el modal
+      openModal(true);
+      
+      // Luego llenar los campos con los datos del producto
+      editingProductId = id;
+      selectedImageFile = null;
+      
+      // Limpiar el input de archivo
+      const fileInput = document.getElementById('product-image-file') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      
+      // Llenar todos los campos con los datos del producto
+      (document.getElementById('product-id') as HTMLInputElement).value = id.toString();
+      (document.getElementById('product-name') as HTMLInputElement).value = product.name || '';
+      (document.getElementById('product-description') as HTMLTextAreaElement).value = product.description || '';
+      (document.getElementById('product-image-url') as HTMLInputElement).value = product.main_image_url || '';
+      (document.getElementById('product-price') as HTMLInputElement).value = product.price?.toString() || '0';
+      (document.getElementById('product-stock') as HTMLInputElement).value = product.stock?.toString() || '0';
+      (document.getElementById('product-status') as HTMLSelectElement).value = product.status || 'active';
+      
+      // Determinar el tipo de producto
+      const categoryValue = product.is_accessory ? 'accessory' : (product.is_spare_part ? 'spare_part' : 'accessory');
+      (document.getElementById('product-category') as HTMLSelectElement).value = categoryValue;
+      
+      // Mostrar preview de imagen existente
+      if (product.main_image_url) {
+        const previewEl = document.getElementById('product-image-preview')!;
+        const previewImg = document.getElementById('product-image-preview-img') as HTMLImageElement;
+        previewImg.src = product.main_image_url;
+        previewEl.classList.remove('hidden');
+      } else {
+        document.getElementById('product-image-preview')!.classList.add('hidden');
+      }
+    }
+
+    async function deleteProduct(id: number) {
+      try {
+        // Primero obtener el producto para eliminar su imagen
+        const { data: product } = await supabaseClient
+          .from('products')
+          .select('main_image_url')
+          .eq('id', id)
+          .single();
+
+        // Eliminar el producto de la base de datos
+        const { error } = await supabaseClient.from('products').delete().eq('id', id);
+        if (error) throw error;
+
+        // Eliminar la imagen del storage si existe
+        if (product?.main_image_url) {
+          try {
+            await deleteImage(product.main_image_url, 'products');
+          } catch (imgErr) {
+            console.warn('No se pudo eliminar la imagen del storage:', imgErr);
+          }
+        }
+
+        loadProducts();
+      } catch (err) {
+        alert('Error al eliminar producto');
+        console.error(err);
+      }
+    }
+
+    // Manejar selección de imagen
+    document.getElementById('product-image-file')?.addEventListener('change', (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        selectedImageFile = file;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const previewEl = document.getElementById('product-image-preview')!;
+          const previewImg = document.getElementById('product-image-preview-img') as HTMLImageElement;
+          previewImg.src = event.target?.result as string;
+          previewEl.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('new-product-btn')?.addEventListener('click', () => openModal());
+    document.getElementById('close-modal')?.addEventListener('click', closeModal);
+    document.getElementById('cancel-form')?.addEventListener('click', closeModal);
+
+    // Función para generar slug a partir del nombre
+    function generateSlug(name: string): string {
+      return name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
+        .replace(/[^a-z0-9]+/g, '-') // Reemplazar caracteres especiales con guiones
+        .replace(/^-+|-+$/g, '') // Eliminar guiones al inicio y final
+        .substring(0, 100); // Limitar longitud
+    }
+
+    // Función para generar slug único
+    async function generateUniqueSlug(baseName: string, excludeId?: number): Promise<string> {
+      let slug = generateSlug(baseName);
+      let counter = 0;
+      let isUnique = false;
+
+      while (!isUnique) {
+        let query = supabaseClient
+          .from('products')
+          .select('id')
+          .eq('slug', slug);
+        
+        if (excludeId) {
+          query = query.neq('id', excludeId);
+        }
+
+        const { data, error } = await query.limit(1);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          isUnique = true;
+        } else {
+          counter++;
+          slug = `${generateSlug(baseName)}-${counter}`;
+        }
+      }
+
+      return slug;
+    }
+
+    document.getElementById('product-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const errorEl = document.getElementById('form-error')!;
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+      try {
+        submitBtn.disabled = true;
+        errorEl.textContent = '';
+
+        let imageUrl = (document.getElementById('product-image-url') as HTMLInputElement).value || null;
+
+        // Si hay un archivo seleccionado, subirlo primero
+        if (selectedImageFile) {
+          errorEl.textContent = 'Subiendo imagen...';
+          imageUrl = await uploadImage(selectedImageFile, 'products');
+        }
+
+        const productName = (form.querySelector('#product-name') as HTMLInputElement).value;
+        
+        // Generar slug único solo para productos nuevos
+        let slug: string;
+        if (editingProductId) {
+          // Si estamos editando, mantener el slug existente
+          const { data: existingProduct } = await supabaseClient
+            .from('products')
+            .select('slug')
+            .eq('id', editingProductId)
+            .single();
+          
+          slug = existingProduct?.slug || await generateUniqueSlug(productName, editingProductId);
+        } else {
+          // Si es un producto nuevo, generar slug único
+          errorEl.textContent = 'Generando slug...';
+          slug = await generateUniqueSlug(productName);
+        }
+
+        const data: any = {
+          name: productName,
+          slug: slug,
+          description: (form.querySelector('#product-description') as HTMLTextAreaElement).value || null,
+          price: Number((form.querySelector('#product-price') as HTMLInputElement).value),
+          stock: Number((form.querySelector('#product-stock') as HTMLInputElement).value),
+          status: (form.querySelector('#product-status') as HTMLSelectElement).value,
+          is_accessory: (form.querySelector('#product-category') as HTMLSelectElement).value === 'accessory',
+          is_spare_part: (form.querySelector('#product-category') as HTMLSelectElement).value === 'spare_part',
+        };
+
+        // Solo actualizar la imagen si se seleccionó una nueva o si es un producto nuevo
+        if (imageUrl) {
+          data.main_image_url = imageUrl;
+        } else if (!editingProductId) {
+          // Si es un producto nuevo y no hay imagen, requerir imagen
+          throw new Error('Debes seleccionar una imagen para el producto');
+        }
+        // Si es edición y no hay nueva imagen, mantener la imagen existente (no incluir main_image_url en el update)
+
+        if (editingProductId) {
+          // Si estamos editando y hay una nueva imagen, eliminar la imagen anterior
+          if (imageUrl && selectedImageFile) {
+            const oldImageUrl = (document.getElementById('product-image-url') as HTMLInputElement).value;
+            if (oldImageUrl && oldImageUrl !== imageUrl) {
+              try {
+                await deleteImage(oldImageUrl, 'products');
+              } catch (imgErr) {
+                console.warn('No se pudo eliminar la imagen anterior:', imgErr);
+              }
+            }
+          }
+
+          const { error } = await supabaseClient
+            .from('products')
+            .update(data)
+            .eq('id', editingProductId);
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient.from('products').insert(data);
+          if (error) throw error;
+        }
+
+        closeModal();
+        loadProducts();
+      } catch (err: any) {
+        errorEl.textContent = err.message || 'Error al guardar producto';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadProducts);
+  </script>
+</BaseLayout>
+

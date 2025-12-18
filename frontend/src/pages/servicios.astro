@@ -1,0 +1,519 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabaseClient } from '../../lib/supabase/client';
+
+const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+
+// Servicios con storytelling completo
+const servicios = [
+  {
+    id: 'mantencion',
+    title: 'Mantenciones Programadas',
+    heroImage: '/servicios/MantencionProgramada.png',
+    story: {
+      intro: 'Tu moto es una máquina de precisión. Cada kilómetro recorrido, cada ruta completada, cada aventura vivida deja su huella. Las mantenciones programadas no son solo un checklist: son el ritual que mantiene viva la conexión entre tú y tu moto.',
+      importancia: 'Una mantención preventiva a tiempo puede evitar reparaciones costosas y mantener tu moto funcionando como el primer día. No es solo cambiar aceite: es revisar cada sistema, detectar desgastes tempranos y asegurar que cada componente esté en su punto óptimo.',
+      cuando: 'Cada 5.000 km o cada 6 meses, lo que ocurra primero. Si usas tu moto intensivamente o en condiciones extremas, reduce estos intervalos. La clave está en la constancia: mejor una mantención pequeña frecuente que una reparación grande ocasional.'
+    },
+    incluye: [
+      'Cambio de aceite y filtros (motor y transmisión)',
+      'Revisión completa de frenos (pastillas, discos, líquido)',
+      'Ajuste y lubricación de cadena',
+      'Revisión de neumáticos (presión, desgaste, válvulas)',
+      'Limpieza profunda y lubricación de puntos críticos',
+      'Revisión de luces, señalización y sistema eléctrico',
+      'Revisión de suspensión y chasis',
+      'Diagnóstico general con escáner electrónico'
+    ],
+    productosRelacionados: ['Aceites y Lubricantes', 'Filtros', 'Bujías'],
+    image: '/servicios/MantencionProgramada.png'
+  },
+  {
+    id: 'motor',
+    title: 'Motor y Transmisión',
+    heroImage: '/servicios/Banner-MotoryTransmision.png',
+    story: {
+      intro: 'El corazón de tu moto late en cada explosión del motor. Cada válvula que se abre, cada pistón que sube y baja, cada engranaje que transmite potencia. Cuando algo no suena bien, cuando falta potencia, cuando algo no encaja, es el momento de confiar en especialistas.',
+      importancia: 'Un motor bien mantenido no solo rinde más: dura más. La regulación de válvulas, el ajuste de carburación o inyección, el diagnóstico electrónico profundo: todo esto no es solo reparar, es optimizar. Es devolverle a tu moto su verdadero potencial.',
+      cuando: 'Si notas pérdida de potencia, ruidos extraños, consumo excesivo de aceite o dificultades al arrancar, es momento de revisar. También cada 15.000 km para regulación de válvulas, o si planeas un viaje largo. La prevención aquí es crítica.'
+    },
+    incluye: [
+      'Regulación de válvulas (ajuste de holguras)',
+      'Ajuste de carburador o diagnóstico de inyección',
+      'Reparación y reconstrucción de motor',
+      'Diagnóstico electrónico completo (ECU, sensores)',
+      'Puesta a punto completa (encendido, compresión)',
+      'Cambio de aceite de caja y transmisión',
+      'Ajuste y reparación de embrague',
+      'Revisión de sistema de refrigeración'
+    ],
+    productosRelacionados: ['Motor', 'Aceites y Lubricantes', 'Bujías'],
+    image: '/servicios/MotoryTransmision.png'
+  },
+  {
+    id: 'suspension',
+    title: 'Suspensión y Chasis',
+    heroImage: '/servicios/banner-suspencionychasis.png',
+    story: {
+      intro: 'La suspensión es el puente entre tu moto y el camino. Cada bache, cada curva, cada salto: la suspensión lo absorbe todo. Cuando está bien ajustada, sientes la carretera sin sentirla. Cuando no, cada imperfección se convierte en incomodidad.',
+      importancia: 'Una suspensión mal mantenida no solo es incómoda: es peligrosa. Las horquillas desgastadas, los amortiguadores sin servicio, la geometría desajustada afectan el manejo, la estabilidad y la seguridad. En ruta, en ciudad, en off-road: la suspensión es crítica.',
+      cuando: 'Cada 20.000 km o si notas rebote excesivo, pérdida de control en curvas, fugas de aceite en horquillas o amortiguador, o si la moto se siente "blanda". Si haces off-road o usas la moto intensivamente, reduce estos intervalos significativamente.'
+    },
+    incluye: [
+      'Servicio completo de horquillas (desarme, limpieza, cambio de aceite y sellos)',
+      'Revisión y servicio de amortiguador trasero',
+      'Ajuste de geometría y altura',
+      'Alineación de ruedas y balanceo',
+      'Revisión de rodamientos (ruedas, dirección)',
+      'Revisión de chasis y estructura',
+      'Ajuste de precarga y compresión/rebote'
+    ],
+    productosRelacionados: ['Suspensión'],
+    image: '/servicios/suspencionyChasis.png'
+  },
+  {
+    id: 'frenos',
+    title: 'Sistema de Frenos',
+    heroImage: '/servicios/frenos.png',
+    story: {
+      intro: 'Los frenos son tu red de seguridad. En una emergencia, en una curva cerrada, en el tráfico: confías en ellos completamente. Un sistema de frenos en perfecto estado no es negociable: es esencial.',
+      importancia: 'Un freno que chirría, que no responde como antes, que vibra: son señales de que algo no está bien. Las pastillas desgastadas, el líquido contaminado, los discos dañados no solo reducen la efectividad: comprometen tu seguridad. Los frenos son vida.',
+      cuando: 'Si notas que el freno no responde como antes, si escuchas ruidos al frenar, si el pedal o la maneta se sienten "esponjosos", o si ves desgaste irregular en las pastillas. También cada 10.000 km para revisión preventiva, o cada 2 años para cambio de líquido.'
+    },
+    incluye: [
+      'Cambio de pastillas de freno (delanteras y traseras)',
+      'Purga completa del sistema de frenos',
+      'Cambio de líquido de frenos (DOT 4 o DOT 5.1)',
+      'Revisión de discos (medición de grosor, rectificado si es necesario)',
+      'Ajuste de freno de mano',
+      'Revisión de mangueras y latiguillos',
+      'Revisión de bomba de freno y calipers',
+      'Limpieza y lubricación de componentes'
+    ],
+    productosRelacionados: ['Frenos'],
+    image: '/servicios/frenos.png'
+  },
+  {
+    id: 'electrico',
+    title: 'Sistema Eléctrico',
+    heroImage: '/servicios/sistema-electrico.png',
+    story: {
+      intro: 'La electricidad es la sangre invisible de tu moto. Sin ella, no hay arranque, no hay luces, no hay nada. Un sistema eléctrico bien mantenido es silencioso, confiable, invisible. Cuando falla, se nota inmediatamente.',
+      importancia: 'Una batería débil, un alternador que no carga, luces que parpadean: problemas eléctricos pueden dejarte varado en el peor momento. El diagnóstico eléctrico requiere herramientas especializadas y conocimiento profundo. No es algo que puedas dejar pasar.',
+      cuando: 'Si la moto no arranca, si las luces se ven débiles, si la batería se descarga rápidamente, o si notas problemas intermitentes. También cada 2 años para revisión preventiva de batería y sistema de carga, o antes de un viaje largo.'
+    },
+    incluye: [
+      'Revisión y prueba de batería (voltaje, carga, estado)',
+      'Reparación y diagnóstico de alternador',
+      'Instalación de luces LED y mejoras de iluminación',
+      'Reparación de sistema de arranque',
+      'Diagnóstico completo de fallas eléctricas',
+      'Instalación de alarmas y sistemas de seguridad',
+      'Revisión de fusibles, relés y conexiones',
+      'Instalación de GPS y electrónica adicional'
+    ],
+    productosRelacionados: ['Eléctrico', 'Baterías', 'Iluminación'],
+    image: '/servicios/sistema-electrico.png'
+  },
+  {
+    id: 'neumaticos',
+    title: 'Neumáticos y Ruedas',
+    heroImage: '/servicios/cambio-neumaticos.png',
+    story: {
+      intro: 'Los neumáticos son el único punto de contacto entre tu moto y el asfalto. Todo pasa por ahí: la aceleración, el frenado, las curvas. Un neumático en mal estado no solo se desgasta: te pone en riesgo.',
+      importancia: 'Un neumático con poco dibujo, con presión incorrecta, con daños: es un accidente esperando a pasar. El montaje correcto, el balanceo preciso, la alineación adecuada: todo esto afecta no solo el desgaste, sino tu seguridad y el manejo de la moto.',
+      cuando: 'Si notas desgaste irregular, si tienes un pinchazo, si los neumáticos tienen más de 5 años (incluso con buen dibujo), o si planeas un viaje largo. También cada 10.000 km para revisión de presión, alineación y balanceo.'
+    },
+    incluye: [
+      'Montaje y desmontaje de neumáticos',
+      'Balanceo de ruedas (estático y dinámico)',
+      'Reparación de pinchazos (parches profesionales)',
+      'Cambio de válvulas y cámaras',
+      'Revisión de presión y ajuste',
+      'Alineación de ruedas',
+      'Revisión de llantas (grietas, daños)',
+      'Asesoría en selección de neumáticos según uso'
+    ],
+    productosRelacionados: ['Neumáticos y Cámaras'],
+    image: '/servicios/cambio-neumaticos.png'
+  },
+  {
+    id: 'accesorios',
+    title: 'Instalación de Accesorios',
+    heroImage: '/servicios/instalacion-accesorios.png',
+    story: {
+      intro: 'Personalizar tu moto es hacerla tuya. Cada accesorio que instalas, cada mejora que agregas, cada detalle que ajustas: es parte de tu historia. Pero una instalación mal hecha puede arruinar no solo el accesorio, sino tu moto.',
+      importancia: 'Instalar accesorios no es solo atornillar: es entender la mecánica, la electricidad, la aerodinámica. Una maleta mal montada puede afectar el manejo. Una luz mal conectada puede dañar el sistema eléctrico. La instalación profesional no es un lujo: es sentido común.',
+      cuando: 'Cuando compres un accesorio nuevo, cuando quieras mejorar tu moto, cuando planees un viaje y necesites equipamiento adicional. También si notas que un accesorio instalado previamente no funciona correctamente o está causando problemas.'
+    },
+    incluye: [
+      'Instalación de maletas y portaequipajes (top case, side cases)',
+      'Montaje de parabrisas y deflectores',
+      'Instalación de luces auxiliares (LED, faros adicionales)',
+      'Instalación de alarmas y sistemas antirrobo',
+      'Montaje de GPS y sistemas de navegación',
+      'Instalación de calentadores de puños y accesorios de confort',
+      'Montaje de protectores de motor y chasis',
+      'Asesoría personalizada según tipo de uso'
+    ],
+    productosRelacionados: ['Accesorios'],
+    image: '/servicios/instalacion-accesorios.png'
+  }
+];
+
+// Cargar productos relacionados para cada servicio basándose en palabras clave
+async function getProductosRelacionados(keywords: string[]) {
+  try {
+    // Buscar productos que contengan las palabras clave en nombre o descripción
+    const { data, error } = await supabaseClient
+      .from('products')
+      .select('*')
+      .eq('status', 'active')
+      .limit(20);
+    
+    if (error || !data || data.length === 0) return [];
+    
+    // Filtrar productos que coincidan con las palabras clave
+    const productosFiltrados = data.filter((producto: any) => {
+      const nombre = (producto.name || '').toLowerCase();
+      const descripcion = (producto.description || '').toLowerCase();
+      const textoCompleto = `${nombre} ${descripcion}`;
+      
+      return keywords.some(keyword => 
+        textoCompleto.includes(keyword.toLowerCase())
+      );
+    });
+    
+    // Si no hay coincidencias exactas, devolver productos aleatorios relevantes
+    if (productosFiltrados.length === 0) {
+      return data.slice(0, 4);
+    }
+    
+    return productosFiltrados.slice(0, 4);
+  } catch (err) {
+    return [];
+  }
+}
+
+// Mapeo de servicios a palabras clave para buscar productos relacionados
+const keywordMap: Record<string, string[]> = {
+  'mantencion': ['aceite', 'filtro', 'bujía', 'lubricante', 'motorex', 'liqui'],
+  'motor': ['motor', 'empaquetadura', 'válvula', 'pistón', 'aceite', 'bujía'],
+  'suspension': ['horquilla', 'amortiguador', 'suspensión', 'resorte', 'fork'],
+  'frenos': ['freno', 'pastilla', 'disco', 'brake', 'líquido'],
+  'electrico': ['batería', 'relay', 'rele', 'regulador', 'led', 'ampolleta', 'bujía'],
+  'neumaticos': ['neumático', 'tire', 'cámara', 'mousse', 'aro'],
+  'accesorios': ['protector', 'espejo', 'maleta', 'portaequipaje', 'parabrisas', 'alarma'],
+};
+
+// Cargar productos para cada servicio
+const serviciosConProductos = await Promise.all(
+  servicios.map(async (servicio) => {
+    const keywords = keywordMap[servicio.id] || [];
+    const productos = await getProductosRelacionados(keywords);
+    return { ...servicio, productos };
+  })
+);
+---
+
+<BaseLayout title="Servicios Técnicos - Mimoto" description="Servicio técnico especializado para motos. Mantenciones, reparaciones y diagnóstico profesional.">
+  <!-- Hero Editorial -->
+  <section class="relative w-full min-h-[85vh] overflow-hidden">
+    <div class="absolute inset-0">
+      <div
+        class="absolute inset-0 bg-cover bg-center"
+        style="background-image: url('/servicios/MantencionProgramada.png');"
+      ></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/40 via-ktm-bg/30 to-ktm-bg/50"></div>
+    </div>
+    <div class="relative z-10 h-full flex items-center">
+      <div class="max-w-7xl mx-auto px-4 md:px-8 w-full">
+        <div class="max-w-4xl">
+          <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-6 text-white leading-tight tracking-tight drop-shadow-lg">
+            Servicio Técnico Especializado
+          </h1>
+          <p class="text-xl md:text-2xl lg:text-3xl text-white/95 mb-8 font-light leading-relaxed drop-shadow-md">
+            Tu moto en manos de especialistas. Cada servicio es una historia de cuidado, precisión y pasión.
+          </p>
+          <div class="flex flex-wrap gap-4">
+            <a
+              href={PUBLIC_WHATSAPP_URL}
+              class="inline-flex items-center gap-3 px-10 py-5 bg-ktm-accent text-black dark:text-white font-bold text-lg hover:bg-ktm-accent-600 transition-all uppercase tracking-wider shadow-lg"
+            >
+              Agendar Servicio
+            </a>
+            <a
+              href="#servicios"
+              class="inline-flex items-center gap-3 px-10 py-5 border-2 border-white text-white font-bold text-lg hover:bg-white hover:text-black dark:hover:text-ktm-bg transition-all uppercase tracking-wider"
+            >
+              Explorar Servicios
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Storytelling Section -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
+      <div>
+        <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">
+          Más que un Taller
+        </h2>
+        <div class="space-y-4 text-lg text-ktm-light-text dark:text-ktm-text/80 leading-relaxed">
+          <p>
+            En Mimoto, entendemos que tu moto es más que un vehículo. Es tu compañera de aventuras, tu medio de transporte diario, tu pasión. Por eso, cada servicio que realizamos está respaldado por años de experiencia y un compromiso inquebrantable con la calidad.
+          </p>
+          <p>
+            Nuestro taller cuenta con técnicos certificados especializados en todas las marcas principales: KTM, Honda, Yamaha, Suzuki, Kawasaki y más. Trabajamos exclusivamente con repuestos originales y de las mejores marcas del mercado, garantizando que cada reparación y mantención dure.
+          </p>
+          <p>
+            Desde una simple mantención preventiva hasta una reconstrucción completa de motor, cada trabajo se realiza con precisión, cuidado y atención al detalle. Tu seguridad y la de tu moto son nuestra prioridad.
+          </p>
+        </div>
+      </div>
+      <div class="relative">
+        <div
+          class="aspect-[4/3] bg-cover bg-center "
+          style="background-image: url('/servicios/MotoryTransmision.png');"
+        ></div>
+        <div class="absolute -bottom-6 -right-6 bg-ktm-accent p-8 border-2 border-white">
+          <div class="text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-2">31</div>
+          <div class="text-ktm-light-text dark:text-ktm-text/90 text-sm uppercase tracking-wider">Años de Experiencia</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Servicios con Storytelling Visual -->
+  <section id="servicios" class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    {serviciosConProductos.map((servicio, index) => (
+      <div class={`mb-32 ${index > 0 ? 'pt-20 border-t-2 border-ktm-light-border dark:border-ktm-border' : ''}`}>
+        <!-- Hero del Servicio -->
+        <div class="relative w-full min-h-[60vh] mb-16 overflow-hidden">
+          <div
+            class="absolute inset-0 bg-cover bg-center"
+            style={`background-image: url('${servicio.heroImage}');`}
+          ></div>
+          <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/40 via-ktm-bg/30 to-ktm-bg/50"></div>
+          <div class="relative z-10 h-full flex items-center">
+            <div class="max-w-7xl mx-auto px-4 md:px-8 w-full">
+              <div class="max-w-3xl">
+                <h2 class="text-4xl md:text-6xl lg:text-7xl font-black mb-6 text-white leading-tight tracking-tight drop-shadow-lg">
+                  {servicio.title}
+                </h2>
+                <p class="text-xl md:text-2xl text-white/95 mb-8 font-light leading-relaxed drop-shadow-md">
+                  {servicio.story.intro}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contenido Editorial - Alternando Imagen/Texto -->
+        <div class="space-y-16">
+          <!-- Bloque 1: Importancia -->
+          <div class={`grid md:grid-cols-2 gap-12 items-center ${index % 2 === 0 ? '' : 'md:flex-row-reverse'}`}>
+            <div class={index % 2 === 0 ? '' : 'md:order-2'}>
+              <h3 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">
+                ¿Por qué es importante?
+              </h3>
+              <p class="text-lg text-ktm-light-text dark:text-ktm-text/80 leading-relaxed">
+                {servicio.story.importancia}
+              </p>
+            </div>
+            <div class={`relative ${index % 2 === 0 ? '' : 'md:order-1'}`}>
+              <div
+                class="aspect-[4/3] bg-cover bg-center "
+                style={`background-image: url('${servicio.image}');`}
+              ></div>
+            </div>
+          </div>
+
+          <!-- Bloque 2: Qué incluye -->
+          <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-8 md:p-12">
+            <h3 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-8 uppercase tracking-tight">
+              ¿Qué incluye este servicio?
+            </h3>
+            <div class="grid md:grid-cols-2 gap-4">
+              {servicio.incluye.map((item) => (
+                <div class="flex items-start gap-3">
+                  <span class="text-ktm-accent font-bold text-xl mt-1">•</span>
+                  <span class="text-ktm-light-text dark:text-ktm-text/80 text-base leading-relaxed">{item}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <!-- Bloque 3: Cuándo hacerlo -->
+          <div class={`grid md:grid-cols-2 gap-12 items-center ${index % 2 === 1 ? '' : 'md:flex-row-reverse'}`}>
+            <div class={index % 2 === 1 ? '' : 'md:order-2'}>
+              <h3 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">
+                ¿Cuándo hacerlo?
+              </h3>
+              <p class="text-lg text-ktm-light-text dark:text-ktm-text/80 leading-relaxed">
+                {servicio.story.cuando}
+              </p>
+            </div>
+            <div class={`relative ${index % 2 === 1 ? '' : 'md:order-1'}`}>
+              <div class="bg-ktm-accent p-8 md:p-12 border-2 border-white">
+                <div class="text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-4">💡</div>
+                <p class="text-ktm-light-text dark:text-ktm-text/90 text-lg leading-relaxed">
+                  <strong class="text-ktm-light-text dark:text-ktm-text">Consejo profesional:</strong> No esperes a que algo falle. La prevención siempre es más económica y segura que la reparación.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Productos Relacionados (si hay) -->
+          {servicio.productos && servicio.productos.length > 0 && (
+            <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-8 md:p-12">
+              <h3 class="text-2xl md:text-3xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">
+                Productos relacionados
+              </h3>
+              <p class="text-ktm-light-text dark:text-ktm-text/70 mb-8 text-base">
+                Repuestos y productos que utilizamos en este servicio
+              </p>
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {servicio.productos.slice(0, 4).map((producto: any) => {
+                  const imageUrl = producto.main_image_url || '';
+                  const hasImage = imageUrl && imageUrl.trim() !== '';
+                  const price = Number(producto.price) || 0;
+                  return (
+                    <a
+                      href="/tienda"
+                      class="bg-ktm-light-surface dark:bg-ktm-surface  p-4 group hover:border-ktm-accent transition-all"
+                    >
+                      {hasImage ? (
+                        <div class="aspect-square mb-3 overflow-hidden bg-gray-800">
+                          <img
+                            src={imageUrl}
+                            alt={producto.name}
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            loading="lazy"
+                            crossorigin="anonymous"
+                            onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
+                          />
+                        </div>
+                      ) : (
+                        <div class="aspect-square mb-3 bg-gray-800 flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs">
+                          Sin imagen
+                        </div>
+                      )}
+                      <h4 class="text-sm font-black text-ktm-light-text dark:text-ktm-text mb-2 uppercase tracking-tight line-clamp-2">
+                        {producto.name}
+                      </h4>
+                      {price > 0 ? (
+                        <p class="text-ktm-accent font-bold">
+                          ${price.toLocaleString('es-CL')}
+                        </p>
+                      ) : (
+                        <p class="text-ktm-light-text dark:text-ktm-text/60 text-xs italic">Consultar precio</p>
+                      )}
+                    </a>
+                  );
+                })}
+              </div>
+              <div class="mt-6">
+                <a
+                  href="/tienda"
+                  class="inline-flex items-center gap-2 text-ktm-accent font-bold uppercase tracking-wider text-sm hover:gap-4 transition-all"
+                >
+                  Ver más productos relacionados →
+                </a>
+              </div>
+            </div>
+          )}
+
+          <!-- CTA del Servicio -->
+          <div class="bg-ktm-light-surface dark:bg-ktm-surface border border-ktm-accent/50 rounded-xl p-8 md:p-12 text-center">
+            <h3 class="text-2xl md:text-3xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">
+              ¿Listo para agendar este servicio?
+            </h3>
+            <p class="text-ktm-light-text dark:text-ktm-text/80 mb-6 text-lg">
+              Contáctanos y coordina una evaluación. Estamos aquí para ayudarte.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+              <a
+                href={PUBLIC_WHATSAPP_URL}
+                class="inline-flex items-center gap-3 px-8 py-4 bg-ktm-accent text-ktm-light-text dark:text-ktm-text font-bold hover:bg-ktm-accent-600 transition-all uppercase tracking-wider"
+              >
+                Agendar por WhatsApp
+              </a>
+              <a
+                href="/tienda"
+                class="inline-flex items-center gap-3 px-8 py-4 border border-ktm-accent/50 rounded-xl text-ktm-accent font-bold hover:bg-ktm-accent hover:text-ktm-light-text dark:text-ktm-text transition-all uppercase tracking-wider"
+              >
+                Ver Repuestos
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    ))}
+  </section>
+
+  <!-- Proceso Editorial -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20 bg-ktm-light-surface dark:bg-ktm-surface/30">
+    <div class="mb-16 text-center">
+      <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Nuestro Proceso</h2>
+      <p class="text-xl text-ktm-light-text dark:text-ktm-text/70 max-w-2xl mx-auto">Cómo trabajamos para garantizar el mejor resultado</p>
+    </div>
+
+    <div class="grid md:grid-cols-4 gap-8">
+      <div class="text-center">
+        <div class="text-5xl font-black text-ktm-accent mb-4">01</div>
+        <h3 class="text-xl font-black text-ktm-light-text dark:text-ktm-text mb-3 uppercase tracking-tight">Diagnóstico</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm leading-relaxed">
+          Evaluación completa de tu moto con herramientas profesionales y diagnóstico electrónico.
+        </p>
+      </div>
+      <div class="text-center">
+        <div class="text-5xl font-black text-ktm-accent mb-4">02</div>
+        <h3 class="text-xl font-black text-ktm-light-text dark:text-ktm-text mb-3 uppercase tracking-tight">Cotización</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm leading-relaxed">
+          Presupuesto transparente y detallado antes de comenzar cualquier trabajo.
+        </p>
+      </div>
+      <div class="text-center">
+        <div class="text-5xl font-black text-ktm-accent mb-4">03</div>
+        <h3 class="text-xl font-black text-ktm-light-text dark:text-ktm-text mb-3 uppercase tracking-tight">Reparación</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm leading-relaxed">
+          Trabajo realizado por técnicos certificados con repuestos originales y de calidad.
+        </p>
+      </div>
+      <div class="text-center">
+        <div class="text-5xl font-black text-ktm-accent mb-4">04</div>
+        <h3 class="text-xl font-black text-ktm-light-text dark:text-ktm-text mb-3 uppercase tracking-tight">Garantía</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm leading-relaxed">
+          Todos nuestros servicios incluyen garantía. Tu tranquilidad es nuestra prioridad.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Final -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="bg-ktm-light-surface dark:bg-ktm-surface border border-ktm-accent/50 rounded-xl p-12 md:p-16 text-center">
+      <h2 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">¿Listo para comenzar?</h2>
+      <p class="text-xl text-ktm-light-text dark:text-ktm-text/80 mb-8 max-w-2xl mx-auto">
+        Agenda tu servicio técnico o consulta por repuestos y accesorios
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a
+          href={PUBLIC_WHATSAPP_URL}
+          class="inline-flex items-center gap-3 px-10 py-5 bg-ktm-accent text-ktm-light-text dark:text-ktm-text font-bold text-lg hover:bg-ktm-accent-600 transition-all uppercase tracking-wider"
+        >
+          Contactar por WhatsApp
+        </a>
+        <a
+          href="/tienda"
+          class="inline-flex items-center gap-3 px-10 py-5 border border-ktm-accent/50 rounded-xl text-ktm-accent font-bold text-lg hover:bg-ktm-accent hover:text-ktm-light-text dark:text-ktm-text transition-all uppercase tracking-wider"
+        >
+          Ver Repuestos
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

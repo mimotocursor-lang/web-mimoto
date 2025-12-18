@@ -1,0 +1,2174 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabaseClient } from '../../lib/supabase/client';
+import { 
+  getAvailableCategories, 
+  filterByCategory, 
+  searchProducts, 
+  getAutocompleteSuggestions,
+  getAvailableBrands,
+  getAvailableModels,
+  filterByBrand,
+  filterByModel,
+  extractBrand,
+  extractModel,
+  CATEGORIES,
+  type ProductCategory 
+} from '../utils/categorizeProducts';
+
+// Cargar productos activos separados por categoría
+const { data: accesorios = [], error: accesoriosError } = await supabaseClient
+  .from('products')
+  .select('*')
+  .eq('status', 'active')
+  .eq('is_accessory', true)
+  .order('created_at', { ascending: false });
+
+const { data: repuestos = [], error: repuestosError } = await supabaseClient
+  .from('products')
+  .select('*')
+  .eq('status', 'active')
+  .eq('is_spare_part', true)
+  .order('created_at', { ascending: false });
+
+
+// Cargar banners de sección
+const { data: bannerAccesorios = null } = await supabaseClient
+  .from('banners')
+  .select('*')
+  .eq('banner_type', 'accessories')
+  .eq('active', true)
+  .single();
+
+const { data: bannerRepuestos = null } = await supabaseClient
+  .from('banners')
+  .select('*')
+  .eq('banner_type', 'spare_parts')
+  .eq('active', true)
+  .single();
+---
+
+<BaseLayout title="Tienda - Mimoto">
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-20 space-y-24">
+    <!-- Sección de Accesorios -->
+    <div>
+      <!-- Hero Editorial de Accesorios -->
+      {bannerAccesorios ? (
+        <div class="relative w-full min-h-[50vh] md:min-h-[60vh] overflow-hidden mb-16">
+          <div
+            class="absolute inset-0 bg-cover bg-center"
+            style={`background-image: url('${bannerAccesorios.image_url}');`}
+          ></div>
+          <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/40 via-ktm-bg/30 to-ktm-bg/50"></div>
+          <div class="relative z-10 min-h-[50vh] md:min-h-[60vh] flex flex-col justify-end pb-8 md:pb-12 lg:pb-16">
+            <div class="max-w-4xl px-4 md:px-8">
+              {bannerAccesorios.title && (
+                <h2 class="text-4xl md:text-6xl lg:text-7xl font-black mb-4 text-white leading-tight tracking-tight uppercase drop-shadow-2xl" style="font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif; text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);">
+                  {bannerAccesorios.title}
+                </h2>
+              )}
+              {bannerAccesorios.subtitle && (
+                <p class="text-xl md:text-2xl text-white mb-0 font-bold leading-relaxed drop-shadow-lg" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">
+                  {bannerAccesorios.subtitle}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div class="relative w-full min-h-[50vh] md:min-h-[60vh] overflow-hidden mb-16">
+          <div
+            class="absolute inset-0 bg-cover bg-center"
+            style="background-image: url('https://images.unsplash.com/photo-1558980664-769d59546b3d?w=1920&q=80');"
+          ></div>
+          <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/40 via-ktm-bg/30 to-ktm-bg/50"></div>
+          <div class="relative z-10 min-h-[50vh] md:min-h-[60vh] flex flex-col justify-end pb-8 md:pb-12 lg:pb-16">
+            <div class="max-w-4xl px-4 md:px-8">
+              <h2 class="text-4xl md:text-6xl lg:text-7xl font-black mb-4 text-white leading-tight tracking-tight uppercase drop-shadow-2xl" style="font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif; text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);">
+                Accesorios
+              </h2>
+              <p class="text-xl md:text-2xl text-white mb-0 font-bold leading-relaxed drop-shadow-lg" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">
+                Equipamiento y accesorios premium para tu moto
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <!-- Filtros y Búsqueda para Accesorios -->
+      {accesorios.length > 0 && (() => {
+        const availableCategories = getAvailableCategories(accesorios);
+        const availableBrands = getAvailableBrands(accesorios);
+        return (
+          <div class="mb-12 space-y-6">
+            <!-- Botón para abrir filtros en móvil -->
+            <button
+              id="btn-filtros-mobile-accesorios"
+              class="md:hidden w-full px-6 py-4 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-accent/30 text-ktm-light-text dark:text-ktm-text font-bold hover:border-ktm-accent/50 transition-all uppercase tracking-wider flex items-center justify-center gap-2"
+            >
+              <span>🔍</span> Filtros y Búsqueda
+            </button>
+
+            <!-- Panel de Filtros (oculto en móvil, visible en desktop) -->
+            <div id="filtros-panel-accesorios" class="hidden md:block space-y-6">
+              <!-- Búsqueda con Autocompletado y Botón -->
+              <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1 relative">
+                  <input
+                    type="text"
+                    id="search-accesorios"
+                    placeholder="Buscar accesorios por nombre, SKU o descripción..."
+                    class="w-full px-6 py-4 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text placeholder-white/50 focus:border-ktm-accent/50 focus:outline-none transition-all uppercase tracking-wide text-sm"
+                  />
+                  <div id="autocomplete-suggestions-accesorios" class="hidden absolute z-50 w-full mt-1 bg-ktm-light-surface/95 dark:bg-ktm-surface/95 backdrop-blur-md rounded-lg border border-ktm-accent/30 shadow-xl max-h-60 overflow-y-auto"></div>
+                </div>
+                <button
+                  type="button"
+                  id="btn-buscar-accesorios"
+                  class="px-8 py-4 bg-ktm-accent text-ktm-light-text dark:text-ktm-text font-bold hover:bg-ktm-accent-600 transition-all whitespace-nowrap uppercase tracking-wider"
+                >
+                  Buscar
+                </button>
+              </div>
+              
+              <!-- Filtros: Categoría, Marca y Modelo -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Filtro por Categoría -->
+                <div>
+                  <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Categoría</label>
+                  <select
+                    id="filter-categoria-accesorios"
+                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                  >
+                    <option value="all">Todas las categorías</option>
+                    {availableCategories.map(cat => (
+                      <option value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <!-- Filtro por Marca -->
+                <div>
+                  <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Marca</label>
+                  <select
+                    id="filter-marca-accesorios"
+                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                  >
+                    <option value="all">Todas las marcas</option>
+                    {availableBrands.map(brand => (
+                      <option value={brand}>{brand}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <!-- Filtro por Modelo -->
+                <div>
+                  <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Modelo</label>
+                  <select
+                    id="filter-modelo-accesorios"
+                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                  >
+                    <option value="all">Todos los modelos</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Contador de resultados -->
+            <div class="text-ktm-light-text dark:text-ktm-text/70 text-sm uppercase tracking-wider">
+              <span id="result-count-accesorios">{accesorios.length}</span> accesorio{accesorios.length !== 1 ? 's' : ''} encontrado{accesorios.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+        );
+      })()}
+
+      <!-- Botón Volver para Accesorios (oculto inicialmente) -->
+      <button
+        id="btn-volver-accesorios"
+        class="hidden mb-6 inline-flex items-center gap-2 px-6 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-accent/30 text-ktm-light-text dark:text-ktm-text font-bold hover:border-ktm-accent/50 transition-all uppercase tracking-wider"
+      >
+        <span>←</span> Volver a Categorías
+      </button>
+
+      <!-- Grid de Accesorios -->
+      <div id="accesorios-container">
+        {accesorios.length === 0 ? (
+          <p class="text-ktm-light-text dark:text-ktm-text/70 text-center py-12">No hay accesorios disponibles en este momento.</p>
+        ) : (
+          <div id="accesorios-initial-view" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {/* Vista inicial: Cards de categorías - será reemplazada por JS */}
+          </div>
+        )}
+      </div>
+    </div>
+
+    <!-- Sección de Repuestos -->
+    <div>
+      <!-- Hero Editorial de Repuestos -->
+      {bannerRepuestos ? (
+        <div class="relative w-full min-h-[50vh] md:min-h-[60vh] overflow-hidden mb-16">
+          <div
+            class="absolute inset-0 bg-cover bg-center"
+            style={`background-image: url('${bannerRepuestos.image_url}');`}
+          ></div>
+          <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/40 via-ktm-bg/30 to-ktm-bg/50"></div>
+          <div class="relative z-10 min-h-[50vh] md:min-h-[60vh] flex flex-col justify-end pb-8 md:pb-12 lg:pb-16">
+            <div class="max-w-4xl px-4 md:px-8">
+              {bannerRepuestos.title && (
+                <h2 class="text-4xl md:text-6xl lg:text-7xl font-black mb-4 text-white leading-tight tracking-tight uppercase drop-shadow-2xl" style="font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif; text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);">
+                  {bannerRepuestos.title}
+                </h2>
+              )}
+              {bannerRepuestos.subtitle && (
+                <p class="text-xl md:text-2xl text-white mb-0 font-bold leading-relaxed drop-shadow-lg" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">
+                  {bannerRepuestos.subtitle}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div class="relative w-full min-h-[50vh] md:min-h-[60vh] overflow-hidden mb-16">
+          <div
+            class="absolute inset-0 bg-cover bg-center"
+            style="background-image: url('https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=1920&q=80');"
+          ></div>
+          <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/40 via-ktm-bg/30 to-ktm-bg/50"></div>
+          <div class="relative z-10 min-h-[50vh] md:min-h-[60vh] flex flex-col justify-end pb-8 md:pb-12 lg:pb-16">
+            <div class="max-w-4xl px-4 md:px-8">
+              <h2 class="text-4xl md:text-6xl lg:text-7xl font-black mb-4 text-white leading-tight tracking-tight uppercase drop-shadow-2xl" style="font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif; text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5);">
+                Repuestos
+              </h2>
+              <p class="text-xl md:text-2xl text-white mb-0 font-bold leading-relaxed drop-shadow-lg" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">
+                Repuestos originales y de calidad para todas las marcas
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <!-- Filtros y Búsqueda -->
+      {repuestos.length > 0 && (() => {
+        const availableCategories = getAvailableCategories(repuestos);
+        const availableBrands = getAvailableBrands(repuestos);
+        return (
+          <div class="mb-12 space-y-6">
+            <!-- Botón para abrir filtros en móvil -->
+            <button
+              id="btn-filtros-mobile-repuestos"
+              class="md:hidden w-full px-6 py-4 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-accent/30 text-ktm-light-text dark:text-ktm-text font-bold hover:border-ktm-accent/50 transition-all uppercase tracking-wider flex items-center justify-center gap-2"
+            >
+              <span>🔍</span> Filtros y Búsqueda
+            </button>
+
+            <!-- Panel de Filtros (oculto en móvil, visible en desktop) -->
+            <div id="filtros-panel-repuestos" class="hidden md:block space-y-6">
+              <!-- Búsqueda con Autocompletado y Botón -->
+              <div class="flex flex-col md:flex-row gap-4">
+                <div class="flex-1 relative">
+                  <input
+                    type="text"
+                    id="search-repuestos"
+                    placeholder="Buscar repuestos por nombre, SKU o descripción..."
+                    class="w-full px-6 py-4 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text placeholder-white/50 focus:border-ktm-accent/50 focus:outline-none transition-all uppercase tracking-wide text-sm"
+                  />
+                  <div id="autocomplete-suggestions" class="hidden absolute z-50 w-full mt-1 bg-ktm-light-surface/95 dark:bg-ktm-surface/95 backdrop-blur-md rounded-lg border border-ktm-accent/30 shadow-xl max-h-60 overflow-y-auto"></div>
+                </div>
+                <button
+                  type="button"
+                  id="btn-buscar"
+                  class="px-8 py-4 bg-ktm-accent text-ktm-light-text dark:text-ktm-text font-bold hover:bg-ktm-accent-600 transition-all whitespace-nowrap uppercase tracking-wider"
+                >
+                  Buscar
+                </button>
+              </div>
+              
+              <!-- Filtros: Categoría, Marca y Modelo -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Filtro por Categoría -->
+                <div>
+                  <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Categoría</label>
+                  <select
+                    id="filter-categoria"
+                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                  >
+                    <option value="all">Todas las categorías</option>
+                    {availableCategories.map(cat => (
+                      <option value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <!-- Filtro por Marca -->
+                <div>
+                  <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Marca</label>
+                  <select
+                    id="filter-marca"
+                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                  >
+                    <option value="all">Todas las marcas</option>
+                    {availableBrands.map(brand => (
+                      <option value={brand}>{brand}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <!-- Filtro por Modelo -->
+                <div>
+                  <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Modelo</label>
+                  <select
+                    id="filter-modelo"
+                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                  >
+                    <option value="all">Todos los modelos</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Contador de resultados -->
+            <div class="text-ktm-light-text dark:text-ktm-text/70 text-sm uppercase tracking-wider">
+              <span id="result-count">{repuestos.length}</span> repuesto{repuestos.length !== 1 ? 's' : ''} encontrado{repuestos.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+        );
+      })()}
+
+      <!-- Botón Volver para Repuestos (oculto inicialmente) -->
+      <button
+        id="btn-volver-repuestos"
+        class="hidden mb-6 inline-flex items-center gap-2 px-6 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-accent/30 text-ktm-light-text dark:text-ktm-text font-bold hover:border-ktm-accent/50 transition-all uppercase tracking-wider"
+      >
+        <span>←</span> Volver a Categorías
+      </button>
+
+      <!-- Grid de Repuestos -->
+      <div id="repuestos-container">
+        {repuestos.length === 0 ? (
+          <p class="text-gray-600 text-center py-12">No hay repuestos disponibles en este momento.</p>
+        ) : (
+          <div id="repuestos-initial-view" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {/* Vista inicial: Cards de marcas - será reemplazada por JS */}
+          </div>
+        )}
+      </div>
+    </div>
+  </section>
+
+  <script>
+    // Esperar a que el DOM esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+      // Obtener datos del elemento script JSON
+      const dataScript = document.getElementById('repuestos-data');
+      if (!dataScript) {
+        console.error('No se encontró el script con datos de repuestos');
+        return;
+      }
+      
+      // Parsear datos
+      let repuestos = [];
+      try {
+        const jsonText = dataScript.textContent || dataScript.innerHTML || '[]';
+        repuestos = JSON.parse(jsonText);
+        console.log('Repuestos cargados:', repuestos.length);
+      } catch (e) {
+        console.error('Error parseando datos de repuestos:', e);
+        return;
+      }
+
+      // Funciones de categorización (inline)
+      const CATEGORIES = [
+      { id: 'Aceites y Lubricantes', keywords: ['aceite', 'oil', 'lubricante', 'motorex', 'liqui moly', 'liquimoly', 'coolant', 'refrigerante', 'fork oil', 'chain lube', 'chainclean', 'brake clean'] },
+      { id: 'Filtros', keywords: ['filtro', 'filter', 'aire', 'aceite', 'air'] },
+      { id: 'Frenos', keywords: ['pastilla', 'freno', 'brake', 'disco', 'bomba de freno', 'bomba freno', 'caliper', 'calipe'] },
+      { id: 'Motor', keywords: ['empaquetadura', 'gasket', 'piston', 'anillo', 'valvula', 'valvulas', 'reten', 'retenes', 'cigueñal', 'cigüeñal', 'culata', 'cilindro', 'juego anillos', 'kit piston'] },
+      { id: 'Transmisión', keywords: ['cadena', 'chain', 'catalina', 'piñon', 'sprocket', 'candado', 'transmision', 'embrague'] },
+      { id: 'Suspensión', keywords: ['horquilla', 'fork', 'resorte', 'spring', 'suspension', 'amortiguador', 'shock'] },
+      { id: 'Eléctrico', keywords: ['relay', 'rele', 'regulador', 'voltage', 'voltaje', 'switch', 'cable', 'intermitente', 'señalizador'] },
+      { id: 'Neumáticos y Cámaras', keywords: ['neumatico', 'tire', 'camara', 'mousse', 'aro'] },
+      { id: 'Baterías', keywords: ['bateria', 'battery', 'ytx', 'ytz', 'ftx', 'ftz', 'litio'] },
+      { id: 'Bujías', keywords: ['bujia', 'bujía', 'spark', 'ngk', 'bosch', 'cachimba'] },
+      { id: 'Iluminación', keywords: ['ampolleta', 'bulb', 'foco', 'led', 'h3', 'h4', 'halogen'] },
+      { id: 'Accesorios', keywords: ['protector', 'espejo', 'mirror', 'bolso', 'funda', 'manilla', 'manubrio', 'calienta puños', 'cubrepuños', 'phone case', 'bundle'] }
+      ];
+
+      function categorizeProduct(name) {
+        const nameLower = (name || '').toLowerCase();
+        for (const category of CATEGORIES) {
+          for (const keyword of category.keywords) {
+            if (nameLower.includes(keyword.toLowerCase())) {
+              return category.id;
+            }
+          }
+        }
+        return 'Otros';
+      }
+
+      function getAvailableCategories(products) {
+        const categorySet = new Set();
+        products.forEach(p => {
+          const category = categorizeProduct(p.name);
+          if (category) categorySet.add(category);
+        });
+        return Array.from(categorySet).sort();
+      }
+
+      function filterByCategory(products, category) {
+      if (category === 'all') return products;
+        return products.filter(p => categorizeProduct(p.name) === category);
+      }
+
+      function searchProducts(products, searchText) {
+      if (!searchText.trim()) return products;
+      const searchLower = searchText.toLowerCase().trim();
+      return products.filter(p => {
+        const name = (p.name || '').toLowerCase();
+        const description = (p.description || '').toLowerCase();
+        const sku = (p.sku || '').toLowerCase();
+          return name.includes(searchLower) || description.includes(searchLower) || sku.includes(searchLower);
+        });
+      }
+
+      function getAutocompleteSuggestions(products, searchText, limit = 5) {
+      if (!searchText.trim()) return [];
+      const searchLower = searchText.toLowerCase().trim();
+      const suggestions = new Set();
+      for (const product of products) {
+        const name = (product.name || '').toLowerCase();
+        if (name.includes(searchLower)) {
+          suggestions.add(product.name);
+          if (suggestions.size >= limit) break;
+        }
+      }
+        return Array.from(suggestions).slice(0, limit);
+      }
+
+      // Funciones de marca y modelo
+      const MOTORCYCLE_BRANDS = ['KTM', 'Honda', 'Yamaha', 'Suzuki', 'Kawasaki', 'BMW', 'Ducati', 'Husqvarna', 'Triumph', 'Aprilia', 'Beta', 'GasGas', 'Sherco', 'Bajaj', 'Bridgestone', 'Continental', 'Heidenau', 'Shinko', 'ANLAS'];
+      const MOTORCYCLE_MODELS = {
+      'KTM': ['Duke', 'RC', 'Adventure', 'EXC', 'SX', 'Enduro', 'Rally', 'LC4', '990', '1190', '1290', '790', '890', '901', '200', '250', '390', '401', '690'],
+      'Honda': ['CRF', 'CR', 'XR', 'Transalp', 'Africa Twin', 'CBR', 'CB', 'CR50', 'CR125', 'CR250'],
+      'Yamaha': ['WR', 'YZ', 'MT', 'Ténéré', 'R1', 'R6'],
+      'Suzuki': ['RMZ', 'DR', 'DL', 'GSX'],
+      'Kawasaki': ['KX', 'KLX', 'Ninja', 'Versys'],
+      'BMW': ['F650', 'GS', 'R', 'S'],
+      'Ducati': ['Monster', 'Multistrada', 'Panigale'],
+      'Husqvarna': ['701', 'TE', 'FE', 'TC']
+      };
+
+      function extractBrand(product) {
+      const text = `${product.name || ''} ${product.description || ''}`.toUpperCase();
+      for (const brand of MOTORCYCLE_BRANDS) {
+        if (text.includes(brand.toUpperCase())) {
+          return brand;
+        }
+      }
+        return null;
+      }
+
+      function extractModel(product, brand) {
+      const text = `${product.name || ''} ${product.description || ''}`.toUpperCase();
+      const models = brand ? (MOTORCYCLE_MODELS[brand] || []) : Object.values(MOTORCYCLE_MODELS).flat();
+      for (const model of models) {
+        if (text.includes(model.toUpperCase())) {
+          return model;
+        }
+      }
+        return null;
+      }
+
+      function filterByBrand(products, brand) {
+      if (brand === 'all') return products;
+        return products.filter(p => extractBrand(p) === brand);
+      }
+
+      function filterByModel(products, model, brand) {
+      if (model === 'all') return products;
+      return products.filter(p => {
+        const pBrand = extractBrand(p);
+        const pModel = extractModel(p, pBrand);
+        return pModel === model && (!brand || pBrand === brand);
+        });
+      }
+
+      function getAvailableModelsForBrand(products, brand) {
+      const modelSet = new Set();
+      products.forEach(p => {
+        const pBrand = extractBrand(p);
+        if (pBrand === brand) {
+          const model = extractModel(p, brand);
+          if (model) modelSet.add(model);
+        }
+      });
+        return Array.from(modelSet).sort();
+      }
+
+      // Estado
+      const allRepuestos = repuestos || [];
+      let currentCategory = 'all';
+      let currentBrand = 'all';
+      let currentModel = 'all';
+      let currentSearch = '';
+      let viewMode = 'categories'; // 'categories', 'category-filters', 'products'
+
+      // Funciones para manejar el estado en la URL
+      function loadStateFromURL() {
+        const params = new URLSearchParams(window.location.search);
+        const section = params.get('seccion') || 'repuestos';
+        
+        // Solo cargar estado si hay parámetros en la URL
+        if (window.location.search.length === 0) {
+          // Sin parámetros: estado inicial
+          currentCategory = 'all';
+          currentBrand = 'all';
+          currentModel = 'all';
+          currentSearch = '';
+          viewMode = 'categories';
+          return;
+        }
+        
+        if (section === 'repuestos') {
+          currentCategory = params.get('categoria') || 'all';
+          currentBrand = params.get('marca') || 'all';
+          currentModel = params.get('modelo') || 'all';
+          currentSearch = params.get('busqueda') || '';
+          
+          // Determinar viewMode basado en los parámetros
+          if (currentCategory !== 'all') {
+            viewMode = 'category-filters';
+          } else if (currentBrand !== 'all' || currentModel !== 'all' || currentSearch.trim()) {
+            viewMode = 'products';
+          } else {
+            viewMode = 'categories';
+          }
+        } else {
+          // Para accesorios (se implementará después)
+          const currentCategoryAccesorios = params.get('categoria') || 'all';
+          const currentBrandAccesorios = params.get('marca') || 'all';
+          const currentModelAccesorios = params.get('modelo') || 'all';
+          const currentSearchAccesorios = params.get('busqueda') || '';
+        }
+      }
+
+      function updateURL(replace = false) {
+        const params = new URLSearchParams();
+        
+        // Determinar sección activa (repuestos o accesorios)
+        // Por ahora asumimos repuestos, pero se puede mejorar detectando qué sección está visible
+        params.set('seccion', 'repuestos');
+        
+        if (currentCategory !== 'all') {
+          params.set('categoria', currentCategory);
+        }
+        if (currentBrand !== 'all') {
+          params.set('marca', currentBrand);
+        }
+        if (currentModel !== 'all') {
+          params.set('modelo', currentModel);
+        }
+        if (currentSearch.trim()) {
+          params.set('busqueda', currentSearch);
+        }
+        
+        const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        
+        if (replace) {
+          window.history.replaceState({}, '', newURL);
+        } else {
+          window.history.pushState({}, '', newURL);
+        }
+      }
+
+      // Elementos DOM
+      const searchInput = document.getElementById('search-repuestos');
+      const btnBuscar = document.getElementById('btn-buscar');
+      const categorySelect = document.getElementById('filter-categoria');
+      const marcaSelect = document.getElementById('filter-marca');
+      const modeloSelect = document.getElementById('filter-modelo');
+      const repuestosContainer = document.getElementById('repuestos-container');
+      const resultCount = document.getElementById('result-count');
+      const autocompleteDiv = document.getElementById('autocomplete-suggestions');
+      const btnVolverRepuestos = document.getElementById('btn-volver-repuestos');
+      
+      if (!repuestosContainer) {
+        console.error('No se encontró el contenedor de repuestos');
+        return;
+      }
+
+      // Función para obtener marcas disponibles
+      function getAvailableBrandsFromProducts(products) {
+        const brandSet = new Set();
+        products.forEach(p => {
+          const brand = extractBrand(p);
+          if (brand) brandSet.add(brand);
+        });
+        return Array.from(brandSet).sort();
+      }
+
+      // Mapeo de marcas a imágenes
+      const brandImages = {
+        'KTM': 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=800&q=80',
+        'Honda': 'https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=800&q=80',
+        'Yamaha': 'https://images.unsplash.com/photo-1558980664-1db506751c6a?w=800&q=80',
+        'Suzuki': 'https://images.unsplash.com/photo-1558980664-769d59546b3d?w=800&q=80',
+        'Kawasaki': 'https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=800&q=80',
+        'BMW': 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=800&q=80',
+        'Ducati': 'https://images.unsplash.com/photo-1558980664-1db506751c6a?w=800&q=80',
+        'Husqvarna': 'https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=800&q=80'
+      };
+
+      // Función para obtener la imagen de una categoría desde la carpeta accesorios-repuestos
+      function getCategoryImage(category) {
+        // Mapeo directo de categorías a nombres de archivo
+        const categoryMap = {
+          'Aceites y Lubricantes': 'aceitesylubricantes.png',
+          'Filtros': 'filtros.png',
+          'Frenos': 'frenos.png',
+          'Motor': 'motor.png',
+          'Transmisión': 'transmision.png',
+          'Suspensión': 'suspension.png',
+          'Eléctrico': 'electrico.png',
+          'Neumáticos y Cámaras': 'NEUMATICOSYCAMARAS.png',
+          'Baterías': 'baterias.png',
+          'Bujías': 'bujias.png',
+          'Iluminación': 'iluminacion.png',
+          'Accesorios': 'accesorios.png',
+          'Otros': 'otros-repuestos.png' // Imagen específica para repuestos
+        };
+        
+        const imageName = categoryMap[category] || 'otros-repuestos.png';
+        return `/accesorios-repuestos/${imageName}`;
+      }
+
+      // Mapeo de categorías a imágenes (usando función para buscar en carpeta local)
+      const categoryImages = {
+        'Aceites y Lubricantes': getCategoryImage('Aceites y Lubricantes'),
+        'Filtros': getCategoryImage('Filtros'),
+        'Frenos': getCategoryImage('Frenos'),
+        'Motor': getCategoryImage('Motor'),
+        'Transmisión': getCategoryImage('Transmisión'),
+        'Suspensión': getCategoryImage('Suspensión'),
+        'Eléctrico': getCategoryImage('Eléctrico'),
+        'Neumáticos y Cámaras': getCategoryImage('Neumáticos y Cámaras'),
+        'Baterías': getCategoryImage('Baterías'),
+        'Bujías': getCategoryImage('Bujías'),
+        'Iluminación': getCategoryImage('Iluminación'),
+        'Otros': getCategoryImage('Otros')
+      };
+
+      // Renderizar cards de categorías (vista inicial para repuestos)
+      function renderCategoryCards() {
+        if (!repuestosContainer) {
+          console.error('repuestosContainer no encontrado');
+          return;
+        }
+        
+        // Ocultar botón volver cuando estamos en la vista inicial
+        if (btnVolverRepuestos) {
+          btnVolverRepuestos.classList.add('hidden');
+        }
+        
+        // Obtener categorías y filtrar "Accesorios" ya que estamos en repuestos
+        const allCategories = getAvailableCategories(allRepuestos);
+        const categories = allCategories.filter(cat => cat !== 'Accesorios');
+        
+        console.log('Total repuestos:', allRepuestos.length);
+        console.log('Categorías encontradas:', allCategories);
+        console.log('Categorías filtradas:', categories);
+        
+        if (categories.length === 0) {
+          repuestosContainer.innerHTML = '<p class="text-ktm-light-text dark:text-ktm-text/70 text-center py-12">No hay categorías disponibles.</p>';
+          return;
+        }
+        
+        const grid = document.createElement('div');
+        grid.className = 'grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8';
+        
+        categories.forEach(category => {
+          const categoryProducts = filterByCategory(allRepuestos, category);
+          const card = document.createElement('div');
+          card.className = 'relative overflow-hidden bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-xl hover:shadow-xl transition-all cursor-pointer group min-h-[280px]';
+          card.addEventListener('click', () => {
+            currentCategory = category;
+            if (categorySelect) categorySelect.value = category;
+            currentBrand = 'all';
+            currentModel = 'all';
+            currentSearch = '';
+            if (marcaSelect) marcaSelect.value = 'all';
+            if (modeloSelect) modeloSelect.value = 'all';
+            if (searchInput) searchInput.value = '';
+            viewMode = 'category-filters';
+            updateURL();
+            showCategoryFilters(category);
+          });
+          
+          const categoryImage = categoryImages[category] || getCategoryImage(category);
+          
+          card.innerHTML = `
+            <div class="absolute inset-0 bg-cover bg-center transition-opacity opacity-80 group-hover:opacity-95" style="background-image: url('${categoryImage}');"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-ktm-bg/40 via-ktm-bg/20 to-transparent"></div>
+            <div class="relative z-10 h-full flex flex-col justify-center items-center p-6 text-center">
+              <h3 class="text-2xl md:text-3xl font-black text-white mb-2 uppercase tracking-tight drop-shadow-2xl" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.3), 0 0 40px rgba(255,255,255,0.2); filter: brightness(1.1);">${category}</h3>
+              <p class="text-white/90 text-sm uppercase tracking-wider drop-shadow-lg" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">${categoryProducts.length} repuesto${categoryProducts.length !== 1 ? 's' : ''}</p>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+        
+        repuestosContainer.innerHTML = '';
+        repuestosContainer.appendChild(grid);
+        
+        if (resultCount) {
+          resultCount.textContent = `${categories.length} categoría${categories.length !== 1 ? 's' : ''} disponible${categories.length !== 1 ? 's' : ''}`;
+        }
+      }
+
+      // Función para determinar si una imagen es real (no placeholder)
+      function hasRealImage(product) {
+        const imageUrl = product.main_image_url || '';
+        if (!imageUrl || imageUrl.trim() === '') return false;
+        
+        // Es placeholder si contiene unsplash, placeholder, o es una URL genérica
+        if (imageUrl.includes('unsplash.com') || 
+            imageUrl.includes('placeholder') ||
+            imageUrl.includes('via.placeholder') ||
+            imageUrl.includes('placehold.it') ||
+            imageUrl.includes('dummyimage.com')) {
+          return false;
+        }
+        
+        // Es imagen real SOLO si:
+        // 1. Es una ruta local (empieza con /) - incluye /imagenes-repuestos-accesorios/
+        // 2. Es de Supabase Storage (supabase.co/storage)
+        // NO considerar otras URLs HTTP/HTTPS como imágenes reales
+        return imageUrl.startsWith('/') || 
+               imageUrl.includes('supabase.co/storage');
+      }
+
+      // Función para ordenar productos: primero los que tienen imágenes reales
+      function sortProductsByImage(products) {
+        if (!products || products.length === 0) return products;
+        
+        return [...products].sort((a, b) => {
+          const aHasReal = hasRealImage(a);
+          const bHasReal = hasRealImage(b);
+          
+          // Si ambos tienen imagen real o ambos no, mantener orden original
+          if (aHasReal === bHasReal) return 0;
+          // Si solo a tiene imagen real, va primero (retornar negativo)
+          if (aHasReal && !bHasReal) return -1;
+          // Si solo b tiene imagen real, va primero (retornar positivo)
+          if (!aHasReal && bHasReal) return 1;
+          return 0;
+        });
+      }
+
+      // Renderizar productos en un contenedor específico
+      function renderProductsInContainer(products, container: HTMLElement) {
+        if (!container) return;
+
+        if (products.length === 0) {
+          container.innerHTML = '<p class="text-ktm-light-text dark:text-ktm-text/70 text-center py-12">No se encontraron repuestos con los filtros seleccionados.</p>';
+          if (resultCount) resultCount.textContent = '0';
+          return;
+        }
+
+        // Ordenar productos: primero los que tienen imágenes reales
+        // IMPORTANTE: Ordenar siempre aquí también para asegurar que funcione
+        const sortedProducts = sortProductsByImage([...products]);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+
+        sortedProducts.forEach(p => {
+          const imageUrl = p.main_image_url || '';
+          const hasImage = imageUrl && imageUrl.trim() !== '';
+          const price = Number(p.price) || 0;
+          const stock = Number(p.stock) || 0;
+          const whatsappUrl = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+
+          const article = document.createElement('article');
+          article.className = 'bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-xl flex flex-col gap-3 hover:shadow-xl transition-all group';
+
+          article.innerHTML = `
+            ${hasImage ? `
+              <div class="aspect-square overflow-hidden bg-ktm-light-surface dark:bg-ktm-light-surfaceAlt dark:bg-ktm-surfaceAlt">
+                <img
+                  src="${imageUrl.replace(/"/g, '&quot;')}"
+                  alt="${(p.name || 'Producto').replace(/"/g, '&quot;')}"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                  crossorigin="anonymous"
+                  referrerpolicy="no-referrer"
+                  onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
+                />
+              </div>
+            ` : `
+              <div class="aspect-square bg-ktm-light-surface dark:bg-ktm-light-surfaceAlt dark:bg-ktm-surfaceAlt flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs">
+                Sin imagen
+              </div>
+            `}
+            <div class="p-4 flex flex-col gap-3 flex-1">
+              <h3 class="font-black text-sm line-clamp-2 text-ktm-light-text dark:text-ktm-text uppercase tracking-tight">${(p.name || 'Sin nombre').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h3>
+              ${p.description ? `<p class="text-xs text-ktm-light-text dark:text-ktm-text/60 line-clamp-2">${p.description.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` : ''}
+              ${price > 0 ? `
+                <p class="text-xl text-ktm-accent font-black mt-auto">
+                  $${price.toLocaleString('es-CL')}
+                </p>
+                <button
+                  type="button"
+                  class="w-full px-4 py-3 bg-ktm-accent text-ktm-light-text dark:text-ktm-text text-sm font-bold hover:bg-ktm-accent-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+                  data-add-to-cart
+                  data-id="${p.id}"
+                  data-name="${(p.name || '').replace(/"/g, '&quot;')}"
+                  data-price="${p.price}"
+                  ${stock <= 0 ? 'disabled' : ''}
+                >
+                  ${stock <= 0 ? 'Sin stock' : 'Agregar al carrito'}
+                </button>
+              ` : `
+                <p class="text-sm text-ktm-light-text dark:text-ktm-text/60 italic mt-auto">Precio a consultar</p>
+                <a
+                  href="${whatsappUrl}"
+                  class="w-full inline-flex items-center justify-center px-4 py-3 bg-green-600 text-ktm-light-text dark:text-ktm-text text-sm font-bold hover:bg-green-700 transition-all uppercase tracking-wider"
+                >
+                  Consultar precio
+                </a>
+              `}
+            </div>
+          `;
+
+          grid.appendChild(article);
+        });
+
+        container.innerHTML = '';
+        container.appendChild(grid);
+        
+        if (resultCount) {
+          resultCount.textContent = products.length.toString();
+        }
+      }
+
+      // Renderizar productos
+      function renderProducts(products) {
+      if (!repuestosContainer) return;
+
+      // Mostrar botón volver cuando hay productos filtrados
+      if (btnVolverRepuestos) {
+        btnVolverRepuestos.classList.remove('hidden');
+      }
+
+      if (products.length === 0) {
+        repuestosContainer.innerHTML = '<p class="text-ktm-light-text dark:text-ktm-text/70 text-center py-12">No se encontraron repuestos con los filtros seleccionados.</p>';
+        if (resultCount) resultCount.textContent = '0';
+        return;
+      }
+
+      const grid = document.createElement('div');
+      grid.className = 'grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+
+      products.forEach(p => {
+        const imageUrl = p.main_image_url || '';
+        const hasImage = imageUrl && imageUrl.trim() !== '';
+        const price = Number(p.price) || 0;
+        const stock = Number(p.stock) || 0;
+        const whatsappUrl = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+
+        const article = document.createElement('article');
+        article.className = 'bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border flex flex-col gap-3 hover:border-ktm-accent transition-all group';
+
+        article.innerHTML = `
+          ${hasImage ? `
+            <div class="aspect-square overflow-hidden bg-ktm-light-surface dark:bg-ktm-light-surfaceAlt dark:bg-ktm-surfaceAlt">
+              <img
+                src="${imageUrl.replace(/"/g, '&quot;')}"
+                alt="${(p.name || 'Producto').replace(/"/g, '&quot;')}"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+                crossorigin="anonymous"
+                referrerpolicy="no-referrer"
+                onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
+              />
+            </div>
+          ` : `
+            <div class="aspect-square bg-ktm-light-surface dark:bg-ktm-light-surfaceAlt dark:bg-ktm-surfaceAlt flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs">
+              Sin imagen
+            </div>
+          `}
+          <div class="p-4 flex flex-col gap-3 flex-1">
+            <h3 class="font-black text-sm line-clamp-2 text-ktm-light-text dark:text-ktm-text uppercase tracking-tight">${(p.name || 'Sin nombre').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h3>
+            ${p.description ? `<p class="text-xs text-ktm-light-text dark:text-ktm-text/60 line-clamp-2">${p.description.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` : ''}
+            ${price > 0 ? `
+              <p class="text-xl text-ktm-accent font-black mt-auto">
+                $${price.toLocaleString('es-CL')}
+              </p>
+              <button
+                type="button"
+                class="w-full px-4 py-3 bg-ktm-accent text-ktm-light-text dark:text-ktm-text text-sm font-bold hover:bg-ktm-accent-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+                data-add-to-cart
+                data-id="${p.id}"
+                data-name="${(p.name || '').replace(/"/g, '&quot;')}"
+                data-price="${p.price}"
+                ${stock <= 0 ? 'disabled' : ''}
+              >
+                ${stock <= 0 ? 'Sin stock' : 'Agregar al carrito'}
+              </button>
+            ` : `
+              <p class="text-sm text-ktm-light-text dark:text-ktm-text/60 italic mt-auto">Precio a consultar</p>
+              <a
+                href="${whatsappUrl}"
+                class="w-full inline-flex items-center justify-center px-4 py-3 bg-green-600 text-ktm-light-text dark:text-ktm-text text-sm font-bold hover:bg-green-700 transition-all uppercase tracking-wider"
+              >
+                Consultar precio
+              </a>
+            `}
+          </div>
+        `;
+
+        grid.appendChild(article);
+      });
+
+      repuestosContainer.innerHTML = '';
+      repuestosContainer.appendChild(grid);
+      
+      if (resultCount) {
+        resultCount.textContent = products.length.toString();
+      }
+    }
+
+      // Funciones para extraer medidas de neumáticos
+      function extractTireSize(product) {
+        const text = `${product.name || ''} ${product.description || ''}`;
+        // Patrones comunes: 120/70-17, 120/70R17, 90/90-21, etc.
+        const patterns = [
+          /(\d{2,3})\/(\d{2,3})[-\s]?R?(\d{2})/i, // 120/70-17 o 120/70R17
+          /(\d{2,3})\/(\d{2,3})[-\s](\d{2})/i,      // 120/70-17
+        ];
+        
+        for (const pattern of patterns) {
+          const match = text.match(pattern);
+          if (match) {
+            return {
+              width: match[1],
+              aspect: match[2],
+              diameter: match[3],
+              full: match[0]
+            };
+          }
+        }
+        return null;
+      }
+
+      function getAvailableTireSizes(products) {
+        const sizes = new Set();
+        products.forEach(p => {
+          const size = extractTireSize(p);
+          if (size) {
+            sizes.add(size.full);
+          }
+        });
+        return Array.from(sizes).sort();
+      }
+
+      function getAvailableTireWidths(products) {
+        const widths = new Set();
+        products.forEach(p => {
+          const size = extractTireSize(p);
+          if (size) {
+            widths.add(size.width);
+          }
+        });
+        return Array.from(widths).sort((a, b) => parseInt(a) - parseInt(b));
+      }
+
+      function getAvailableTireDiameters(products) {
+        const diameters = new Set();
+        products.forEach(p => {
+          const size = extractTireSize(p);
+          if (size) {
+            diameters.add(size.diameter);
+          }
+        });
+        return Array.from(diameters).sort((a, b) => parseInt(a) - parseInt(b));
+      }
+
+      // Mostrar filtros específicos por categoría
+      function showCategoryFilters(category) {
+        if (!repuestosContainer) return;
+        
+        // Cambiar a modo de filtros de categoría
+        viewMode = 'category-filters';
+        
+        // Mostrar botón volver
+        if (btnVolverRepuestos) {
+          btnVolverRepuestos.classList.remove('hidden');
+        }
+
+        const categoryProducts = filterByCategory(allRepuestos, category);
+        
+        // Para neumáticos: filtros especiales
+        if (category === 'Neumáticos y Cámaras') {
+          showTireFilters(categoryProducts);
+        } else {
+          // Para otras categorías: filtros por marca y modelo
+          showStandardFilters(category, categoryProducts);
+        }
+      }
+
+      // Filtros específicos para neumáticos
+      function showTireFilters(products) {
+        const brands = getAvailableBrandsFromProducts(products);
+        const tireSizes = getAvailableTireSizes(products);
+        const tireWidths = getAvailableTireWidths(products);
+        const tireDiameters = getAvailableTireDiameters(products);
+
+        // Crear interfaz de filtros específica para neumáticos
+        const filtersHTML = `
+          <div class="mb-8 space-y-6">
+            <div>
+              <h3 class="text-2xl md:text-3xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">Neumáticos y Cámaras</h3>
+              <p class="text-ktm-light-text dark:text-ktm-text/70 mb-6">Filtra por marca, medida o búsqueda específica</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Filtro por Marca -->
+              <div>
+                <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Marca</label>
+                <select
+                  id="filter-tire-brand"
+                  class="w-full px-4 py-3 bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                >
+                  <option value="all">Todas las marcas</option>
+                  ${brands.map(b => `<option value="${b}">${b}</option>`).join('')}
+                </select>
+              </div>
+              
+              <!-- Filtro por Ancho -->
+              <div>
+                <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Ancho</label>
+                <select
+                  id="filter-tire-width"
+                  class="w-full px-4 py-3 bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                >
+                  <option value="all">Todos los anchos</option>
+                  ${tireWidths.map(w => `<option value="${w}">${w}</option>`).join('')}
+                </select>
+              </div>
+              
+              <!-- Filtro por Rodado -->
+              <div>
+                <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Rodado</label>
+                <select
+                  id="filter-tire-diameter"
+                  class="w-full px-4 py-3 bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                >
+                  <option value="all">Todos los rodados</option>
+                  ${tireDiameters.map(d => `<option value="${d}">${d}"</option>`).join('')}
+                </select>
+              </div>
+              
+              <!-- Filtro por Medida Completa -->
+              <div>
+                <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Medida Completa</label>
+                <select
+                  id="filter-tire-size"
+                  class="w-full px-4 py-3 bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                >
+                  <option value="all">Todas las medidas</option>
+                  ${tireSizes.map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+              </div>
+            </div>
+          </div>
+        `;
+
+        repuestosContainer.innerHTML = filtersHTML + '<div id="tire-products-container"></div>';
+        
+        // Guardar referencia al contenedor de productos
+        const productsContainer = document.getElementById('tire-products-container');
+        
+        // Agregar event listeners a los filtros de neumáticos
+        document.getElementById('filter-tire-brand')?.addEventListener('change', () => {
+          applyTireFilters(products, productsContainer);
+        });
+        document.getElementById('filter-tire-width')?.addEventListener('change', () => {
+          applyTireFilters(products, productsContainer);
+        });
+        document.getElementById('filter-tire-diameter')?.addEventListener('change', () => {
+          applyTireFilters(products, productsContainer);
+        });
+        document.getElementById('filter-tire-size')?.addEventListener('change', () => {
+          applyTireFilters(products, productsContainer);
+        });
+        
+        // Actualizar placeholder de búsqueda
+        if (searchInput) {
+          searchInput.placeholder = 'Buscar neumáticos por nombre, SKU o medida (ej: 120/70-17)...';
+        }
+        
+        // Aplicar filtros iniciales
+        applyTireFilters(products, productsContainer);
+      }
+
+      // Aplicar filtros de neumáticos
+      function applyTireFilters(products, container?: HTMLElement | null) {
+        const brandFilter = (document.getElementById('filter-tire-brand') as HTMLSelectElement)?.value || 'all';
+        const widthFilter = (document.getElementById('filter-tire-width') as HTMLSelectElement)?.value || 'all';
+        const diameterFilter = (document.getElementById('filter-tire-diameter') as HTMLSelectElement)?.value || 'all';
+        const sizeFilter = (document.getElementById('filter-tire-size') as HTMLSelectElement)?.value || 'all';
+        
+        let filtered = [...products];
+        
+        if (brandFilter !== 'all') {
+          filtered = filterByBrand(filtered, brandFilter);
+        }
+        
+        if (widthFilter !== 'all') {
+          filtered = filtered.filter(p => {
+            const size = extractTireSize(p);
+            return size && size.width === widthFilter;
+          });
+        }
+        
+        if (diameterFilter !== 'all') {
+          filtered = filtered.filter(p => {
+            const size = extractTireSize(p);
+            return size && size.diameter === diameterFilter;
+          });
+        }
+        
+        if (sizeFilter !== 'all') {
+          filtered = filtered.filter(p => {
+            const size = extractTireSize(p);
+            return size && size.full === sizeFilter;
+          });
+        }
+        
+        // Aplicar búsqueda si existe
+        const searchValue = searchInput?.value || currentSearch || '';
+        if (searchValue.trim()) {
+          filtered = searchProducts(filtered, searchValue);
+        }
+        
+        // Ordenar productos: primero los que tienen imágenes reales
+        // Crear una copia nueva para asegurar que el ordenamiento funcione correctamente
+        const sortedFiltered = sortProductsByImage([...filtered]);
+        
+        // Renderizar en el contenedor específico si existe, sino usar el contenedor principal
+        if (container) {
+          renderProductsInContainer(sortedFiltered, container);
+        } else {
+          renderProducts(filtered);
+        }
+      }
+
+      // Filtros estándar para otras categorías
+      function showStandardFilters(category, products) {
+        const brands = getAvailableBrandsFromProducts(products);
+        
+        // Crear interfaz de filtros estándar
+        const filtersHTML = `
+          <div class="mb-8 space-y-6">
+            <div>
+              <h3 class="text-2xl md:text-3xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">${category}</h3>
+              <p class="text-ktm-light-text dark:text-ktm-text/70 mb-6">Filtra por marca, modelo o búsqueda específica</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+              <!-- Filtro por Marca -->
+              <div>
+                <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Marca de Moto</label>
+                <select
+                  id="filter-category-brand"
+                  class="w-full px-4 py-3 bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                >
+                  <option value="all">Todas las marcas</option>
+                  ${brands.map(b => `<option value="${b}">${b}</option>`).join('')}
+                </select>
+              </div>
+              
+              <!-- Filtro por Modelo -->
+              <div>
+                <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Modelo</label>
+                <select
+                  id="filter-category-model"
+                  class="w-full px-4 py-3 bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                >
+                  <option value="all">Todos los modelos</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        `;
+
+        repuestosContainer.innerHTML = filtersHTML + '<div id="category-products-container"></div>';
+        
+        // Guardar referencia al contenedor de productos
+        const productsContainer = document.getElementById('category-products-container');
+        
+        // Actualizar modelos cuando cambia la marca
+        const brandSelect = document.getElementById('filter-category-brand');
+        const modelSelect = document.getElementById('filter-category-model');
+        
+        function updateCategoryModels() {
+          const selectedBrand = (brandSelect as HTMLSelectElement)?.value || 'all';
+          if (!modelSelect) return;
+          
+          modelSelect.innerHTML = '<option value="all">Todos los modelos</option>';
+          
+          if (selectedBrand !== 'all') {
+            const brandProducts = filterByBrand(products, selectedBrand);
+            const models = getAvailableModelsForBrand(brandProducts, selectedBrand);
+            models.forEach(model => {
+              const option = document.createElement('option');
+              option.value = model;
+              option.textContent = model;
+              modelSelect.appendChild(option);
+            });
+          }
+        }
+        
+        brandSelect?.addEventListener('change', () => {
+          updateCategoryModels();
+          applyCategoryFilters(products, productsContainer);
+        });
+        
+        modelSelect?.addEventListener('change', () => {
+          applyCategoryFilters(products, productsContainer);
+        });
+        
+        // Actualizar placeholder de búsqueda
+        if (searchInput) {
+          searchInput.placeholder = `Buscar ${category.toLowerCase()} por nombre, SKU o descripción...`;
+        }
+        
+        // Aplicar filtros iniciales
+        applyCategoryFilters(products, productsContainer);
+      }
+
+      // Aplicar filtros de categoría estándar
+      function applyCategoryFilters(products, container?: HTMLElement | null) {
+        const brandFilter = (document.getElementById('filter-category-brand') as HTMLSelectElement)?.value || 'all';
+        const modelFilter = (document.getElementById('filter-category-model') as HTMLSelectElement)?.value || 'all';
+        
+        let filtered = [...products];
+        
+        if (brandFilter !== 'all') {
+          filtered = filterByBrand(filtered, brandFilter);
+        }
+        
+        if (modelFilter !== 'all') {
+          filtered = filterByModel(filtered, modelFilter, brandFilter);
+        }
+        
+        // Aplicar búsqueda si existe
+        const searchValue = searchInput?.value || currentSearch || '';
+        if (searchValue.trim()) {
+          filtered = searchProducts(filtered, searchValue);
+        }
+        
+        // Ordenar productos: primero los que tienen imágenes reales
+        // Crear una copia nueva para asegurar que el ordenamiento funcione correctamente
+        const sortedFiltered = sortProductsByImage([...filtered]);
+        
+        // Renderizar en el contenedor específico si existe, sino usar el contenedor principal
+        if (container) {
+          renderProductsInContainer(sortedFiltered, container);
+        } else {
+          renderProducts(filtered);
+        }
+      }
+
+      // Aplicar filtros
+      function applyFilters() {
+        let filtered = [...allRepuestos];
+        
+        // Actualizar URL cuando se aplican filtros
+        updateURL();
+        
+        // Si no hay ningún filtro activo, mostrar cards de categorías
+        if (currentCategory === 'all' && currentBrand === 'all' && currentModel === 'all' && !currentSearch.trim()) {
+          viewMode = 'categories';
+          renderCategoryCards();
+          return;
+        }
+        
+        viewMode = 'products';
+        
+        // Aplicar filtros
+        if (currentCategory !== 'all') {
+          filtered = filterByCategory(filtered, currentCategory);
+        }
+        if (currentBrand !== 'all') {
+          filtered = filterByBrand(filtered, currentBrand);
+        }
+        if (currentModel !== 'all') {
+          if (currentModel === 'otros') {
+            // Filtrar productos sin modelo específico
+            filtered = filtered.filter(p => {
+              const pBrand = extractBrand(p);
+              return pBrand === currentBrand && !extractModel(p, pBrand);
+            });
+          } else {
+            filtered = filterByModel(filtered, currentModel, currentBrand);
+          }
+        }
+        if (currentSearch.trim()) {
+          filtered = searchProducts(filtered, currentSearch);
+        }
+        
+        // Ordenar productos: primero los que tienen imágenes reales
+        filtered = sortProductsByImage(filtered);
+        
+        renderProducts(filtered);
+      }
+
+      // Actualizar modelos cuando cambia la marca
+      function updateModelos() {
+        if (!modeloSelect) return;
+        
+        modeloSelect.innerHTML = '<option value="all">Todos los modelos</option>';
+        
+        if (currentBrand !== 'all') {
+          const models = getAvailableModelsForBrand(allRepuestos, currentBrand);
+          const brandProducts = filterByBrand(allRepuestos, currentBrand);
+          const otherProducts = brandProducts.filter(p => !extractModel(p, currentBrand));
+          
+          models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            modeloSelect.appendChild(option);
+          });
+          
+          if (otherProducts.length > 0) {
+            const option = document.createElement('option');
+            option.value = 'otros';
+            option.textContent = 'Otros repuestos';
+            modeloSelect.appendChild(option);
+          }
+        }
+      }
+
+      // Búsqueda con autocompletado
+      if (searchInput) {
+        let autocompleteTimeout;
+        
+        const showSuggestions = (value) => {
+          clearTimeout(autocompleteTimeout);
+          if (value.trim() && autocompleteDiv) {
+            autocompleteTimeout = setTimeout(() => {
+              const suggestions = getAutocompleteSuggestions(allRepuestos, value, 5);
+              showAutocomplete(suggestions);
+            }, 200);
+          } else {
+            hideAutocomplete();
+          }
+        };
+        
+        searchInput.addEventListener('input', (e) => {
+          const value = e.target.value;
+          currentSearch = value;
+          showSuggestions(value);
+          
+          // Actualizar URL con debounce para no saturar el historial
+          clearTimeout(window.searchTimeout);
+          window.searchTimeout = setTimeout(() => {
+            updateURL(true); // replace en lugar de push para búsquedas
+          }, 500);
+          
+          // Si estamos en modo de categoría con filtros específicos, usar esos filtros
+          if (currentCategory !== 'all' && viewMode === 'category-filters') {
+            const tireContainer = document.getElementById('tire-products-container');
+            const categoryContainer = document.getElementById('category-products-container');
+            if (currentCategory === 'Neumáticos y Cámaras') {
+              const categoryProducts = filterByCategory(allRepuestos, currentCategory);
+              applyTireFilters(categoryProducts, tireContainer);
+            } else {
+              const categoryProducts = filterByCategory(allRepuestos, currentCategory);
+              applyCategoryFilters(categoryProducts, categoryContainer);
+            }
+          } else if (!value.trim()) {
+            // Si se limpia la búsqueda, volver a la vista inicial si no hay otros filtros
+            if (currentCategory === 'all' && currentBrand === 'all' && currentModel === 'all') {
+              updateURL();
+              renderCategoryCards();
+            } else {
+              applyFilters();
+            }
+          } else {
+            applyFilters(); // Aplicar filtros mientras se escribe
+          }
+        });
+      
+      searchInput.addEventListener('focus', (e) => {
+        const value = e.target.value;
+        showSuggestions(value);
+      });
+
+      // Buscar al presionar Enter
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          // Si estamos en modo de categoría con filtros específicos, usar esos filtros
+          if (currentCategory !== 'all' && viewMode === 'category-filters') {
+            if (currentCategory === 'Neumáticos y Cámaras') {
+              const categoryProducts = filterByCategory(allRepuestos, currentCategory);
+              applyTireFilters(categoryProducts);
+            } else {
+              const categoryProducts = filterByCategory(allRepuestos, currentCategory);
+              applyCategoryFilters(categoryProducts);
+            }
+          } else {
+            applyFilters();
+          }
+          hideAutocomplete();
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (autocompleteDiv && !autocompleteDiv.contains(e.target) && e.target !== searchInput) {
+          hideAutocomplete();
+        }
+      });
+    }
+
+      // Botón de buscar
+      if (btnBuscar) {
+        btnBuscar.addEventListener('click', (e) => {
+          e.preventDefault();
+          // Si estamos en modo de categoría con filtros específicos, usar esos filtros
+          if (currentCategory !== 'all' && viewMode === 'category-filters') {
+            const tireContainer = document.getElementById('tire-products-container');
+            const categoryContainer = document.getElementById('category-products-container');
+            if (currentCategory === 'Neumáticos y Cámaras') {
+              const categoryProducts = filterByCategory(allRepuestos, currentCategory);
+              applyTireFilters(categoryProducts, tireContainer);
+            } else {
+              const categoryProducts = filterByCategory(allRepuestos, currentCategory);
+              applyCategoryFilters(categoryProducts, categoryContainer);
+            }
+          } else {
+            applyFilters();
+          }
+          hideAutocomplete();
+        });
+      }
+
+      function showAutocomplete(suggestions) {
+        if (!autocompleteDiv) return;
+        if (suggestions.length === 0) {
+          hideAutocomplete();
+          return;
+        }
+        autocompleteDiv.innerHTML = '';
+        autocompleteDiv.classList.remove('hidden');
+        suggestions.forEach(suggestion => {
+          const item = document.createElement('div');
+          item.className = 'px-4 py-2 text-ktm-light-text dark:text-ktm-text hover:bg-ktm-accent/30 cursor-pointer transition-colors border-b border-ktm-accent/20 last:border-b-0';
+          item.textContent = suggestion;
+          item.addEventListener('click', () => {
+            if (searchInput) {
+              searchInput.value = suggestion;
+              currentSearch = suggestion;
+              hideAutocomplete();
+              updateURL();
+              // Si estamos en modo de categoría con filtros específicos, usar esos filtros
+              if (currentCategory !== 'all' && viewMode === 'category-filters') {
+                const tireContainer = document.getElementById('tire-products-container');
+                const categoryContainer = document.getElementById('category-products-container');
+                if (currentCategory === 'Neumáticos y Cámaras') {
+                  const categoryProducts = filterByCategory(allRepuestos, currentCategory);
+                  applyTireFilters(categoryProducts, tireContainer);
+                } else {
+                  const categoryProducts = filterByCategory(allRepuestos, currentCategory);
+                  applyCategoryFilters(categoryProducts, categoryContainer);
+                }
+              } else {
+                applyFilters();
+              }
+            }
+          });
+          autocompleteDiv.appendChild(item);
+        });
+      }
+
+      function hideAutocomplete() {
+        if (autocompleteDiv) {
+          autocompleteDiv.classList.add('hidden');
+        }
+      }
+
+      // Filtro de categoría
+      if (categorySelect) {
+        categorySelect.addEventListener('change', (e) => {
+          currentCategory = e.target.value;
+          currentBrand = 'all';
+          currentModel = 'all';
+          currentSearch = '';
+          if (marcaSelect) marcaSelect.value = 'all';
+          if (modeloSelect) modeloSelect.value = 'all';
+          if (searchInput) searchInput.value = '';
+          updateURL();
+          if (currentCategory !== 'all') {
+            // Mostrar filtros específicos de la categoría
+            const categoryProducts = filterByCategory(allRepuestos, currentCategory);
+            showCategoryFilters(currentCategory);
+          } else {
+            // Volver a vista de categorías
+            renderCategoryCards();
+          }
+        });
+      }
+
+      // Filtro de marca
+      if (marcaSelect) {
+        marcaSelect.addEventListener('change', (e) => {
+          currentBrand = e.target.value;
+          currentModel = 'all';
+          if (modeloSelect) modeloSelect.value = 'all';
+          updateModelos();
+          updateURL();
+          applyFilters();
+        });
+      }
+
+      // Filtro de modelo
+      if (modeloSelect) {
+        modeloSelect.addEventListener('change', (e) => {
+          currentModel = e.target.value;
+          updateURL();
+          applyFilters();
+        });
+      }
+
+      // Event listener para botón volver repuestos
+      if (btnVolverRepuestos) {
+        btnVolverRepuestos.addEventListener('click', () => {
+          // Limpiar todos los filtros
+          currentCategory = 'all';
+          currentBrand = 'all';
+          currentModel = 'all';
+          currentSearch = '';
+          
+          // Resetear selects
+          if (categorySelect) categorySelect.value = 'all';
+          if (marcaSelect) marcaSelect.value = 'all';
+          if (modeloSelect) modeloSelect.value = 'all';
+          if (searchInput) {
+            searchInput.value = '';
+            searchInput.placeholder = 'Buscar repuestos por nombre, SKU o descripción...';
+          }
+          
+          // Actualizar URL y volver a vista inicial
+          updateURL();
+          viewMode = 'categories';
+          renderCategoryCards();
+        });
+      }
+
+      // Función de inicialización
+      function initializeRepuestos() {
+        // Cargar estado desde URL al inicio
+        loadStateFromURL();
+        
+        // Aplicar filtros basados en el estado cargado
+        const hasURLParams = window.location.search.length > 0;
+        
+        if (hasURLParams && viewMode === 'category-filters' && currentCategory !== 'all') {
+          // Si hay una categoría en la URL, mostrar sus filtros
+          const categoryProducts = filterByCategory(allRepuestos, currentCategory);
+          showCategoryFilters(currentCategory);
+        } else if (hasURLParams && viewMode === 'products' && (currentBrand !== 'all' || currentModel !== 'all' || currentSearch.trim())) {
+          // Si hay filtros activos en la URL, aplicar y mostrar productos
+          if (searchInput) searchInput.value = currentSearch;
+          if (categorySelect) categorySelect.value = currentCategory;
+          if (marcaSelect) marcaSelect.value = currentBrand;
+          updateModelos();
+          if (modeloSelect) modeloSelect.value = currentModel;
+          applyFilters();
+        } else {
+          // Vista inicial: mostrar cards de categorías (sin parámetros en URL o parámetros vacíos)
+          if (allRepuestos.length > 0) {
+            updateModelos();
+            renderCategoryCards();
+          } else {
+            if (repuestosContainer) {
+              repuestosContainer.innerHTML = '<p class="text-ktm-light-text dark:text-ktm-text/70 text-center py-12">No hay repuestos disponibles.</p>';
+            }
+          }
+        }
+      }
+
+      // Inicializar después de que todo esté listo
+      initializeRepuestos();
+
+      // Manejar el botón atrás del navegador
+      window.addEventListener('popstate', () => {
+        loadStateFromURL();
+        
+        // Aplicar filtros basados en el nuevo estado
+        if (viewMode === 'category-filters' && currentCategory !== 'all') {
+          const categoryProducts = filterByCategory(allRepuestos, currentCategory);
+          showCategoryFilters(currentCategory);
+        } else if (viewMode === 'products' && (currentBrand !== 'all' || currentModel !== 'all' || currentSearch.trim())) {
+          if (searchInput) searchInput.value = currentSearch;
+          if (categorySelect) categorySelect.value = currentCategory;
+          if (marcaSelect) marcaSelect.value = currentBrand;
+          updateModelos();
+          if (modeloSelect) modeloSelect.value = currentModel;
+          applyFilters();
+        } else {
+          if (allRepuestos.length > 0) {
+            updateModelos();
+            renderCategoryCards();
+          }
+        }
+      });
+
+      // ============================================
+      // LÓGICA DE FILTROS PARA ACCESORIOS
+      // ============================================
+      
+      // Obtener datos de accesorios
+      const dataScriptAccesorios = document.getElementById('accesorios-data');
+      let accesorios = [];
+      if (dataScriptAccesorios) {
+        try {
+          const jsonTextAccesorios = dataScriptAccesorios.textContent || dataScriptAccesorios.innerHTML || '[]';
+          accesorios = JSON.parse(jsonTextAccesorios);
+        } catch (e) {
+          console.error('Error parseando datos de accesorios:', e);
+        }
+      }
+
+      // Estado de filtros para accesorios
+      const allAccesorios = accesorios || [];
+      let currentCategoryAccesorios = 'all';
+      let currentBrandAccesorios = 'all';
+      let currentModelAccesorios = 'all';
+      let currentSearchAccesorios = '';
+      let viewModeAccesorios = 'categories';
+
+      // Elementos DOM para accesorios
+      const searchInputAccesorios = document.getElementById('search-accesorios');
+      const btnBuscarAccesorios = document.getElementById('btn-buscar-accesorios');
+      const categorySelectAccesorios = document.getElementById('filter-categoria-accesorios');
+      const marcaSelectAccesorios = document.getElementById('filter-marca-accesorios');
+      const modeloSelectAccesorios = document.getElementById('filter-modelo-accesorios');
+      const accesoriosContainer = document.getElementById('accesorios-container');
+      const resultCountAccesorios = document.getElementById('result-count-accesorios');
+      const autocompleteDivAccesorios = document.getElementById('autocomplete-suggestions-accesorios');
+      const btnVolverAccesorios = document.getElementById('btn-volver-accesorios');
+
+      if (!accesoriosContainer) {
+        console.error('No se encontró el contenedor de accesorios');
+      }
+
+      // Función para obtener categorías disponibles de accesorios
+      function getAvailableCategoriesFromAccesorios(products) {
+        const categorySet = new Set();
+        products.forEach(p => {
+          const category = categorizeProduct(p.name);
+          if (category) categorySet.add(category);
+        });
+        return Array.from(categorySet).sort();
+      }
+
+      // Función para obtener la imagen de una categoría de accesorios desde la carpeta accesorios-repuestos
+      function getCategoryImageAccesorios(category) {
+        // Mapeo directo de categorías a nombres de archivo
+        const categoryMap = {
+          'Aceites y Lubricantes': 'aceitesylubricantes.png',
+          'Filtros': 'filtros.png',
+          'Frenos': 'frenos.png',
+          'Motor': 'motor.png',
+          'Transmisión': 'transmision.png',
+          'Suspensión': 'suspension.png',
+          'Eléctrico': 'electrico.png',
+          'Neumáticos y Cámaras': 'NEUMATICOSYCAMARAS.png',
+          'Baterías': 'baterias.png',
+          'Bujías': 'bujias.png',
+          'Iluminación': 'iluminacion.png',
+          'Accesorios': 'accesorios.png',
+          'Otros': 'otros-accesorios.png' // Imagen específica para accesorios
+        };
+        
+        const imageName = categoryMap[category] || 'otros-accesorios.png';
+        return `/accesorios-repuestos/${imageName}`;
+      }
+
+      // Mapeo de categorías a imágenes (usando función para buscar en carpeta local)
+      const categoryImagesAccesorios = {
+        'Aceites y Lubricantes': getCategoryImageAccesorios('Aceites y Lubricantes'),
+        'Filtros': getCategoryImageAccesorios('Filtros'),
+        'Frenos': getCategoryImageAccesorios('Frenos'),
+        'Motor': getCategoryImageAccesorios('Motor'),
+        'Transmisión': getCategoryImageAccesorios('Transmisión'),
+        'Suspensión': getCategoryImageAccesorios('Suspensión'),
+        'Eléctrico': getCategoryImageAccesorios('Eléctrico'),
+        'Neumáticos y Cámaras': getCategoryImageAccesorios('Neumáticos y Cámaras'),
+        'Baterías': getCategoryImageAccesorios('Baterías'),
+        'Bujías': getCategoryImageAccesorios('Bujías'),
+        'Iluminación': getCategoryImageAccesorios('Iluminación'),
+        'Accesorios': getCategoryImageAccesorios('Accesorios'),
+        'Otros': getCategoryImageAccesorios('Otros')
+      };
+
+      // Renderizar cards de categorías (vista inicial para accesorios)
+      function renderCategoryCardsAccesorios() {
+        if (!accesoriosContainer) return;
+        
+        // Ocultar botón volver cuando estamos en la vista inicial
+        if (btnVolverAccesorios) {
+          btnVolverAccesorios.classList.add('hidden');
+        }
+        
+        // Obtener categorías y mostrar solo "Accesorios" y "Otros" (categorías relevantes para accesorios)
+        const allCategories = getAvailableCategoriesFromAccesorios(allAccesorios);
+        const categories = allCategories.filter(cat => cat === 'Accesorios' || cat === 'Otros');
+        
+        if (categories.length === 0) {
+          accesoriosContainer.innerHTML = '<p class="text-ktm-light-text dark:text-ktm-text/70 text-center py-12">No hay categorías disponibles.</p>';
+          return;
+        }
+        
+        const grid = document.createElement('div');
+        grid.className = 'grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8';
+        
+        categories.forEach(category => {
+          const categoryProducts = filterByCategory(allAccesorios, category);
+          const card = document.createElement('div');
+          card.className = 'relative overflow-hidden bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-xl hover:shadow-xl transition-all cursor-pointer group min-h-[280px]';
+          card.addEventListener('click', () => {
+            currentCategoryAccesorios = category;
+            if (categorySelectAccesorios) categorySelectAccesorios.value = category;
+            viewModeAccesorios = 'products';
+            applyFiltersAccesorios();
+          });
+          
+          const categoryImage = categoryImagesAccesorios[category] || getCategoryImageAccesorios(category);
+          
+          card.innerHTML = `
+            <div class="absolute inset-0 bg-cover bg-center transition-opacity opacity-80 group-hover:opacity-95" style="background-image: url('${categoryImage}');"></div>
+            <div class="absolute inset-0 bg-gradient-to-t from-ktm-bg/40 via-ktm-bg/20 to-transparent"></div>
+            <div class="relative z-10 h-full flex flex-col justify-center items-center p-6 text-center">
+              <h3 class="text-2xl md:text-3xl font-black text-white mb-2 uppercase tracking-tight drop-shadow-2xl" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.3), 0 0 40px rgba(255,255,255,0.2); filter: brightness(1.1);">${category}</h3>
+              <p class="text-white/90 text-sm uppercase tracking-wider drop-shadow-lg" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">${categoryProducts.length} accesorio${categoryProducts.length !== 1 ? 's' : ''}</p>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+        
+        accesoriosContainer.innerHTML = '';
+        accesoriosContainer.appendChild(grid);
+        
+        if (resultCountAccesorios) {
+          resultCountAccesorios.textContent = `${categories.length} categoría${categories.length !== 1 ? 's' : ''} disponible${categories.length !== 1 ? 's' : ''}`;
+        }
+      }
+
+      // Renderizar accesorios
+      function renderAccesorios(products) {
+        if (!accesoriosContainer) return;
+
+        // Mostrar botón volver cuando hay productos filtrados
+        if (btnVolverAccesorios) {
+          btnVolverAccesorios.classList.remove('hidden');
+        }
+
+        if (products.length === 0) {
+          accesoriosContainer.innerHTML = '<p class="text-ktm-light-text dark:text-ktm-text/70 text-center py-12">No se encontraron accesorios con los filtros seleccionados.</p>';
+          if (resultCountAccesorios) resultCountAccesorios.textContent = '0';
+          return;
+        }
+
+        // Ordenar productos: primero los que tienen imágenes reales
+        const sortedProducts = sortProductsByImage(products);
+
+        const grid = document.createElement('div');
+        grid.className = 'grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+
+        sortedProducts.forEach(p => {
+          const imageUrl = p.main_image_url || '';
+          const hasImage = imageUrl && imageUrl.trim() !== '';
+          const price = Number(p.price) || 0;
+          const stock = Number(p.stock) || 0;
+          const whatsappUrl = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+
+          const article = document.createElement('article');
+          article.className = 'bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-xl flex flex-col gap-3 hover:shadow-xl transition-all group';
+
+          article.innerHTML = `
+            ${hasImage ? `
+              <div class="aspect-square overflow-hidden bg-ktm-light-surface dark:bg-ktm-light-surfaceAlt dark:bg-ktm-surfaceAlt">
+                <img
+                  src="${imageUrl.replace(/"/g, '&quot;')}"
+                  alt="${(p.name || 'Producto').replace(/"/g, '&quot;')}"
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                  crossorigin="anonymous"
+                  referrerpolicy="no-referrer"
+                  onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
+                />
+              </div>
+            ` : `
+              <div class="aspect-square bg-ktm-light-surface dark:bg-ktm-light-surfaceAlt dark:bg-ktm-surfaceAlt flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs">
+                Sin imagen
+              </div>
+            `}
+            <div class="p-4 flex flex-col gap-3 flex-1">
+              <h3 class="font-black text-sm line-clamp-2 text-ktm-light-text dark:text-ktm-text uppercase tracking-tight">${(p.name || 'Sin nombre').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</h3>
+              ${p.description ? `<p class="text-xs text-ktm-light-text dark:text-ktm-text/60 line-clamp-2">${p.description.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>` : ''}
+              ${price > 0 ? `
+                <p class="text-xl text-ktm-accent font-black mt-auto">
+                  $${price.toLocaleString('es-CL')}
+                </p>
+                <button
+                  type="button"
+                  class="w-full px-4 py-3 bg-ktm-accent text-ktm-light-text dark:text-ktm-text text-sm font-bold hover:bg-ktm-accent-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider"
+                  data-add-to-cart
+                  data-id="${p.id}"
+                  data-name="${(p.name || '').replace(/"/g, '&quot;')}"
+                  data-price="${p.price}"
+                  ${stock <= 0 ? 'disabled' : ''}
+                >
+                  ${stock <= 0 ? 'Sin stock' : 'Agregar al carrito'}
+                </button>
+              ` : `
+                <p class="text-sm text-ktm-light-text dark:text-ktm-text/60 italic mt-auto">Precio a consultar</p>
+                <a
+                  href="${whatsappUrl}"
+                  class="w-full inline-flex items-center justify-center px-4 py-3 bg-green-600 text-ktm-light-text dark:text-ktm-text text-sm font-bold hover:bg-green-700 transition-all uppercase tracking-wider"
+                >
+                  Consultar precio
+                </a>
+              `}
+            </div>
+          `;
+
+          grid.appendChild(article);
+        });
+
+        accesoriosContainer.innerHTML = '';
+        accesoriosContainer.appendChild(grid);
+        
+        if (resultCountAccesorios) {
+          resultCountAccesorios.textContent = products.length.toString();
+        }
+      }
+
+      // Renderizar modelos de accesorios cuando se selecciona solo marca
+      function renderModelsAccesorios(brand) {
+        if (!accesoriosContainer) return;
+        
+        // Mostrar botón volver cuando estamos en vista de modelos
+        if (btnVolverAccesorios) {
+          btnVolverAccesorios.classList.remove('hidden');
+        }
+        
+        const brandProducts = filterByBrand(allAccesorios, brand);
+        const models = getAvailableModelsForBrand(brandProducts, brand);
+        const otherProducts = brandProducts.filter(p => !extractModel(p, brand));
+        
+        const grid = document.createElement('div');
+        grid.className = 'grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+        
+        models.forEach(model => {
+          const modelProducts = filterByModel(brandProducts, model, brand);
+          const card = document.createElement('div');
+          card.className = 'rounded-xl p-6 bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md hover:shadow-xl transition-all shadow-lg cursor-pointer group';
+          card.addEventListener('click', () => {
+            currentModelAccesorios = model;
+            if (modeloSelectAccesorios) modeloSelectAccesorios.value = model;
+            viewModeAccesorios = 'products';
+            applyFiltersAccesorios();
+          });
+          
+          card.innerHTML = `
+            <div class="text-center">
+              <h3 class="text-xl font-bold text-ktm-light-text dark:text-ktm-text mb-2">${brand} ${model}</h3>
+              <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm">${modelProducts.length} accesorio${modelProducts.length !== 1 ? 's' : ''}</p>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+        
+        if (otherProducts.length > 0) {
+          const card = document.createElement('div');
+          card.className = 'rounded-xl p-6 bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md hover:shadow-xl transition-all shadow-lg cursor-pointer group';
+          card.addEventListener('click', () => {
+            currentModelAccesorios = 'otros';
+            if (modeloSelectAccesorios) modeloSelectAccesorios.value = 'otros';
+            viewModeAccesorios = 'products';
+            applyFiltersAccesorios();
+          });
+          
+          card.innerHTML = `
+            <div class="text-center">
+              <h3 class="text-xl font-bold text-ktm-light-text dark:text-ktm-text mb-2">Otros accesorios ${brand}</h3>
+              <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm">${otherProducts.length} accesorio${otherProducts.length !== 1 ? 's' : ''}</p>
+            </div>
+          `;
+          grid.appendChild(card);
+        }
+        
+        accesoriosContainer.innerHTML = '';
+        accesoriosContainer.appendChild(grid);
+        
+        if (resultCountAccesorios) {
+          resultCountAccesorios.textContent = `${models.length + (otherProducts.length > 0 ? 1 : 0)} modelo${models.length + (otherProducts.length > 0 ? 1 : 0) !== 1 ? 's' : ''}`;
+        }
+      }
+
+      // Aplicar filtros para accesorios
+      function applyFiltersAccesorios() {
+        let filtered = [...allAccesorios];
+        
+        // Si no hay ningún filtro activo, mostrar cards de categorías
+        if (currentCategoryAccesorios === 'all' && currentBrandAccesorios === 'all' && currentModelAccesorios === 'all' && !currentSearchAccesorios.trim()) {
+          viewModeAccesorios = 'categories';
+          renderCategoryCardsAccesorios();
+          return;
+        }
+        
+        if (currentBrandAccesorios !== 'all' && currentModelAccesorios === 'all' && !currentSearchAccesorios.trim() && currentCategoryAccesorios === 'all') {
+          viewModeAccesorios = 'models';
+          renderModelsAccesorios(currentBrandAccesorios);
+          return;
+        }
+        
+        viewModeAccesorios = 'products';
+        
+        if (currentCategoryAccesorios !== 'all') {
+          filtered = filterByCategory(filtered, currentCategoryAccesorios);
+        }
+        if (currentBrandAccesorios !== 'all') {
+          filtered = filterByBrand(filtered, currentBrandAccesorios);
+        }
+        if (currentModelAccesorios !== 'all') {
+          if (currentModelAccesorios === 'otros') {
+            filtered = filtered.filter(p => {
+              const pBrand = extractBrand(p);
+              return pBrand === currentBrandAccesorios && !extractModel(p, pBrand);
+            });
+          } else {
+            filtered = filterByModel(filtered, currentModelAccesorios, currentBrandAccesorios);
+          }
+        }
+        if (currentSearchAccesorios.trim()) {
+          filtered = searchProducts(filtered, currentSearchAccesorios);
+        }
+        
+        renderAccesorios(filtered);
+      }
+
+      // Actualizar modelos de accesorios cuando cambia la marca
+      function updateModelosAccesorios() {
+        if (!modeloSelectAccesorios) return;
+        
+        modeloSelectAccesorios.innerHTML = '<option value="all">Todos los modelos</option>';
+        
+        if (currentBrandAccesorios !== 'all') {
+          const models = getAvailableModelsForBrand(allAccesorios, currentBrandAccesorios);
+          const brandProducts = filterByBrand(allAccesorios, currentBrandAccesorios);
+          const otherProducts = brandProducts.filter(p => !extractModel(p, currentBrandAccesorios));
+          
+          models.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            modeloSelectAccesorios.appendChild(option);
+          });
+          
+          if (otherProducts.length > 0) {
+            const option = document.createElement('option');
+            option.value = 'otros';
+            option.textContent = 'Otros accesorios';
+            modeloSelectAccesorios.appendChild(option);
+          }
+        }
+      }
+
+      // Búsqueda con autocompletado para accesorios
+      if (searchInputAccesorios) {
+        let autocompleteTimeoutAccesorios;
+        
+        const showSuggestionsAccesorios = (value) => {
+          clearTimeout(autocompleteTimeoutAccesorios);
+          if (value.trim() && autocompleteDivAccesorios) {
+            autocompleteTimeoutAccesorios = setTimeout(() => {
+              const suggestions = getAutocompleteSuggestions(allAccesorios, value, 5);
+              showAutocompleteAccesorios(suggestions);
+            }, 200);
+          } else {
+            hideAutocompleteAccesorios();
+          }
+        };
+        
+        searchInputAccesorios.addEventListener('input', (e) => {
+          const value = e.target.value;
+          currentSearchAccesorios = value;
+          showSuggestionsAccesorios(value);
+          if (!value.trim()) {
+            // Si se limpia la búsqueda, volver a la vista inicial si no hay otros filtros
+            if (currentCategoryAccesorios === 'all' && currentBrandAccesorios === 'all' && currentModelAccesorios === 'all') {
+              renderCategoryCardsAccesorios();
+            } else {
+              applyFiltersAccesorios();
+            }
+          } else {
+            applyFiltersAccesorios(); // Aplicar filtros mientras se escribe
+          }
+        });
+        
+        searchInputAccesorios.addEventListener('focus', (e) => {
+          const value = e.target.value;
+          showSuggestionsAccesorios(value);
+        });
+
+        searchInputAccesorios.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            applyFiltersAccesorios();
+            hideAutocompleteAccesorios();
+          }
+        });
+
+        document.addEventListener('click', (e) => {
+          if (autocompleteDivAccesorios && !autocompleteDivAccesorios.contains(e.target) && e.target !== searchInputAccesorios) {
+            hideAutocompleteAccesorios();
+          }
+        });
+      }
+
+      // Botón de buscar accesorios
+      if (btnBuscarAccesorios) {
+        btnBuscarAccesorios.addEventListener('click', (e) => {
+          e.preventDefault();
+          applyFiltersAccesorios();
+          hideAutocompleteAccesorios();
+        });
+      }
+
+      function showAutocompleteAccesorios(suggestions) {
+        if (!autocompleteDivAccesorios) return;
+        if (suggestions.length === 0) {
+          hideAutocompleteAccesorios();
+          return;
+        }
+        autocompleteDivAccesorios.innerHTML = '';
+        autocompleteDivAccesorios.classList.remove('hidden');
+        suggestions.forEach(suggestion => {
+          const item = document.createElement('div');
+          item.className = 'px-4 py-2 text-ktm-light-text dark:text-ktm-text hover:bg-ktm-accent/30 cursor-pointer transition-colors border-b border-ktm-accent/20 last:border-b-0';
+          item.textContent = suggestion;
+          item.addEventListener('click', () => {
+            if (searchInputAccesorios) {
+              searchInputAccesorios.value = suggestion;
+              currentSearchAccesorios = suggestion;
+              hideAutocompleteAccesorios();
+              applyFiltersAccesorios();
+            }
+          });
+          autocompleteDivAccesorios.appendChild(item);
+        });
+      }
+
+      function hideAutocompleteAccesorios() {
+        if (autocompleteDivAccesorios) {
+          autocompleteDivAccesorios.classList.add('hidden');
+        }
+      }
+
+      // Filtro de categoría para accesorios
+      if (categorySelectAccesorios) {
+        categorySelectAccesorios.addEventListener('change', (e) => {
+          currentCategoryAccesorios = e.target.value;
+          applyFiltersAccesorios();
+        });
+      }
+
+      // Filtro de marca para accesorios
+      if (marcaSelectAccesorios) {
+        marcaSelectAccesorios.addEventListener('change', (e) => {
+          currentBrandAccesorios = e.target.value;
+          currentModelAccesorios = 'all';
+          if (modeloSelectAccesorios) modeloSelectAccesorios.value = 'all';
+          updateModelosAccesorios();
+          applyFiltersAccesorios();
+        });
+      }
+
+      // Filtro de modelo para accesorios
+      if (modeloSelectAccesorios) {
+        modeloSelectAccesorios.addEventListener('change', (e) => {
+          currentModelAccesorios = e.target.value;
+          applyFiltersAccesorios();
+        });
+      }
+
+      // Event listener para botón volver accesorios
+      if (btnVolverAccesorios) {
+        btnVolverAccesorios.addEventListener('click', () => {
+          // Limpiar todos los filtros
+          currentCategoryAccesorios = 'all';
+          currentBrandAccesorios = 'all';
+          currentModelAccesorios = 'all';
+          currentSearchAccesorios = '';
+          
+          // Resetear selects
+          if (categorySelectAccesorios) categorySelectAccesorios.value = 'all';
+          if (marcaSelectAccesorios) marcaSelectAccesorios.value = 'all';
+          if (modeloSelectAccesorios) modeloSelectAccesorios.value = 'all';
+          if (searchInputAccesorios) searchInputAccesorios.value = '';
+          
+          // Volver a vista inicial
+          viewModeAccesorios = 'categories';
+          renderCategoryCardsAccesorios();
+        });
+      }
+
+      // Inicializar filtros de accesorios - mostrar cards de categorías al inicio
+      if (allAccesorios.length > 0) {
+        updateModelosAccesorios();
+        renderCategoryCardsAccesorios(); // Mostrar categorías al inicio
+      }
+
+      // ============================================
+      // DRAWER MÓVIL PARA FILTROS
+      // ============================================
+      
+      // Drawer para accesorios
+      const btnFiltrosMobileAccesorios = document.getElementById('btn-filtros-mobile-accesorios');
+      const filtrosPanelAccesorios = document.getElementById('filtros-panel-accesorios');
+      
+      if (btnFiltrosMobileAccesorios && filtrosPanelAccesorios) {
+        btnFiltrosMobileAccesorios.addEventListener('click', () => {
+          filtrosPanelAccesorios.classList.toggle('hidden');
+          if (!filtrosPanelAccesorios.classList.contains('hidden')) {
+            filtrosPanelAccesorios.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      }
+
+      // Drawer para repuestos
+      const btnFiltrosMobileRepuestos = document.getElementById('btn-filtros-mobile-repuestos');
+      const filtrosPanelRepuestos = document.getElementById('filtros-panel-repuestos');
+      
+      if (btnFiltrosMobileRepuestos && filtrosPanelRepuestos) {
+        btnFiltrosMobileRepuestos.addEventListener('click', () => {
+          filtrosPanelRepuestos.classList.toggle('hidden');
+          if (!filtrosPanelRepuestos.classList.contains('hidden')) {
+            filtrosPanelRepuestos.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      }
+    });
+  </script>
+  
+  <script type="application/json" id="repuestos-data" set:html={JSON.stringify(repuestos)}></script>
+  <script type="application/json" id="accesorios-data" set:html={JSON.stringify(accesorios)}></script>
+</BaseLayout>
+
+

@@ -1,0 +1,161 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
+---
+
+<BaseLayout title="Checkout - Mimoto">
+  <section class="max-w-6xl mx-auto px-4 py-12 md:py-16 space-y-8">
+    <div class="text-center mb-8">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Checkout</h1>
+      <p class="text-white/80">Revisa tu pedido antes de confirmar</p>
+    </div>
+    
+    <div class="grid gap-8 md:grid-cols-[2fr,1.5fr]">
+      <!-- Datos del comprador -->
+      <div class="space-y-6 bg-gray-900/50 border-2 border-primary rounded-xl p-6 shadow-lg backdrop-blur-sm">
+        <h2 class="text-2xl font-bold text-white border-b-2 border-primary pb-2">Datos del comprador</h2>
+        <p class="text-sm text-white/70">
+          Aquí se mostrarán los datos del usuario autenticado desde Supabase. Si no estás
+          logueado, serás redirigido a la página de login.
+        </p>
+        <div id="checkout-user" class="text-sm text-white/90 bg-gray-800/50 p-4 rounded-lg border border-primary/30"></div>
+      </div>
+      
+      <!-- Resumen del pedido -->
+      <aside class="bg-gray-900/50 border-2 border-primary rounded-xl p-6 shadow-lg space-y-4 backdrop-blur-sm">
+        <h2 class="text-xl font-bold text-white border-b-2 border-primary pb-2">Resumen del pedido</h2>
+        <div id="checkout-items" class="space-y-3 text-sm"></div>
+        <div class="border-t-2 border-primary pt-4 flex justify-between items-center">
+          <span class="text-lg font-bold text-white">Total</span>
+          <span id="checkout-total" class="text-2xl font-bold text-primary">$0</span>
+        </div>
+        <button
+          id="confirm-order-btn"
+          type="button"
+          class="w-full mt-4 inline-flex items-center justify-center px-6 py-4 rounded-lg bg-primary text-white font-bold hover:bg-primary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-lg hover:scale-105"
+        >
+          Confirmar compra
+        </button>
+        <p id="checkout-error" class="text-xs text-red-400 text-center"></p>
+      </aside>
+    </div>
+  </section>
+
+  <script type="module" define:vars={{ backendUrl: BACKEND_URL }}>
+    const STORAGE_KEY = 'mimoto_cart_v1';
+    const BACKEND_URL = backendUrl;
+
+    function loadCart() {
+      try {
+        const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (Array.isArray(raw)) return raw;
+        if (raw && Array.isArray(raw.items)) return raw.items;
+      } catch {
+        // ignore
+      }
+      return [];
+    }
+
+    function renderSummary(cart) {
+      const itemsEl = document.getElementById('checkout-items');
+      const totalEl = document.getElementById('checkout-total');
+      if (!itemsEl || !totalEl) return;
+
+      if (cart.length === 0) {
+          itemsEl.innerHTML =
+          '<p class="text-white/70 text-center py-4">Tu carrito está vacío. Agrega productos desde la tienda.</p>';
+        totalEl.textContent = '$0';
+        return;
+      }
+
+      let total = 0;
+      itemsEl.innerHTML = cart
+        .map((item) => {
+          const lineTotal = item.price * item.quantity;
+          total += lineTotal;
+          return `<div class="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg border border-primary/30">
+              <div>
+                <span class="font-semibold text-white">${item.name}</span>
+                <span class="text-white/70 text-xs block">Cantidad: ${item.quantity}</span>
+              </div>
+              <span class="font-bold text-primary text-lg">$${lineTotal.toLocaleString('es-CL')}</span>
+            </div>`;
+        })
+        .join('');
+      totalEl.textContent = `$${total.toLocaleString('es-CL')}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const cart = loadCart();
+      renderSummary(cart);
+
+      const confirmBtn = document.getElementById('confirm-order-btn');
+      const errorEl = document.getElementById('checkout-error');
+
+      if (!confirmBtn) return;
+
+      if (cart.length === 0) {
+        confirmBtn.disabled = true;
+      }
+
+      confirmBtn.addEventListener('click', async () => {
+        if (cart.length === 0) return;
+        confirmBtn.disabled = true;
+        errorEl.textContent = '';
+
+        try {
+          const items = cart.map((item) => ({
+            productId: Number(item.id),
+            quantity: item.quantity,
+            priceSnapshot: item.price,
+          }));
+
+          let order = null;
+          try {
+            const res = await fetch(`${BACKEND_URL}/orders/from-cart`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ items }),
+            });
+
+            if (res.ok) {
+              order = await res.json();
+            } else {
+              throw new Error('Backend error');
+            }
+          } catch (fetchErr) {
+            const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+            order = {
+              id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              status: 'pending_payment',
+              totalAmount,
+              items: cart.map((item) => ({
+                productId: Number(item.id),
+                name: item.name,
+                quantity: item.quantity,
+                priceSnapshot: item.price,
+              })),
+              createdAt: new Date().toISOString(),
+            };
+
+            const ordersKey = 'mimoto_orders_v1';
+            const existingOrders = JSON.parse(localStorage.getItem(ordersKey) || '[]');
+            existingOrders.push(order);
+            localStorage.setItem(ordersKey, JSON.stringify(existingOrders));
+          }
+
+          localStorage.removeItem(STORAGE_KEY);
+          window.location.href = `/pago?orderId=${order.id}`;
+        } catch (err) {
+          console.error(err);
+          errorEl.textContent =
+            'Ocurrió un error al crear la orden. Intenta nuevamente o contáctanos.';
+          confirmBtn.disabled = false;
+        }
+      });
+    });
+  </script>
+</BaseLayout>

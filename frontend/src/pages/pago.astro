@@ -1,0 +1,145 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabaseClient } from '../lib/supabase/client';
+
+const { orderId } = Astro.url.searchParams;
+
+// Obtener el monto del pedido desde la base de datos
+let orderTotal = null;
+let orderStatus = null;
+let userEmail = null;
+
+if (orderId) {
+  try {
+    const { data: order, error } = await supabaseClient
+      .from('orders')
+      .select('total_amount, status, user_id')
+      .eq('id', orderId)
+      .single();
+
+    if (!error && order) {
+      orderTotal = Number(order.total_amount);
+      orderStatus = order.status;
+      
+      // Obtener email del usuario
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (user) {
+        userEmail = user.email;
+      }
+    }
+  } catch (err) {
+    console.error('Error obteniendo el pedido:', err);
+  }
+}
+---
+
+<BaseLayout title="Pago - Mimoto">
+  <section class="max-w-2xl mx-auto px-4 py-12 md:py-16 space-y-8">
+    <div class="text-center mb-8">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Pago de tu pedido</h1>
+      <p class="text-white/80">Finaliza tu compra realizando el pago</p>
+    </div>
+
+    <div class="bg-gray-900/50 border-2 border-primary rounded-xl p-8 shadow-lg space-y-6 backdrop-blur-sm">
+      <div class="text-center">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
+          <svg class="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <p class="text-white/90 text-lg">
+          Para finalizar tu compra, realiza el pago en el siguiente enlace. Una vez que el
+          pago se confirme, validaremos tu pedido manualmente.
+        </p>
+      </div>
+
+      <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-6 space-y-4">
+        <div class="flex justify-between items-center">
+          <span class="text-white/90 font-semibold">Pedido asociado:</span>
+          <span class="font-bold text-primary text-xl">#{orderId || '—'}</span>
+        </div>
+        
+        {orderTotal && (
+          <div class="flex justify-between items-center border-t border-primary/30 pt-4">
+            <span class="text-white/90 font-semibold">Monto a pagar:</span>
+            <span class="font-bold text-primary text-xl">${orderTotal.toLocaleString('es-CL')}</span>
+          </div>
+        )}
+        
+        <button
+          id="pay-button"
+          class="w-full inline-flex items-center justify-center px-8 py-4 rounded-lg bg-primary text-white font-bold hover:bg-primary-600 transition-colors shadow-md text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={!orderId || !orderTotal}
+        >
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span id="pay-button-text">Pagar ahora</span>
+        </button>
+      </div>
+
+      <div class="bg-primary/10 border-l-4 border-primary p-4 rounded">
+        <p class="text-sm text-white/90">
+          <strong>Importante:</strong> Después de realizar el pago, recibirás una confirmación por WhatsApp o correo
+          cuando tu pedido cambie a estado <strong>en revisión</strong>.
+        </p>
+      </div>
+
+      {!orderTotal && orderId && (
+        <div class="bg-yellow-500/10 border-l-4 border-yellow-500 p-4 rounded">
+          <p class="text-sm text-yellow-200">
+            <strong>Nota:</strong> No se pudo obtener el monto del pedido. Por favor, recarga la página o contacta con soporte.
+          </p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const payButton = document.getElementById('pay-button');
+      const payButtonText = document.getElementById('pay-button-text');
+      const urlParams = new URLSearchParams(window.location.search);
+      const orderId = urlParams.get('orderId');
+
+      if (!payButton || !orderId) return;
+
+      payButton.addEventListener('click', async () => {
+        payButton.disabled = true;
+        payButtonText.textContent = 'Iniciando pago...';
+
+        try {
+          // Obtener URL de retorno
+          const returnUrl = `${window.location.origin}/pago/confirmar?orderId=${orderId}`;
+
+          // Iniciar transacción de Webpay
+          const response = await fetch('/api/webpay/init', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              orderId,
+              returnUrl
+            }),
+          });
+
+          const result = await response.json();
+
+          if (result.success && result.url) {
+            // Redirigir a Webpay
+            window.location.href = result.url;
+          } else {
+            throw new Error(result.error || 'Error al iniciar el pago');
+          }
+        } catch (error) {
+          console.error('Error iniciando pago:', error);
+          payButton.disabled = false;
+          payButtonText.textContent = 'Pagar ahora';
+          
+          alert('Error al iniciar el pago. Por favor, intenta nuevamente o contacta con soporte.');
+        }
+      });
+    });
+  </script>
+</BaseLayout>

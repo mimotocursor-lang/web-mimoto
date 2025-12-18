@@ -1,0 +1,284 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { supabaseClient } from '../../../lib/supabase/client';
+
+const { id } = Astro.params;
+
+if (!id) {
+  return Astro.redirect('/motos-usadas');
+}
+
+// Cargar moto por ID
+const { data: moto, error } = await supabaseClient
+  .from('used_motorcycles')
+  .select('*')
+  .eq('id', id)
+  .eq('status', 'active')
+  .single();
+
+if (error || !moto) {
+  return Astro.redirect('/motos-usadas');
+}
+
+// Procesar imágenes
+const mainImage = moto.main_image_url || '';
+const allImages = moto.images_urls || [];
+const images = [mainImage, ...allImages].filter(img => img && img.trim() !== '');
+
+// Si no hay imágenes, usar placeholder
+if (images.length === 0) {
+  images.push('https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=1200&q=80');
+}
+
+const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+
+// Datos formateados
+const year = moto.year || 'N/A';
+const mileage = moto.mileage ? `${moto.mileage.toLocaleString('es-CL')} km` : 'N/A';
+const price = Number(moto.price) || 0;
+const brand = moto.brand || '';
+const model = moto.model || '';
+const title = moto.title || `${brand} ${model}`;
+---
+
+<BaseLayout title={`${title} - Motos Usadas - Mimoto`} description={`${title} - ${year} - ${mileage}. Moto usada revisada y lista para conocer.`}>
+  <!-- Hero / Portada -->
+  <section class="relative w-full min-h-[85vh] overflow-hidden">
+    <div class="absolute inset-0">
+      <div
+        class="absolute inset-0 bg-cover bg-center"
+        style={`background-image: url('${images[0]}');`}
+      ></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-black/90"></div>
+    </div>
+    <div class="relative z-10 h-full flex items-center">
+      <div class="max-w-7xl mx-auto px-4 md:px-8 w-full">
+        <div class="max-w-4xl">
+          <div class="flex items-start gap-4 mb-6">
+            <h1 class="text-5xl md:text-7xl lg:text-8xl font-black text-ktm-light-text dark:text-ktm-text leading-tight tracking-tight flex-1">
+              {title}
+            </h1>
+            {moto.mileage === 0 && (
+              <span class="px-4 py-2 bg-green-600 text-ktm-light-text dark:text-ktm-text text-sm md:text-base font-bold uppercase tracking-wider border-2 border-white">
+                Nueva 0 kms
+              </span>
+            )}
+          </div>
+          <div class="flex flex-wrap gap-6 mb-8 text-lg md:text-xl text-ktm-light-text dark:text-ktm-text/95">
+            <div>
+              <span class="text-ktm-light-text dark:text-ktm-text/70">Año:</span> <span class="font-bold">{year}</span>
+            </div>
+            <div>
+              <span class="text-ktm-light-text dark:text-ktm-text/70">Kilometraje:</span> <span class="font-bold">{mileage}</span>
+            </div>
+            {price > 0 && (
+              <div>
+                <span class="text-ktm-light-text dark:text-ktm-text/70">Precio:</span> <span class="font-bold text-ktm-accent">${price.toLocaleString('es-CL')}</span>
+              </div>
+            )}
+          </div>
+          <a
+            href={PUBLIC_WHATSAPP_URL}
+            class="inline-flex items-center gap-3 px-10 py-5 bg-ktm-accent text-ktm-light-text dark:text-ktm-text font-bold text-lg hover:bg-ktm-accent-600 transition-all uppercase tracking-wider"
+          >
+            Consultar Disponibilidad
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bloque de Información Clave -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border p-8 md:p-12">
+      <h2 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-8 uppercase tracking-tight">Información Clave</h2>
+      <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div>
+          <span class="text-ktm-light-text dark:text-ktm-text/50 uppercase tracking-wider text-xs block mb-2">Marca</span>
+          <p class="text-ktm-light-text dark:text-ktm-text font-black text-xl">{brand}</p>
+        </div>
+        <div>
+          <span class="text-ktm-light-text dark:text-ktm-text/50 uppercase tracking-wider text-xs block mb-2">Modelo</span>
+          <p class="text-ktm-light-text dark:text-ktm-text font-black text-xl">{model}</p>
+        </div>
+        <div>
+          <span class="text-ktm-light-text dark:text-ktm-text/50 uppercase tracking-wider text-xs block mb-2">Año</span>
+          <p class="text-ktm-light-text dark:text-ktm-text font-black text-xl">{year}</p>
+        </div>
+        <div>
+          <span class="text-ktm-light-text dark:text-ktm-text/50 uppercase tracking-wider text-xs block mb-2">Kilometraje</span>
+          <p class="text-ktm-light-text dark:text-ktm-text font-black text-xl">{mileage}</p>
+        </div>
+        {price > 0 && (
+          <div class="md:col-span-2 lg:col-span-4">
+            <span class="text-ktm-light-text dark:text-ktm-text/50 uppercase tracking-wider text-xs block mb-2">Precio</span>
+            <p class="text-ktm-accent font-black text-3xl">${price.toLocaleString('es-CL')}</p>
+          </div>
+        )}
+      </div>
+      {moto.description && (
+        <div class="mt-8 pt-8 border-t border-ktm-light-border dark:border-ktm-border">
+          <span class="text-ktm-light-text dark:text-ktm-text/50 uppercase tracking-wider text-xs block mb-3">Descripción</span>
+          <p class="text-ktm-light-text dark:text-ktm-text/80 leading-relaxed text-lg">{moto.description}</p>
+        </div>
+      )}
+    </div>
+  </section>
+
+  <!-- Galería Narrativa -->
+  {images.length > 1 && (
+    <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+      <div class="mb-16">
+        <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Galería</h2>
+        <p class="text-xl text-ktm-light-text dark:text-ktm-text/70 max-w-2xl">Imágenes detalladas de la moto</p>
+      </div>
+
+      <div class="space-y-24">
+        {images.slice(1, 4).map((imageUrl, index) => (
+          <div class={`grid md:grid-cols-2 gap-12 items-center ${index % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
+            <div class={index % 2 === 1 ? 'md:order-2' : ''}>
+              {index === 0 && (
+                <>
+                  <h3 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">
+                    Vista Lateral
+                  </h3>
+                  <p class="text-lg text-ktm-light-text dark:text-ktm-text/80 leading-relaxed mb-4">
+                    Diseño y estado general. Observa las líneas, el estado de la pintura y los detalles que hacen única esta moto.
+                  </p>
+                </>
+              )}
+              {index === 1 && (
+                <>
+                  <h3 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">
+                    Tablero y Controles
+                  </h3>
+                  <p class="text-lg text-ktm-light-text dark:text-ktm-text/80 leading-relaxed mb-4">
+                    Kilometraje visible, funcionamiento de instrumentos y estado de controles. Transparencia total en cada detalle.
+                  </p>
+                </>
+              )}
+              {index === 2 && (
+                <>
+                  <h3 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">
+                    Detalles Traseros
+                  </h3>
+                  <p class="text-lg text-ktm-light-text dark:text-ktm-text/80 leading-relaxed mb-4">
+                    Estado de luces, neumáticos, escape y componentes traseros. Todo revisado y documentado.
+                  </p>
+                </>
+              )}
+            </div>
+            <div class={`relative ${index % 2 === 1 ? 'md:order-1' : ''}`}>
+              <div
+                class="aspect-[4/3] bg-cover bg-center border-2 border-ktm-light-border dark:border-ktm-border"
+                style={`background-image: url('${imageUrl}');`}
+              ></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )}
+
+  <!-- Sección Editorial - Por qué esta moto -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20 bg-ktm-light-surface dark:bg-ktm-surface/30">
+    <div class="mb-16">
+      <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Por qué esta Moto</h2>
+      <p class="text-xl text-ktm-light-text dark:text-ktm-text/70 max-w-2xl">Una opción que vale la pena considerar</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6 md:gap-8">
+      <div class="bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border p-8 group hover:border-primary transition-all">
+        <div class="text-5xl mb-4">🏍️</div>
+        <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Uso Recomendado</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 leading-relaxed">
+          Ideal para {brand === 'KTM' ? 'aventura y off-road' : brand === 'Honda' ? 'ciudad y ruta' : 'uso mixto'}. Una moto versátil que se adapta a diferentes necesidades.
+        </p>
+      </div>
+
+      <div class="bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border p-8 group hover:border-primary transition-all">
+        <div class="text-5xl mb-4">✅</div>
+        <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Estado Verificado</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 leading-relaxed">
+          Revisada completamente en nuestro taller. Motor, transmisión, frenos, suspensión: todo verificado y documentado.
+        </p>
+      </div>
+
+      <div class="bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border p-8 group hover:border-primary transition-all">
+        <div class="text-5xl mb-4">🎯</div>
+        <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Perfil Ideal</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 leading-relaxed">
+          Perfecta para quien busca {year !== 'N/A' && parseInt(year) > 2015 ? 'una moto moderna y confiable' : 'una opción económica sin sacrificar calidad'}.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Confianza y Transparencia -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="bg-ktm-light-surface dark:bg-ktm-surface border-2 border-primary p-8 md:p-12">
+      <h2 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-8 uppercase tracking-tight">Revisión Realizada</h2>
+      <div class="grid md:grid-cols-2 gap-8">
+        <div>
+          <h3 class="text-xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Estado Mecánico</h3>
+          <ul class="space-y-3">
+            <li class="text-ktm-light-text dark:text-ktm-text/70 flex items-start gap-3">
+              <span class="text-ktm-accent font-bold">✓</span>
+              <span>Motor revisado y funcionando correctamente</span>
+            </li>
+            <li class="text-ktm-light-text dark:text-ktm-text/70 flex items-start gap-3">
+              <span class="text-ktm-accent font-bold">✓</span>
+              <span>Transmisión y embrague operativos</span>
+            </li>
+            <li class="text-ktm-light-text dark:text-ktm-text/70 flex items-start gap-3">
+              <span class="text-ktm-accent font-bold">✓</span>
+              <span>Sistema de frenos verificado</span>
+            </li>
+            <li class="text-ktm-light-text dark:text-ktm-text/70 flex items-start gap-3">
+              <span class="text-ktm-accent font-bold">✓</span>
+              <span>Suspensión revisada</span>
+            </li>
+            <li class="text-ktm-light-text dark:text-ktm-text/70 flex items-start gap-3">
+              <span class="text-ktm-accent font-bold">✓</span>
+              <span>Sistema eléctrico funcional</span>
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="text-xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Mantenimiento</h3>
+          <p class="text-ktm-light-text dark:text-ktm-text/70 leading-relaxed mb-4">
+            Esta moto ha sido revisada completamente en nuestro taller. Si requiere algún mantenimiento específico, te lo informaremos antes de cualquier compromiso.
+          </p>
+          <p class="text-ktm-light-text dark:text-ktm-text/70 leading-relaxed">
+            Nuestro compromiso es la transparencia. Conocemos el estado real de esta moto porque la revisamos nosotros.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Final -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="bg-ktm-light-surface dark:bg-ktm-surface border-2 border-primary p-12 md:p-16 text-center">
+      <h2 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">¿Interesado en esta moto?</h2>
+      <p class="text-xl text-ktm-light-text dark:text-ktm-text/80 mb-8 max-w-2xl mx-auto">
+        Contáctanos para agendar una visita, conocer más detalles o hacer cualquier consulta. Estamos aquí para ayudarte.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a
+          href={PUBLIC_WHATSAPP_URL}
+          class="inline-flex items-center gap-3 px-10 py-5 bg-ktm-accent text-ktm-light-text dark:text-ktm-text font-bold text-lg hover:bg-ktm-accent-600 transition-all uppercase tracking-wider"
+        >
+          Consultar por esta Moto
+        </a>
+        <a
+          href="/motos-usadas"
+          class="inline-flex items-center gap-3 px-10 py-5 border-2 border-primary text-ktm-accent font-bold text-lg hover:bg-ktm-accent hover:text-ktm-light-text dark:text-ktm-text transition-all uppercase tracking-wider"
+        >
+          Ver Otras Motos
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+

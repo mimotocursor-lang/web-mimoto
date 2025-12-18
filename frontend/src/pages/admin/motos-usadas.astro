@@ -1,0 +1,530 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Gestión de Motos Usadas - Mimoto">
+  <section class="max-w-6xl mx-auto px-4 py-16">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-bold text-ktm-text">Gestión de Motos Usadas</h1>
+      <nav class="flex gap-4 text-sm">
+        <a href="/admin" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Dashboard</a>
+        <a href="/admin/productos" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Productos</a>
+        <a href="/admin/motos-usadas" class="text-ktm-accent font-bold">Motos Usadas</a>
+        <a href="/admin/banners" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Banners</a>
+      </nav>
+    </div>
+
+    <div class="mb-6">
+      <button
+        id="new-moto-btn"
+        class="px-6 py-3 rounded-lg bg-ktm-accent text-ktm-text font-bold hover:bg-ktm-accent-600 transition-colors shadow-lg"
+      >
+        + Nueva Moto
+      </button>
+    </div>
+
+    <div id="motos-list" class="space-y-4">
+      <p class="text-ktm-text/70">Cargando motos...</p>
+    </div>
+
+    <!-- Modal para crear/editar moto -->
+    <div
+      id="moto-modal"
+      class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center backdrop-blur-sm p-4"
+    >
+      <div class="bg-gradient-to-b from-gray-900 to-gray-950 border-2 border-primary rounded-xl p-4 md:p-5 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="flex items-center justify-between mb-3 border-b-2 border-primary pb-2">
+          <h2 id="modal-title" class="text-lg md:text-xl font-bold text-ktm-text">Nueva Moto</h2>
+          <button id="close-modal" class="text-ktm-text/80 hover:text-ktm-text text-xl md:text-2xl font-bold">✕</button>
+        </div>
+
+        <form id="moto-form" class="space-y-3">
+          <input type="hidden" id="moto-id" />
+
+          <div>
+            <label for="moto-title" class="block text-sm font-bold mb-2 text-ktm-text">Título</label>
+            <input
+              type="text"
+              id="moto-title"
+              required
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              placeholder="Ej: KTM 1090 Adventure"
+            />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="moto-brand" class="block text-sm font-bold mb-2 text-ktm-text">Marca</label>
+              <input
+                type="text"
+                id="moto-brand"
+                required
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="Ej: KTM"
+              />
+            </div>
+
+            <div>
+              <label for="moto-model" class="block text-sm font-bold mb-2 text-ktm-text">Modelo</label>
+              <input
+                type="text"
+                id="moto-model"
+                required
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="Ej: 1090 Adventure"
+              />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label for="moto-year" class="block text-sm font-bold mb-2 text-ktm-text">Año</label>
+              <input
+                type="number"
+                id="moto-year"
+                min="1900"
+                max="2030"
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="2024"
+              />
+            </div>
+
+            <div>
+              <label for="moto-mileage" class="block text-sm font-bold mb-2 text-ktm-text">Kilometraje</label>
+              <input
+                type="number"
+                id="moto-mileage"
+                min="0"
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="0"
+              />
+              <p class="text-xs text-ktm-text/60 mt-1">0 = Nueva (0 kms)</p>
+            </div>
+
+            <div>
+              <label for="moto-price" class="block text-sm font-bold mb-2 text-ktm-text">Precio</label>
+              <input
+                type="number"
+                id="moto-price"
+                step="0.01"
+                min="0"
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                placeholder="Dejar vacío para consultar"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="moto-description" class="block text-sm font-bold mb-2 text-ktm-text">Descripción</label>
+            <textarea
+              id="moto-description"
+              rows="4"
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              placeholder="Descripción de la moto, estado, características..."
+            ></textarea>
+          </div>
+
+          <div>
+            <label for="moto-main-image" class="block text-sm font-bold mb-2 text-ktm-text">Imagen Principal (Portada)</label>
+            <input
+              type="file"
+              id="moto-main-image"
+              accept="image/*"
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-ktm-accent file:text-ktm-text hover:file:bg-ktm-accent-600"
+            />
+            <p class="text-xs text-ktm-text/60 mt-1">Imagen principal que se mostrará en el listado y hero</p>
+            <div id="moto-main-image-preview" class="mt-2 hidden">
+              <img id="moto-main-image-preview-img" src="" alt="Preview" class="max-w-xs rounded-lg border-2 border-primary/30" />
+            </div>
+            <input type="hidden" id="moto-main-image-url" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-bold mb-2 text-ktm-text">Imágenes Adicionales</label>
+            <input
+              type="file"
+              id="moto-additional-images"
+              accept="image/*"
+              multiple
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-ktm-accent file:text-ktm-text hover:file:bg-ktm-accent-600"
+            />
+            <p class="text-xs text-ktm-text/60 mt-1">Puedes seleccionar múltiples imágenes (Lateral, Trasera, Tablero, etc.)</p>
+            <div id="moto-additional-images-preview" class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2"></div>
+            <input type="hidden" id="moto-additional-images-urls" />
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="moto-status" class="block text-sm font-bold mb-2 text-ktm-text">Estado</label>
+              <select
+                id="moto-status"
+                required
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                <option value="active">Activa</option>
+                <option value="inactive">Inactiva</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-3 pt-8">
+              <input
+                type="checkbox"
+                id="moto-featured"
+                class="w-5 h-5 rounded border-2 border-primary/30 bg-gray-800 text-ktm-accent focus:ring-2 focus:ring-primary"
+              />
+              <label for="moto-featured" class="text-sm font-bold text-ktm-text">Destacada</label>
+            </div>
+          </div>
+
+          <div class="flex gap-3 pt-4">
+            <button
+              type="submit"
+              class="flex-1 px-6 py-3 rounded-lg bg-ktm-accent text-ktm-text font-bold hover:bg-ktm-accent-600 transition-colors shadow-lg"
+            >
+              Guardar
+            </button>
+            <button
+              type="button"
+              id="cancel-btn"
+              class="px-6 py-3 rounded-lg bg-gray-700 text-ktm-text font-bold hover:bg-gray-600 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    import { supabaseClient } from '../../../lib/supabase/client';
+
+    async function checkAdminAccess() {
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) {
+        window.location.href = '/login';
+        return false;
+      }
+
+      const { data: userData } = await supabaseClient
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (userData?.role !== 'admin') {
+        alert('No tienes permisos de administrador');
+        window.location.href = '/';
+        return false;
+      }
+      return true;
+    }
+
+    async function loadMotos() {
+      const hasAccess = await checkAdminAccess();
+      if (!hasAccess) return;
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('used_motorcycles')
+          .select('*')
+          .order('featured', { ascending: false })
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error cargando motos:', error);
+          throw error;
+        }
+
+        const listEl = document.getElementById('motos-list')!;
+        if (!data || data.length === 0) {
+          listEl.innerHTML = '<p class="text-ktm-text/70">No hay motos registradas</p>';
+          return;
+        }
+
+        listEl.innerHTML = data
+          .map((moto: any) => {
+            const imageUrl = moto.main_image_url || '';
+            const hasImage = imageUrl && imageUrl.trim() !== '';
+            const price = Number(moto.price) || 0;
+            const mileage = moto.mileage || 0;
+            const isNew = mileage === 0;
+            
+            return `
+              <div class="bg-ktm-surface border-2 border-primary/30 rounded-xl p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div class="w-32 h-24 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-gray-800 border-2 border-primary/20 flex-shrink-0">
+                  ${hasImage ? `
+                    <img 
+                      src="${imageUrl}" 
+                      alt="${moto.title || 'Moto'}" 
+                      class="w-full h-full object-cover"
+                      loading="lazy"
+                      crossorigin="anonymous"
+                      onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
+                    >
+                  ` : `
+                    <div class="w-full h-full flex items-center justify-center text-ktm-text/40 text-xs">Sin imagen</div>
+                  `}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-start gap-2 mb-1">
+                    <h3 class="font-bold text-ktm-text">${moto.title || `${moto.brand} ${moto.model}`}</h3>
+                    ${isNew ? '<span class="px-2 py-1 bg-green-600 text-ktm-text text-xs font-bold uppercase">Nueva 0 kms</span>' : ''}
+                    ${moto.featured ? '<span class="px-2 py-1 bg-ktm-accent text-ktm-text text-xs font-bold uppercase">Destacada</span>' : ''}
+                  </div>
+                  <p class="text-sm text-ktm-text/70">
+                    ${moto.brand} ${moto.model} | ${moto.year || 'N/A'} | ${mileage.toLocaleString('es-CL')} km
+                    ${price > 0 ? `| $${price.toLocaleString('es-CL')}` : '| Precio a consultar'}
+                  </p>
+                  <p class="text-xs text-ktm-text/50 mt-1">
+                    ${moto.status === 'active' ? '<span class="text-green-400">Activa</span>' : '<span class="text-red-400">Inactiva</span>'}
+                  </p>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                  <button class="edit-moto flex-1 sm:flex-none px-4 py-2 rounded-lg bg-ktm-accent/20 hover:bg-ktm-accent/30 text-ktm-accent text-sm font-semibold transition-colors shadow-md hover:scale-105" data-id="${moto.id}">Editar</button>
+                  <button class="delete-moto flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-400 font-semibold transition-colors shadow-md hover:scale-105" data-id="${moto.id}">Eliminar</button>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+
+        // Agregar event listeners
+        document.querySelectorAll('.edit-moto').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            const id = Number((e.target as HTMLElement).getAttribute('data-id'));
+            editMoto(id, data.find((m: any) => m.id === id)!);
+          });
+        });
+
+        document.querySelectorAll('.delete-moto').forEach((btn) => {
+          btn.addEventListener('click', async (e) => {
+            const id = Number((e.target as HTMLElement).getAttribute('data-id'));
+            if (confirm('¿Estás seguro de eliminar esta moto?')) {
+              await deleteMoto(id);
+            }
+          });
+        });
+      } catch (err) {
+        console.error('Error cargando motos:', err);
+      }
+    }
+
+    function openModal(isEdit = false) {
+      const modal = document.getElementById('moto-modal')!;
+      const title = document.getElementById('modal-title')!;
+      title.textContent = isEdit ? 'Editar Moto' : 'Nueva Moto';
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('moto-modal')!;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.getElementById('moto-form')!.reset();
+      document.getElementById('moto-id')!.value = '';
+      document.getElementById('moto-main-image-preview')!.classList.add('hidden');
+      document.getElementById('moto-additional-images-preview')!.innerHTML = '';
+    }
+
+    async function uploadImage(file: File): Promise<string> {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `motos/${fileName}`;
+
+      const { error: uploadError } = await supabaseClient.storage
+        .from('product-images')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data } = supabaseClient.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    }
+
+    async function saveMoto(formData: any) {
+      const hasAccess = await checkAdminAccess();
+      if (!hasAccess) return;
+
+      try {
+        const motoData: any = {
+          title: formData.title,
+          brand: formData.brand,
+          model: formData.model,
+          year: formData.year ? Number(formData.year) : null,
+          mileage: formData.mileage ? Number(formData.mileage) : 0,
+          price: formData.price ? Number(formData.price) : null,
+          description: formData.description || null,
+          status: formData.status || 'active',
+          featured: formData.featured || false,
+        };
+
+        if (formData.mainImageUrl) {
+          motoData.main_image_url = formData.mainImageUrl;
+        }
+
+        if (formData.additionalImagesUrls && formData.additionalImagesUrls.length > 0) {
+          motoData.images_urls = formData.additionalImagesUrls;
+        }
+
+        if (formData.id) {
+          const { error } = await supabaseClient
+            .from('used_motorcycles')
+            .update(motoData)
+            .eq('id', formData.id);
+
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient
+            .from('used_motorcycles')
+            .insert([motoData]);
+
+          if (error) throw error;
+        }
+
+        closeModal();
+        await loadMotos();
+      } catch (err) {
+        console.error('Error guardando moto:', err);
+        alert('Error al guardar la moto. Verifica la consola para más detalles.');
+      }
+    }
+
+    function editMoto(id: number, moto: any) {
+      (document.getElementById('moto-id') as HTMLInputElement).value = id.toString();
+      (document.getElementById('moto-title') as HTMLInputElement).value = moto.title || '';
+      (document.getElementById('moto-brand') as HTMLInputElement).value = moto.brand || '';
+      (document.getElementById('moto-model') as HTMLInputElement).value = moto.model || '';
+      (document.getElementById('moto-year') as HTMLInputElement).value = moto.year || '';
+      (document.getElementById('moto-mileage') as HTMLInputElement).value = moto.mileage || '0';
+      (document.getElementById('moto-price') as HTMLInputElement).value = moto.price || '';
+      (document.getElementById('moto-description') as HTMLTextAreaElement).value = moto.description || '';
+      (document.getElementById('moto-status') as HTMLSelectElement).value = moto.status || 'active';
+      (document.getElementById('moto-featured') as HTMLInputElement).checked = moto.featured || false;
+      (document.getElementById('moto-main-image-url') as HTMLInputElement).value = moto.main_image_url || '';
+      (document.getElementById('moto-additional-images-urls') as HTMLInputElement).value = JSON.stringify(moto.images_urls || []);
+
+      if (moto.main_image_url) {
+        const preview = document.getElementById('moto-main-image-preview')!;
+        const previewImg = document.getElementById('moto-main-image-preview-img') as HTMLImageElement;
+        previewImg.src = moto.main_image_url;
+        preview.classList.remove('hidden');
+      }
+
+      if (moto.images_urls && moto.images_urls.length > 0) {
+        const previewContainer = document.getElementById('moto-additional-images-preview')!;
+        previewContainer.innerHTML = moto.images_urls.map((url: string) => `
+          <div class="relative">
+            <img src="${url}" alt="Preview" class="w-full h-24 object-cover rounded-lg border-2 border-primary/30" />
+          </div>
+        `).join('');
+      }
+
+      openModal(true);
+    }
+
+    async function deleteMoto(id: number) {
+      const hasAccess = await checkAdminAccess();
+      if (!hasAccess) return;
+
+      try {
+        const { error } = await supabaseClient
+          .from('used_motorcycles')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+
+        await loadMotos();
+      } catch (err) {
+        console.error('Error eliminando moto:', err);
+        alert('Error al eliminar la moto');
+      }
+    }
+
+    // Event listeners
+    document.getElementById('new-moto-btn')?.addEventListener('click', () => {
+      openModal(false);
+    });
+
+    document.getElementById('close-modal')?.addEventListener('click', closeModal);
+    document.getElementById('cancel-btn')?.addEventListener('click', closeModal);
+
+    document.getElementById('moto-main-image')?.addEventListener('change', async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const url = await uploadImage(file);
+        (document.getElementById('moto-main-image-url') as HTMLInputElement).value = url;
+        const preview = document.getElementById('moto-main-image-preview')!;
+        const previewImg = document.getElementById('moto-main-image-preview-img') as HTMLImageElement;
+        previewImg.src = url;
+        preview.classList.remove('hidden');
+      } catch (err) {
+        console.error('Error subiendo imagen:', err);
+        alert('Error al subir la imagen');
+      }
+    });
+
+    document.getElementById('moto-additional-images')?.addEventListener('change', async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (!files || files.length === 0) return;
+
+      try {
+        const urls: string[] = [];
+        const previewContainer = document.getElementById('moto-additional-images-preview')!;
+        previewContainer.innerHTML = '';
+
+        for (let i = 0; i < files.length; i++) {
+          const url = await uploadImage(files[i]);
+          urls.push(url);
+          previewContainer.innerHTML += `
+            <div class="relative">
+              <img src="${url}" alt="Preview" class="w-full h-24 object-cover rounded-lg border-2 border-primary/30" />
+            </div>
+          `;
+        }
+
+        (document.getElementById('moto-additional-images-urls') as HTMLInputElement).value = JSON.stringify(urls);
+      } catch (err) {
+        console.error('Error subiendo imágenes:', err);
+        alert('Error al subir las imágenes');
+      }
+    });
+
+    document.getElementById('moto-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = {
+        id: (document.getElementById('moto-id') as HTMLInputElement).value || null,
+        title: (document.getElementById('moto-title') as HTMLInputElement).value,
+        brand: (document.getElementById('moto-brand') as HTMLInputElement).value,
+        model: (document.getElementById('moto-model') as HTMLInputElement).value,
+        year: (document.getElementById('moto-year') as HTMLInputElement).value,
+        mileage: (document.getElementById('moto-mileage') as HTMLInputElement).value,
+        price: (document.getElementById('moto-price') as HTMLInputElement).value,
+        description: (document.getElementById('moto-description') as HTMLTextAreaElement).value,
+        status: (document.getElementById('moto-status') as HTMLSelectElement).value,
+        featured: (document.getElementById('moto-featured') as HTMLInputElement).checked,
+        mainImageUrl: (document.getElementById('moto-main-image-url') as HTMLInputElement).value,
+        additionalImagesUrls: (() => {
+          const value = (document.getElementById('moto-additional-images-urls') as HTMLInputElement).value;
+          return value ? JSON.parse(value) : [];
+        })(),
+      };
+
+      await saveMoto(formData);
+    });
+
+    // Cargar motos al iniciar
+    loadMotos();
+  </script>
+</BaseLayout>
+

@@ -1,0 +1,221 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabaseClient } from '../../lib/supabase/client';
+
+// Cargar motos usadas activas
+const { data: motos = [], error } = await supabaseClient
+  .from('used_motorcycles')
+  .select('*')
+  .eq('status', 'active')
+  .order('featured', { ascending: false })
+  .order('created_at', { ascending: false });
+
+const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+---
+
+<BaseLayout title="Motos Usadas - Mimoto" description="Motos usadas seleccionadas y revisadas. Todas las unidades pasan por nuestro taller antes de ser publicadas.">
+  <!-- Hero Editorial -->
+  <section class="relative w-full min-h-[85vh] overflow-hidden">
+    <div class="absolute inset-0">
+      <div
+        class="absolute inset-0 bg-cover bg-center"
+        style="background-image: url('https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=1920&q=80');"
+      ></div>
+      <div class="absolute inset-0 bg-gradient-to-b from-black/80 via-black/70 to-black/90"></div>
+    </div>
+    <div class="relative z-10 h-full flex items-center">
+      <div class="max-w-7xl mx-auto px-4 md:px-8 w-full">
+        <div class="max-w-4xl">
+          <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-6 text-ktm-light-text dark:text-ktm-text leading-tight tracking-tight">
+            Motos Usadas
+          </h1>
+          <p class="text-xl md:text-2xl lg:text-3xl text-ktm-light-text dark:text-ktm-text/95 mb-8 font-light leading-relaxed">
+            Seleccionadas y revisadas. Todas las unidades pasan por nuestro taller antes de ser publicadas.
+          </p>
+          <p class="text-lg md:text-xl text-ktm-light-text dark:text-ktm-text/90 font-light leading-relaxed">
+            Transparencia total. Estado real. Confianza garantizada.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Storytelling Section -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
+      <div>
+        <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">
+          Nuestro Proceso
+        </h2>
+        <div class="space-y-4 text-lg text-ktm-light-text dark:text-ktm-text/80 leading-relaxed">
+          <p>
+            No vendemos cualquier moto. Cada unidad que ofrecemos pasa por una revisión completa en nuestro taller. Revisamos motor, transmisión, frenos, suspensión, sistema eléctrico y más.
+          </p>
+          <p>
+            Te mostramos el estado real. No ocultamos detalles. Si algo necesita atención, te lo decimos. Porque creemos que la confianza se construye con transparencia.
+          </p>
+          <p>
+            Todas las motos incluyen una evaluación mecánica profesional. Y si decides comprar, puedes estar seguro de que estás adquiriendo una moto en el estado que te decimos.
+          </p>
+        </div>
+      </div>
+      <div class="relative">
+        <div
+          class="aspect-[4/3] bg-cover bg-center border-2 border-ktm-light-border dark:border-ktm-border"
+          style="background-image: url('https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=800&q=80');"
+        ></div>
+        <div class="absolute -bottom-6 -right-6 bg-ktm-accent p-8 border-2 border-white">
+          <div class="text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-2">100%</div>
+          <div class="text-ktm-light-text dark:text-ktm-text/90 text-sm uppercase tracking-wider">Revisadas</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grid de Motos -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="mb-16">
+      <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Motos Disponibles</h2>
+      <p class="text-xl text-ktm-light-text dark:text-ktm-text/70 max-w-2xl">Todas revisadas y listas para conocer</p>
+    </div>
+
+    {motos.length === 0 ? (
+      <div class="text-center py-20">
+        <p class="text-ktm-light-text dark:text-ktm-text/70 text-xl mb-4">No hay motos disponibles en este momento.</p>
+        <p class="text-ktm-light-text dark:text-ktm-text/60">Contáctanos para conocer las próximas unidades disponibles.</p>
+      </div>
+    ) : (
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        {motos.map((moto: any) => {
+          const imageUrl = moto.main_image_url || '';
+          const hasImage = imageUrl && imageUrl.trim() !== '';
+          const price = Number(moto.price) || 0;
+          const year = moto.year || 'N/A';
+          const mileage = moto.mileage ? `${moto.mileage.toLocaleString('es-CL')} km` : 'N/A';
+          
+          return (
+            <a
+              href={`/motos-usadas/${moto.id}`}
+              class="bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border flex flex-col hover:border-primary transition-all group"
+            >
+              {hasImage ? (
+                <div class="aspect-[4/3] overflow-hidden bg-gray-800">
+                  <img
+                    src={imageUrl}
+                    alt={moto.title || 'Moto usada'}
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    crossorigin="anonymous"
+                    onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
+                  />
+                </div>
+              ) : (
+                <div class="aspect-[4/3] bg-gray-800 flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs">
+                  Sin imagen
+                </div>
+              )}
+              <div class="p-6 flex flex-col gap-4 flex-1">
+                <div>
+                  <div class="flex items-start gap-2 mb-2">
+                    <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text uppercase tracking-tight line-clamp-2 flex-1">
+                      {moto.brand} {moto.model}
+                    </h3>
+                    {moto.mileage === 0 && (
+                      <span class="px-2 py-1 bg-green-600 text-ktm-light-text dark:text-ktm-text text-xs font-bold uppercase flex-shrink-0">
+                        Nueva 0 kms
+                      </span>
+                    )}
+                  </div>
+                  {moto.title && moto.title !== `${moto.brand} ${moto.model}` && (
+                    <p class="text-ktm-light-text dark:text-ktm-text/60 text-sm mb-3">{moto.title}</p>
+                  )}
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span class="text-ktm-light-text dark:text-ktm-text/50 uppercase tracking-wider text-xs">Año</span>
+                    <p class="text-ktm-light-text dark:text-ktm-text font-bold">{year}</p>
+                  </div>
+                  <div>
+                    <span class="text-ktm-light-text dark:text-ktm-text/50 uppercase tracking-wider text-xs">Kilometraje</span>
+                    <p class="text-ktm-light-text dark:text-ktm-text font-bold">{mileage}</p>
+                  </div>
+                </div>
+
+                {price > 0 ? (
+                  <p class="text-3xl text-ktm-accent font-black mt-auto">
+                    ${price.toLocaleString('es-CL')}
+                  </p>
+                ) : (
+                  <p class="text-ktm-light-text dark:text-ktm-text/60 italic mt-auto">Precio a consultar</p>
+                )}
+
+                <div class="mt-4 pt-4 border-t border-ktm-light-border dark:border-ktm-border">
+                  <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider inline-flex items-center gap-2">
+                    Ver detalles →
+                  </span>
+                </div>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    )}
+  </section>
+
+  <!-- Sección de Confianza -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20 bg-ktm-light-surface dark:bg-ktm-surface/30">
+    <div class="mb-12 text-center">
+      <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Por qué Confiar</h2>
+      <p class="text-xl text-ktm-light-text dark:text-ktm-text/70 max-w-2xl mx-auto">Nuestro compromiso con la transparencia</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-8">
+      <div class="text-center">
+        <div class="text-5xl mb-4">🔍</div>
+        <h3 class="text-xl font-black text-ktm-light-text dark:text-ktm-text mb-3 uppercase tracking-tight">Revisión Completa</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 leading-relaxed">
+          Cada moto pasa por una evaluación mecánica profesional antes de ser publicada.
+        </p>
+      </div>
+      <div class="text-center">
+        <div class="text-5xl mb-4">✅</div>
+        <h3 class="text-xl font-black text-ktm-light-text dark:text-ktm-text mb-3 uppercase tracking-tight">Estado Real</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 leading-relaxed">
+          Te mostramos el estado real de cada unidad. Sin ocultar detalles, sin sorpresas.
+        </p>
+      </div>
+      <div class="text-center">
+        <div class="text-5xl mb-4">🛠️</div>
+        <h3 class="text-xl font-black text-ktm-light-text dark:text-ktm-text mb-3 uppercase tracking-tight">Taller Propio</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 leading-relaxed">
+          Revisamos cada moto en nuestro taller. Conocemos su estado porque lo verificamos nosotros.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Final -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="bg-ktm-light-surface dark:bg-ktm-surface border-2 border-primary p-12 md:p-16 text-center">
+      <h2 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">¿Interesado en una moto?</h2>
+      <p class="text-xl text-ktm-light-text dark:text-ktm-text/80 mb-8 max-w-2xl mx-auto">
+        Contáctanos para agendar una visita, conocer más detalles o hacer cualquier consulta.
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a
+          href={PUBLIC_WHATSAPP_URL}
+          class="inline-flex items-center gap-3 px-10 py-5 bg-ktm-accent text-ktm-light-text dark:text-ktm-text font-bold text-lg hover:bg-ktm-accent-600 transition-all uppercase tracking-wider"
+        >
+          Contactar por WhatsApp
+        </a>
+        <a
+          href="/servicios"
+          class="inline-flex items-center gap-3 px-10 py-5 border-2 border-primary text-ktm-accent font-bold text-lg hover:bg-ktm-accent hover:text-ktm-light-text dark:text-ktm-text transition-all uppercase tracking-wider"
+        >
+          Ver Servicios
+        </a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

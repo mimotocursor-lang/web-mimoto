@@ -1,0 +1,912 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { supabaseClient } from '../../lib/supabase/client';
+
+// Cargar banners activos del hero desde Supabase
+let banners: any[] = [];
+try {
+  const { data: bannersData, error: bannersError } = await supabaseClient
+    .from('banners')
+    .select('*')
+    .eq('active', true)
+    .eq('banner_type', 'hero')
+    .order('position', { ascending: true })
+    .limit(3);
+  
+  if (bannersError) {
+    const { data: allBanners } = await supabaseClient
+      .from('banners')
+      .select('*')
+      .eq('active', true)
+      .order('position', { ascending: true })
+      .limit(3);
+    banners = allBanners || [];
+  } else {
+    banners = bannersData || [];
+  }
+} catch (err) {
+  banners = [];
+}
+
+// Si no hay banners, usar imágenes de prueba
+if (banners.length === 0) {
+  banners = [
+    {
+      id: 'demo-1',
+      image_url: 'https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=1920&q=80',
+      title: 'Servicio Técnico Especializado',
+      subtitle: 'Mantenciones, reparaciones y diagnóstico profesional',
+      link_url: '/servicios',
+      position: 0
+    },
+    {
+      id: 'demo-2',
+      image_url: 'https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=1920&q=80',
+      title: 'Repuestos Originales',
+      subtitle: 'Stock disponible de las mejores marcas',
+      link_url: '/tienda',
+      position: 1
+    },
+    {
+      id: 'demo-3',
+      image_url: 'https://images.unsplash.com/photo-1558980664-769d59546b3d?w=1920&q=80',
+      title: 'Accesorios Premium',
+      subtitle: 'Equipa tu moto con lo mejor del mercado',
+      link_url: '/tienda',
+      position: 2
+    }
+  ];
+}
+
+// Función para verificar si un producto tiene imagen real
+function hasRealImage(product: any): boolean {
+  const imageUrl = product.main_image_url || '';
+  if (!imageUrl || imageUrl.trim() === '') return false;
+  
+  // Es placeholder si contiene unsplash, placeholder, o es una URL genérica
+  if (imageUrl.includes('unsplash.com') || 
+      imageUrl.includes('placeholder') ||
+      imageUrl.includes('via.placeholder') ||
+      imageUrl.includes('placehold.it') ||
+      imageUrl.includes('dummyimage.com')) {
+    return false;
+  }
+  
+  // Es imagen real SOLO si:
+  // 1. Es una ruta local (empieza con /) - incluye /imagenes-repuestos-accesorios/
+  // 2. Es de Supabase Storage (supabase.co/storage)
+  return imageUrl.startsWith('/') || 
+         imageUrl.includes('supabase.co/storage');
+}
+
+// Función para ordenar productos: primero los que tienen imágenes reales
+function sortProductsByImage(products: any[]): any[] {
+  if (!products || products.length === 0) return products;
+  
+  return [...products].sort((a, b) => {
+    const aHasReal = hasRealImage(a);
+    const bHasReal = hasRealImage(b);
+    
+    // Si ambos tienen imagen real o ambos no, mantener orden original
+    if (aHasReal === bHasReal) return 0;
+    // Los que tienen imagen real van primero
+    return aHasReal ? -1 : 1;
+  });
+}
+
+// Cargar productos destacados - Mezclar accesorios y repuestos con imágenes reales
+const { data: productosAccesoriosDestacadosData } = await supabaseClient
+  .from('products')
+  .select('*')
+  .eq('status', 'active')
+  .eq('is_accessory', true)
+  .order('created_at', { ascending: false })
+  .limit(100); // Cargar más para tener más opciones con imágenes
+
+const { data: productosRepuestosDestacadosData } = await supabaseClient
+  .from('products')
+  .select('*')
+  .eq('status', 'active')
+  .eq('is_spare_part', true)
+  .order('created_at', { ascending: false })
+  .limit(100); // Cargar más para tener más opciones con imágenes
+
+// Combinar y filtrar: solo productos con imágenes reales
+const todosProductosDestacados = [
+  ...(productosAccesoriosDestacadosData || []), 
+  ...(productosRepuestosDestacadosData || [])
+];
+
+let productosDestacados = todosProductosDestacados
+  .filter((producto: any) => hasRealImage(producto))
+  .sort((a, b) => {
+    // Ordenar por fecha de creación (más recientes primero)
+    const dateA = new Date(a.created_at || 0).getTime();
+    const dateB = new Date(b.created_at || 0).getTime();
+    return dateB - dateA;
+  })
+  .slice(0, 12); // Mostrar hasta 12 productos con imágenes reales
+
+// Cargar algunos accesorios para el masonry grid
+const { data: productosAccesoriosData } = await supabaseClient
+  .from('products')
+  .select('*')
+  .eq('status', 'active')
+  .eq('is_accessory', true)
+  .order('created_at', { ascending: false })
+  .limit(4);
+const productosAccesorios = productosAccesoriosData || [];
+
+// Cargar algunos repuestos para el masonry grid
+const { data: productosRepuestosData } = await supabaseClient
+  .from('products')
+  .select('*')
+  .eq('status', 'active')
+  .eq('is_spare_part', true)
+  .order('created_at', { ascending: false })
+  .limit(4);
+const productosRepuestos = productosRepuestosData || [];
+
+const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+---
+<style>
+  /* Sliders automáticos para las cards */
+  .servicios-slide,
+  .repuestos-slide,
+  .accesorios-slide,
+  .motos-slide {
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+  }
+  
+  .servicios-slide.active,
+  .repuestos-slide.active,
+  .accesorios-slide.active,
+  .motos-slide.active {
+    opacity: 1;
+  }
+</style>
+
+<BaseLayout
+  title="Mimoto - Servicio técnico, accesorios y motos usadas"
+  description="Servicio técnico especializado, reparación de motos, venta de accesorios, repuestos y motos usadas."
+>
+  <!-- Hero Banner Editorial - Full Width -->
+  <section class="dark-section relative w-full overflow-hidden">
+    {banners.length > 0 ? (
+      <div class="relative w-full h-[50vh] md:h-[60vh] hero-banner-slider">
+        {banners.map((banner, index) => (
+          <div
+            key={banner.id || index}
+            class={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out hero-banner-slide ${index === 0 ? 'active' : ''}`}
+            style={`background-image: url('${banner.image_url}'); z-index: ${index === 0 ? 1 : 0};`}
+            data-banner-index={index}
+          >
+            <div class="absolute inset-0 bg-gradient-to-b from-ktm-light-bg dark:from-ktm-bg/70 via-ktm-light-bg dark:via-ktm-bg/50 to-ktm-light-bg dark:to-ktm-bg/80"></div>
+          </div>
+        ))}
+        <div class="relative z-10 h-full flex items-center">
+          <div class="max-w-7xl mx-auto px-4 md:px-8 w-full">
+            <div class="max-w-3xl hero-banner-content">
+              {banners.map((banner, index) => (
+                <div key={`content-${banner.id || index}`} class={`hero-banner-content-item ${index === 0 ? 'active' : ''}`} data-banner-index={index}>
+                  {banner.title && (
+                    <h1 class="text-4xl md:text-6xl lg:text-7xl font-black mb-4 text-white leading-tight tracking-tight">
+                      {banner.title}
+                    </h1>
+                  )}
+                  {banner.subtitle && (
+                    <p class="text-lg md:text-xl lg:text-2xl text-white/95 mb-8 font-light leading-relaxed">
+                      {banner.subtitle}
+                    </p>
+                  )}
+                  <div class="flex flex-wrap gap-4">
+                    {banner.link_url ? (
+                      <a
+                        href={banner.link_url}
+                        class="inline-flex items-center gap-3 px-8 py-4 bg-ktm-accent text-black dark:text-white font-bold text-base hover:bg-ktm-accentSoft transition-all uppercase tracking-wider shadow-lg"
+                      >
+                        Explorar →
+                      </a>
+                    ) : null}
+                    <a
+                      href={PUBLIC_WHATSAPP_URL}
+                      class="inline-flex items-center gap-3 px-8 py-4 border-2 border-white text-white font-bold text-base hover:bg-white hover:text-black dark:hover:text-ktm-bg transition-all uppercase tracking-wider"
+                    >
+                      Contactar
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <!-- Indicadores de banners -->
+        {banners.length > 1 && (
+          <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
+            {banners.map((_, index) => (
+              <button
+                class={`w-2 h-2 rounded-full transition-all hero-banner-indicator ${index === 0 ? 'bg-white' : 'bg-white/40'}`}
+                data-banner-index={index}
+                aria-label={`Banner ${index + 1}`}
+              ></button>
+            ))}
+          </div>
+        )}
+      </div>
+    ) : (
+      <div class="relative w-full h-[50vh] md:h-[60vh] flex items-center bg-gradient-to-br from-ktm-surface via-red-950/20 to-ktm-light-bg dark:to-ktm-bg">
+        <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=1920&q=80')] bg-cover bg-center opacity-20"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-ktm-light-bg dark:from-ktm-bg/80 via-ktm-light-bg dark:via-ktm-bg/60 to-ktm-light-bg dark:to-ktm-bg/80"></div>
+        <div class="relative z-10 max-w-7xl mx-auto px-4 md:px-8 w-full">
+          <div class="max-w-3xl">
+            <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-6 text-white leading-tight tracking-tight">
+              Servicio técnico y equipamiento para tu moto
+            </h1>
+            <p class="text-xl md:text-2xl lg:text-3xl text-white/95 mb-10 font-light leading-relaxed">
+              Mantenciones, reparaciones y accesorios para ciudad, ruta y aventura. Tu moto en manos de especialistas.
+            </p>
+            <div class="flex flex-wrap gap-4">
+              <a
+                href="/tienda"
+                class="inline-flex items-center gap-3 px-10 py-5 bg-ktm-accent text-black dark:text-white font-bold text-lg hover:bg-ktm-accentSoft transition-all uppercase tracking-wider shadow-lg"
+              >
+                Ver tienda →
+              </a>
+              <a
+                href={PUBLIC_WHATSAPP_URL}
+                class="inline-flex items-center gap-3 px-10 py-5 border-2 border-white text-white font-bold text-lg hover:bg-white hover:text-black dark:hover:text-ktm-bg transition-all uppercase tracking-wider"
+              >
+                Contactar
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </section>
+
+  <!-- Visual Category Grid - Asimétrico -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <!-- Banner para título de sección -->
+    <div class="relative mb-16 h-48 md:h-56 rounded-lg overflow-hidden">
+      <div class="absolute inset-0 bg-[url('/banner.jpg')] bg-cover bg-center"></div>
+      <!-- Overlay para dar estilo manteniendo textura -->
+      <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-red-900/40 to-orange-900/30 dark:from-black/60 dark:via-red-800/30 dark:to-orange-800/20"></div>
+      <!-- Contenedor para PNGs de productos (preparado para futuro) -->
+      <div class="absolute inset-0 flex items-center justify-end pr-8 md:pr-16 pointer-events-none">
+        <div class="banner-product-placeholder w-32 h-32 md:w-40 md:h-40 opacity-0"></div>
+      </div>
+      <!-- Contenido del título -->
+      <div class="relative z-10 h-full flex flex-col justify-center pl-8 md:pl-16">
+        <h2 class="text-4xl md:text-5xl font-black text-white mb-2 uppercase tracking-tight drop-shadow-lg">Explorar</h2>
+        <p class="text-xl text-white/90 max-w-2xl drop-shadow-md">Navega por nuestras categorías principales</p>
+      </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <!-- Categoría grande - Servicios -->
+      <a
+        href="/servicios"
+        class="md:col-span-2 md:row-span-2 relative group overflow-hidden bg-ktm-light-surface dark:bg-ktm-surface rounded-xl hover:shadow-xl transition-all min-h-[400px] md:min-h-[500px]"
+        id="servicios-card"
+      >
+        <div class="absolute inset-0 servicios-slider">
+          <div class="absolute inset-0 bg-cover bg-center opacity-40 servicios-slide active" style="background-image: url('/servicios/MantencionProgramada.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-40 servicios-slide" style="background-image: url('/servicios/MotoryTransmision.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-40 servicios-slide" style="background-image: url('/servicios/suspencionyChasis.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-40 servicios-slide" style="background-image: url('/servicios/frenos.png');"></div>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-ktm-light-bg dark:from-ktm-bg via-ktm-light-bg dark:via-ktm-bg/50 to-transparent"></div>
+        <div class="relative z-10 h-full flex flex-col justify-end p-8">
+          <h3 class="text-3xl md:text-4xl font-black text-white mb-3 uppercase tracking-tight">Servicio Técnico</h3>
+          <p class="text-white/80 text-lg mb-4">Mantenciones, reparaciones y diagnóstico profesional</p>
+          <span class="text-ktm-accent font-bold text-sm uppercase tracking-wider">Ver servicios →</span>
+        </div>
+      </a>
+
+      <!-- Categoría - Repuestos -->
+      <a
+        href="/tienda"
+        class="relative group overflow-hidden bg-ktm-light-surface dark:bg-ktm-surface rounded-xl hover:shadow-xl transition-all min-h-[240px]"
+        id="repuestos-card"
+      >
+        <div class="absolute inset-0 repuestos-slider">
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 repuestos-slide active" style="background-image: url('/imagenes-repuestos-accesorios/Motorex10W50Sintetico4Tiempos.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 repuestos-slide" style="background-image: url('/imagenes-repuestos-accesorios/PastillasdeFrenoGOLDfrenCeramicCarbon.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 repuestos-slide" style="background-image: url('/imagenes-repuestos-accesorios/FiltrodeAireDNA11901290790890.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 repuestos-slide" style="background-image: url('/imagenes-repuestos-accesorios/BateríaFURATFT7B-4GEL12V6-8Ah.png');"></div>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-ktm-light-bg dark:from-ktm-bg via-ktm-light-bg dark:via-ktm-bg/40 to-transparent"></div>
+        <div class="relative z-10 h-full flex flex-col justify-end p-6">
+          <h3 class="text-2xl font-black text-white mb-2 uppercase tracking-tight">Repuestos</h3>
+          <p class="text-white/70 text-sm mb-2">Originales y de calidad</p>
+          <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Explorar →</span>
+        </div>
+      </a>
+
+      <!-- Categoría - Accesorios -->
+      <a
+        href="/tienda"
+        class="relative group overflow-hidden bg-ktm-light-surface dark:bg-ktm-surface rounded-xl hover:shadow-xl transition-all min-h-[240px]"
+        id="accesorios-card"
+      >
+        <div class="absolute inset-0 accesorios-slider">
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 accesorios-slide active" style="background-image: url('/imagenes-repuestos-accesorios/CalientaPuñosOxfordProAdventure.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 accesorios-slide" style="background-image: url('/imagenes-repuestos-accesorios/AmarrasAcerbisAzules25mm.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 accesorios-slide" style="background-image: url('/imagenes-repuestos-accesorios/PuñosCircuitEquipmentNaranjas.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 accesorios-slide" style="background-image: url('/imagenes-repuestos-accesorios/JuegodePuñosKTM-Husqvarna.png');"></div>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-ktm-light-bg dark:from-ktm-bg via-ktm-light-bg dark:via-ktm-bg/40 to-transparent"></div>
+        <div class="relative z-10 h-full flex flex-col justify-end p-6">
+          <h3 class="text-2xl font-black text-white mb-2 uppercase tracking-tight">Accesorios</h3>
+          <p class="text-white/70 text-sm mb-2">Equipamiento premium</p>
+          <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Explorar →</span>
+        </div>
+      </a>
+
+      <!-- Categoría - Motos Usadas -->
+      <a
+        href="/motos-usadas"
+        class="md:col-span-2 relative group overflow-hidden bg-ktm-light-surface dark:bg-ktm-surface rounded-xl hover:shadow-xl transition-all min-h-[240px]"
+        id="motos-card"
+      >
+        <div class="absolute inset-0 motos-slider">
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 motos-slide active" style="background-image: url('/MOTOS/KTM1090-PORTADA.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 motos-slide" style="background-image: url('/MOTOS/YAMAHAP7-PORTADA.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 motos-slide" style="background-image: url('/MOTOS/BONNEVILLETRIUMP-PORTADA.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-30 motos-slide" style="background-image: url('/MOTOS/VOGEDS800RALLY-PORTADA.png');"></div>
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-t from-ktm-light-bg dark:from-ktm-bg via-ktm-light-bg dark:via-ktm-bg/40 to-transparent"></div>
+        <div class="relative z-10 h-full flex flex-col justify-end p-6">
+          <h3 class="text-2xl md:text-3xl font-black text-white mb-2 uppercase tracking-tight">Motos Usadas</h3>
+          <p class="text-white/70 text-base mb-2">Seleccionadas y revisadas</p>
+          <span class="text-ktm-accent font-bold text-sm uppercase tracking-wider">Ver catálogo →</span>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- Masonry / Editorial Grid - Servicios y Productos -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20 bg-ktm-light-surfaceAlt/50 dark:bg-ktm-surface/30">
+    <!-- Banner para título de sección -->
+    <div class="relative mb-16 h-48 md:h-56 rounded-lg overflow-hidden">
+      <div class="absolute inset-0 bg-[url('/banner.jpg')] bg-cover bg-center"></div>
+      <!-- Overlay para dar estilo manteniendo textura -->
+      <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-red-900/40 to-orange-900/30 dark:from-black/60 dark:via-red-800/30 dark:to-orange-800/20"></div>
+      <!-- Contenedor para PNGs de productos (preparado para futuro) -->
+      <div class="absolute inset-0 flex items-center justify-end pr-8 md:pr-16 pointer-events-none">
+        <div class="banner-product-placeholder w-32 h-32 md:w-40 md:h-40 opacity-0"></div>
+      </div>
+      <!-- Contenido del título -->
+      <div class="relative z-10 h-full flex flex-col justify-center pl-8 md:pl-16">
+        <h2 class="text-4xl md:text-5xl font-black text-white mb-2 uppercase tracking-tight drop-shadow-lg">Servicios y Productos</h2>
+        <p class="text-xl text-white/90 max-w-2xl drop-shadow-md">Lo esencial para tu moto</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+      <!-- Servicio destacado - Motor -->
+      <div class="lg:col-span-2 lg:row-span-2 bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-8 md:p-12 group hover:border-ktm-accent transition-all">
+        <div class="mb-6">
+          <span class="text-ktm-accent font-bold text-sm uppercase tracking-wider">Servicio Técnico</span>
+          <h3 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mt-4 mb-4 uppercase tracking-tight">Motor y Transmisión</h3>
+          <p class="text-ktm-light-text dark:text-ktm-text/80 text-lg leading-relaxed">
+            Regulación de válvulas, ajuste de carburador/inyección, reparación de motor, diagnóstico electrónico y puesta a punto completa.
+          </p>
+        </div>
+        <ul class="space-y-3 mb-8">
+          <li class="text-ktm-light-text dark:text-ktm-text/70 flex items-start gap-3">
+            <span class="text-ktm-accent font-bold">•</span>
+            <span>Regulación de válvulas</span>
+          </li>
+          <li class="text-ktm-light-text dark:text-ktm-text/70 flex items-start gap-3">
+            <span class="text-ktm-accent font-bold">•</span>
+            <span>Diagnóstico electrónico</span>
+          </li>
+          <li class="text-ktm-light-text dark:text-ktm-text/70 flex items-start gap-3">
+            <span class="text-ktm-accent font-bold">•</span>
+            <span>Reparación y reconstrucción</span>
+          </li>
+        </ul>
+        <a
+          href="/servicios"
+          class="inline-flex items-center gap-2 text-ktm-accent font-bold uppercase tracking-wider text-sm hover:gap-4 transition-all"
+        >
+          Ver todos los servicios →
+        </a>
+      </div>
+
+      <!-- Servicio - Frenos -->
+      <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 md:p-8 group hover:border-ktm-accent transition-all">
+        <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Servicio</span>
+        <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mt-3 mb-3 uppercase tracking-tight">Sistema de Frenos</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm mb-4">
+          Cambio de pastillas, purga, revisión de discos y ajuste completo.
+        </p>
+        <a
+          href="/servicios"
+          class="text-ktm-accent font-bold text-xs uppercase tracking-wider hover:gap-2 transition-all inline-flex items-center gap-1"
+        >
+          Más info →
+        </a>
+      </div>
+
+      <!-- Servicio - Suspensión -->
+      <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 md:p-8 group hover:border-ktm-accent transition-all">
+        <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Servicio</span>
+        <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mt-3 mb-3 uppercase tracking-tight">Suspensión</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm mb-4">
+          Servicio de horquillas, revisión de amortiguador y ajuste de geometría.
+        </p>
+        <a
+          href="/servicios"
+          class="text-ktm-accent font-bold text-xs uppercase tracking-wider hover:gap-2 transition-all inline-flex items-center gap-1"
+        >
+          Más info →
+        </a>
+      </div>
+
+      <!-- Producto destacado -->
+      {productosDestacados.length > 0 && productosDestacados[0] ? (
+        <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 md:p-8 group hover:border-ktm-accent transition-all">
+          {productosDestacados[0].main_image_url ? (
+            <div class="aspect-square mb-4 overflow-hidden bg-ktm-light-surfaceAlt dark:bg-ktm-surfaceAlt">
+              <img
+                src={productosDestacados[0].main_image_url}
+                alt={productosDestacados[0].name}
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+                crossorigin="anonymous"
+                onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
+              />
+            </div>
+          ) : (
+            <div class="aspect-square mb-4 bg-ktm-light-surfaceAlt dark:bg-ktm-surfaceAlt flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs">
+              Sin imagen
+            </div>
+          )}
+          <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Destacado</span>
+          <h3 class="text-xl font-black text-ktm-light-text dark:text-ktm-text mt-2 mb-2 uppercase tracking-tight line-clamp-2">{productosDestacados[0].name}</h3>
+          {Number(productosDestacados[0].price) > 0 ? (
+            <p class="text-ktm-accent font-bold text-2xl mb-4">
+              ${Number(productosDestacados[0].price).toLocaleString('es-CL')}
+            </p>
+          ) : (
+            <p class="text-ktm-light-text dark:text-ktm-text/60 text-sm italic mb-4">Precio a consultar</p>
+          )}
+          <a
+            href="/tienda"
+            class="text-ktm-accent font-bold text-xs uppercase tracking-wider hover:gap-2 transition-all inline-flex items-center gap-1"
+          >
+            Ver producto →
+          </a>
+        </div>
+      ) : null}
+
+      <!-- Servicio - Mantención -->
+      <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 md:p-8 group hover:border-ktm-accent transition-all">
+        <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Servicio</span>
+        <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mt-3 mb-3 uppercase tracking-tight">Mantenciones</h3>
+        <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm mb-4">
+          Cambio de aceite, filtros, revisión completa y lubricación.
+        </p>
+        <a
+          href="/servicios"
+          class="text-ktm-accent font-bold text-xs uppercase tracking-wider hover:gap-2 transition-all inline-flex items-center gap-1"
+        >
+          Más info →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Productos Destacados - Curaduría Visual -->
+  {productosDestacados.length > 0 && (
+    <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+      <!-- Banner para título de sección -->
+      <div class="relative mb-12 h-48 md:h-56 rounded-lg overflow-hidden">
+        <div class="absolute inset-0 bg-[url('/banner.jpg')] bg-cover bg-center"></div>
+        <!-- Overlay para dar estilo manteniendo textura -->
+        <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-red-900/40 to-orange-900/30 dark:from-black/60 dark:via-red-800/30 dark:to-orange-800/20"></div>
+        <!-- Contenedor para PNGs de productos (preparado para futuro) -->
+        <div class="absolute inset-0 flex items-center justify-end pr-8 md:pr-16 pointer-events-none">
+          <div class="banner-product-placeholder w-32 h-32 md:w-40 md:h-40 opacity-0"></div>
+        </div>
+        <!-- Contenido del título -->
+        <div class="relative z-10 h-full flex flex-col justify-center pl-8 md:pl-16">
+          <div class="flex items-end justify-between w-full pr-8 md:pr-16">
+            <div>
+              <h2 class="text-4xl md:text-5xl font-black text-white mb-2 uppercase tracking-tight drop-shadow-lg">Productos Destacados</h2>
+              <p class="text-xl text-white/90 drop-shadow-md">Selección curada de lo mejor</p>
+            </div>
+            <a
+              href="/tienda"
+              class="text-white bg-ktm-accent/90 hover:bg-ktm-accent px-4 py-2 rounded-md font-bold uppercase tracking-wider text-sm hover:gap-2 transition-all inline-flex items-center gap-1 drop-shadow-lg"
+            >
+              Ver todo →
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+        {productosDestacados.map((producto: any) => {
+          const imageUrl = producto.main_image_url || '';
+          const price = Number(producto.price) || 0;
+          
+          return (
+            <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 group hover:border-ktm-accent transition-all">
+              <div class="aspect-square mb-4 overflow-hidden bg-ktm-light-surfaceAlt dark:bg-ktm-surfaceAlt">
+                <img
+                  src={imageUrl}
+                  alt={producto.name}
+                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                  crossorigin="anonymous"
+                  onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
+                />
+              </div>
+              <h3 class="text-lg font-black text-ktm-light-text dark:text-ktm-text mb-2 uppercase tracking-tight line-clamp-2">{producto.name}</h3>
+              {producto.description && (
+                <p class="text-ktm-light-text dark:text-ktm-text/60 text-sm mb-3 line-clamp-2">{producto.description}</p>
+              )}
+              {price > 0 ? (
+                <p class="text-ktm-accent font-bold text-xl mb-4">
+                  ${price.toLocaleString('es-CL')}
+                </p>
+              ) : (
+                <p class="text-ktm-light-text dark:text-ktm-text/60 text-sm italic mb-4">Precio a consultar</p>
+              )}
+              <a
+                href={`/tienda#product-${producto.id}`}
+                class="text-ktm-accent font-bold text-xs uppercase tracking-wider hover:gap-2 transition-all inline-flex items-center gap-1"
+              >
+                Ver detalles →
+              </a>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  )}
+
+  <!-- Motos Usadas - Sección Editorial -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20 bg-ktm-light-surfaceAlt/50 dark:bg-ktm-surface/30">
+    <div class="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
+      <div>
+        <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">Motos Usadas</h2>
+        <p class="text-lg text-ktm-light-text dark:text-ktm-text/80 leading-relaxed mb-6">
+          Seleccionadas y revisadas. Todas las unidades pasan por nuestro taller antes de ser publicadas. Transparencia total, estado real, confianza garantizada.
+        </p>
+        <p class="text-lg text-ktm-light-text dark:text-ktm-text/80 leading-relaxed mb-8">
+          No vendemos cualquier moto. Cada unidad es evaluada mecánicamente por nuestros técnicos. Te mostramos el estado real, sin ocultar detalles.
+        </p>
+        <a
+          href="/motos-usadas"
+          class="inline-flex items-center gap-2 text-ktm-accent font-bold uppercase tracking-wider text-sm hover:gap-4 transition-all"
+        >
+          Ver motos disponibles →
+        </a>
+      </div>
+      <div class="relative">
+        <div
+          class="aspect-[4/3] bg-cover bg-center "
+          style="background-image: url('https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=800&q=80');"
+        ></div>
+        <div class="absolute -bottom-6 -right-6 bg-ktm-accent p-6 border-2 border-white">
+          <div class="text-3xl font-black text-ktm-light-text dark:text-ktm-text mb-1">100%</div>
+          <div class="text-ktm-light-text dark:text-ktm-text/90 text-xs uppercase tracking-wider">Revisadas</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Sobre Nosotros - Sección Editorial -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
+      <div class="relative">
+        <div
+          class="aspect-[4/3] bg-cover bg-center "
+          style="background-image: url('https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=800&q=80');"
+        ></div>
+        <div class="absolute -bottom-6 -right-6 bg-ktm-accent p-6 border-2 border-white">
+          <div class="text-3xl font-black text-ktm-light-text dark:text-ktm-text mb-1">31</div>
+          <div class="text-ktm-light-text dark:text-ktm-text/90 text-xs uppercase tracking-wider">Años</div>
+        </div>
+      </div>
+      <div>
+        <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">Sobre Nosotros</h2>
+        <p class="text-lg text-ktm-light-text dark:text-ktm-text/80 leading-relaxed mb-6">
+          Más que un taller. Somos apasionados por las motos y comprometidos con hacer que cada reparación, cada mantención, cada ajuste sea perfecto.
+        </p>
+        <p class="text-lg text-ktm-light-text dark:text-ktm-text/80 leading-relaxed mb-8">
+          Porque entendemos que tu moto no es solo un vehículo: es tu libertad, tu aventura, tu pasión. Y por eso, cada trabajo que realizamos está respaldado por años de experiencia y un compromiso inquebrantable con la calidad.
+        </p>
+        <a
+          href="/sobre-nosotros"
+          class="inline-flex items-center gap-2 text-ktm-accent font-bold uppercase tracking-wider text-sm hover:gap-4 transition-all"
+        >
+          Conoce nuestra historia →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Información de Contacto y Ubicación -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="mb-16 text-center">
+      <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Visítanos</h2>
+      <p class="text-xl text-ktm-light-text dark:text-ktm-text/70 max-w-2xl mx-auto">Estamos en Las Condes, Santiago</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-12 md:gap-16">
+      <!-- Información de Contacto -->
+      <div class="space-y-6">
+        <div>
+          <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Información de Contacto</h3>
+          <div class="space-y-4 text-ktm-light-text dark:text-ktm-text/80">
+            <div class="flex items-start gap-4">
+              <span class="text-2xl">📍</span>
+              <div>
+                <p class="font-bold text-ktm-light-text dark:text-ktm-text mb-1">Dirección</p>
+                <p>Av. Cuarto Centenario 785, Las Condes, Santiago</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <span class="text-2xl">📞</span>
+              <div>
+                <p class="font-bold text-ktm-light-text dark:text-ktm-text mb-1">Teléfono</p>
+                <a href="tel:+56222049215" class="hover:text-ktm-accent transition-colors">+(562) 22049215</a>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <span class="text-2xl">🕐</span>
+              <div>
+                <p class="font-bold text-ktm-light-text dark:text-ktm-text mb-1">Horario de Atención</p>
+                <p>Lunes a viernes de 9:30 a 14:00 y 15:00 a 18:30</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Google Maps -->
+      <div class="relative">
+        <div class="aspect-[4/3]  overflow-hidden">
+          <iframe
+            src="https://www.google.com/maps?q=Av.+Cuarto+Centenario+785,+Las+Condes,+Santiago&output=embed"
+            width="100%"
+            height="100%"
+            style="border:0;"
+            allowfullscreen=""
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            class="w-full h-full"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Brand Showcase - KTM Partner -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20 bg-ktm-light-surfaceAlt/50 dark:bg-ktm-surface/30">
+    <div class="mb-12 text-center">
+      <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">Marcas</h2>
+      <p class="text-xl text-ktm-light-text dark:text-ktm-text/70 max-w-2xl mx-auto">Trabajamos con las mejores marcas del mercado</p>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 items-center">
+      <div class="text-center">
+        <div class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-2">KTM</div>
+        <p class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Partner Oficial</p>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl md:text-3xl font-bold text-ktm-light-text dark:text-ktm-text/80 mb-2">Honda</div>
+        <p class="text-ktm-light-text dark:text-ktm-text/50 text-xs uppercase">Autorizado</p>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl md:text-3xl font-bold text-ktm-light-text dark:text-ktm-text/80 mb-2">Yamaha</div>
+        <p class="text-ktm-light-text dark:text-ktm-text/50 text-xs uppercase">Autorizado</p>
+      </div>
+      <div class="text-center">
+        <div class="text-2xl md:text-3xl font-bold text-ktm-light-text dark:text-ktm-text/80 mb-2">Suzuki</div>
+        <p class="text-ktm-light-text dark:text-ktm-text/50 text-xs uppercase">Autorizado</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Final -->
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-accent p-12 md:p-16 text-center">
+      <h2 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mb-4 uppercase tracking-tight">¿Listo para comenzar?</h2>
+      <p class="text-xl text-ktm-light-text/80 dark:text-ktm-text/80 mb-8 max-w-2xl mx-auto">
+        Agenda tu servicio técnico o consulta por repuestos y accesorios
+      </p>
+      <div class="flex flex-wrap justify-center gap-4">
+        <a
+          href={PUBLIC_WHATSAPP_URL}
+          class="inline-flex items-center gap-3 px-10 py-5 bg-[#25D366] text-white font-bold text-lg hover:bg-[#20BA5A] transition-all uppercase tracking-wider shadow-lg"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+          </svg>
+          Contactar por WhatsApp
+        </a>
+        <a
+          href="/servicios"
+          class="inline-flex items-center gap-3 px-10 py-5 border border-ktm-accent/50 text-ktm-accent font-bold text-lg hover:bg-ktm-accent hover:text-black dark:hover:text-white transition-all uppercase tracking-wider"
+        >
+          Ver Servicios
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Script para sliders automáticos de las cards -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Slider de Banners Hero - Cambia cada 5 segundos
+      function initHeroBannerSlider() {
+        const slides = document.querySelectorAll('.hero-banner-slide');
+        const indicators = document.querySelectorAll('.hero-banner-indicator');
+        const contentItems = document.querySelectorAll('.hero-banner-content-item');
+        
+        if (slides.length <= 1) return;
+        
+        let currentIndex = 0;
+        
+        function showSlide(index: number) {
+          // Ocultar todos los slides
+          slides.forEach((slide, i) => {
+            if (i === index) {
+              slide.classList.add('active');
+              slide.style.opacity = '1';
+              slide.style.zIndex = '1';
+            } else {
+              slide.classList.remove('active');
+              slide.style.opacity = '0';
+              slide.style.zIndex = '0';
+            }
+          });
+          
+          // Ocultar/mostrar contenido
+          contentItems.forEach((item, i) => {
+            if (i === index) {
+              item.classList.add('active');
+              item.style.opacity = '1';
+              item.style.zIndex = '1';
+            } else {
+              item.classList.remove('active');
+              item.style.opacity = '0';
+              item.style.zIndex = '0';
+            }
+          });
+          
+          // Actualizar indicadores
+          indicators.forEach((indicator, i) => {
+            if (i === index) {
+              indicator.classList.remove('bg-white/40');
+              indicator.classList.add('bg-white');
+            } else {
+              indicator.classList.remove('bg-white');
+              indicator.classList.add('bg-white/40');
+            }
+          });
+        }
+        
+        // Cambiar banner cada 5 segundos
+        setInterval(() => {
+          currentIndex = (currentIndex + 1) % slides.length;
+          showSlide(currentIndex);
+        }, 5000);
+        
+        // Permitir click en indicadores
+        indicators.forEach((indicator, index) => {
+          indicator.addEventListener('click', () => {
+            currentIndex = index;
+            showSlide(currentIndex);
+          });
+        });
+      }
+      
+      // Slider de Servicios - Cambia cada 4 segundos
+      function initServiciosSlider() {
+        const slides = document.querySelectorAll('.servicios-slide');
+        if (slides.length === 0) return;
+        
+        let currentIndex = 0;
+        
+        setInterval(() => {
+          slides[currentIndex].classList.remove('active');
+          currentIndex = (currentIndex + 1) % slides.length;
+          slides[currentIndex].classList.add('active');
+        }, 4000); // 4 segundos
+      }
+
+      // Slider de Repuestos - Cambia cada 5 segundos
+      function initRepuestosSlider() {
+        const slides = document.querySelectorAll('.repuestos-slide');
+        if (slides.length === 0) return;
+        
+        let currentIndex = 0;
+        
+        // Iniciar después de 1 segundo para desincronizar
+        setTimeout(() => {
+          setInterval(() => {
+            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + 1) % slides.length;
+            slides[currentIndex].classList.add('active');
+          }, 5000); // 5 segundos
+        }, 1000);
+      }
+
+      // Slider de Accesorios - Cambia cada 4.5 segundos
+      function initAccesoriosSlider() {
+        const slides = document.querySelectorAll('.accesorios-slide');
+        if (slides.length === 0) return;
+        
+        let currentIndex = 0;
+        
+        // Iniciar después de 2 segundos para desincronizar
+        setTimeout(() => {
+          setInterval(() => {
+            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + 1) % slides.length;
+            slides[currentIndex].classList.add('active');
+          }, 4500); // 4.5 segundos
+        }, 2000);
+      }
+
+      // Slider de Motos Usadas - Cambia cada 5.5 segundos
+      function initMotosSlider() {
+        const slides = document.querySelectorAll('.motos-slide');
+        if (slides.length === 0) return;
+        
+        let currentIndex = 0;
+        
+        // Iniciar después de 3 segundos para desincronizar
+        setTimeout(() => {
+          setInterval(() => {
+            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + 1) % slides.length;
+            slides[currentIndex].classList.add('active');
+          }, 5500); // 5.5 segundos
+        }, 3000);
+      }
+
+      // Inicializar todos los sliders
+      initHeroBannerSlider();
+      initServiciosSlider();
+      initRepuestosSlider();
+      initAccesoriosSlider();
+      initMotosSlider();
+    });
+  </script>
+  
+  <style>
+    .hero-banner-slide {
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+    
+    .hero-banner-slide.active {
+      opacity: 1;
+    }
+    
+    .hero-banner-content-item {
+      position: absolute;
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+      z-index: 0;
+    }
+    
+    .hero-banner-content-item.active {
+      position: relative;
+      opacity: 1;
+      z-index: 1;
+    }
+  </style>
+</BaseLayout>

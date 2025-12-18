@@ -1,0 +1,458 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Gestión de Banners - Mimoto">
+  <section class="max-w-6xl mx-auto px-4 py-16">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-bold text-ktm-text">Gestión de Banners</h1>
+      <nav class="flex gap-4 text-sm">
+        <a href="/admin" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Dashboard</a>
+        <a href="/admin/productos" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Productos</a>
+        <a href="/admin/banners" class="text-ktm-accent font-bold">Banners</a>
+      </nav>
+    </div>
+
+    <!-- Tabs para filtrar por tipo -->
+    <div class="mb-6 flex gap-2 border-b-2 border-primary/30 overflow-x-auto">
+      <button
+        id="tab-hero"
+        class="px-4 py-2 border-b-2 border-primary text-ktm-accent font-bold whitespace-nowrap"
+        data-type="hero"
+      >
+        Hero (Slider Principal)
+      </button>
+      <button
+        id="tab-accessories"
+        class="px-4 py-2 border-b-2 border-transparent text-ktm-text/80 hover:text-ktm-accent font-semibold whitespace-nowrap"
+        data-type="accessories"
+      >
+        Banner Accesorios
+      </button>
+      <button
+        id="tab-spare-parts"
+        class="px-4 py-2 border-b-2 border-transparent text-ktm-text/80 hover:text-ktm-accent font-semibold whitespace-nowrap"
+        data-type="spare_parts"
+      >
+        Banner Repuestos
+      </button>
+    </div>
+
+    <div class="mb-6">
+      <button
+        id="new-banner-btn"
+        class="px-6 py-3 rounded-lg bg-ktm-accent text-ktm-text font-bold hover:bg-ktm-accent-600 transition-colors shadow-lg"
+      >
+        + Nuevo Banner
+      </button>
+    </div>
+
+    <div id="banners-list" class="space-y-4">
+      <p class="text-ktm-text/70">Cargando banners...</p>
+    </div>
+
+    <!-- Modal para crear/editar banner -->
+    <div
+      id="banner-modal"
+      class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center backdrop-blur-sm p-4"
+    >
+      <div class="bg-gradient-to-b from-gray-900 to-gray-950 border-2 border-primary rounded-xl p-4 md:p-5 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[85vh] overflow-y-auto shadow-2xl">
+        <div class="flex items-center justify-between mb-3 border-b-2 border-primary pb-2">
+          <h2 id="modal-title" class="text-lg md:text-xl font-bold text-ktm-text">Nuevo Banner</h2>
+          <button id="close-modal" class="text-ktm-text/80 hover:text-ktm-text text-xl md:text-2xl font-bold">✕</button>
+        </div>
+
+        <form id="banner-form" class="space-y-3">
+          <input type="hidden" id="banner-id" />
+
+          <div>
+            <label for="banner-title" class="block text-sm font-bold mb-2 text-ktm-text">Título</label>
+            <input
+              type="text"
+              id="banner-title"
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              placeholder="Título del banner"
+            />
+          </div>
+
+          <div>
+            <label for="banner-subtitle" class="block text-sm font-bold mb-2 text-ktm-text">Subtítulo</label>
+            <input
+              type="text"
+              id="banner-subtitle"
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              placeholder="Subtítulo del banner"
+            />
+          </div>
+
+          <div>
+            <label for="banner-image-file" class="block text-sm font-bold mb-2 text-ktm-text">Imagen del Banner</label>
+            <input
+              type="file"
+              id="banner-image-file"
+              accept="image/*"
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-ktm-accent file:text-ktm-text hover:file:bg-ktm-accent-600"
+            />
+            <p class="text-xs text-ktm-text/60 mt-1">Selecciona una imagen desde tu dispositivo (recomendado: 1920x1080px para hero, 1920x600px para secciones)</p>
+            <div id="banner-image-preview" class="mt-2 hidden">
+              <img id="banner-image-preview-img" src="" alt="Preview" class="max-w-full rounded-lg border-2 border-primary/30" />
+            </div>
+            <input type="hidden" id="banner-image-url" />
+          </div>
+
+          <div>
+            <label for="banner-link-url" class="block text-sm font-bold mb-2 text-ktm-text">URL de Enlace (opcional)</label>
+            <input
+              type="url"
+              id="banner-link-url"
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              placeholder="https://ejemplo.com/destino"
+            />
+          </div>
+
+          <div>
+            <label for="banner-type" class="block text-sm font-bold mb-2 text-ktm-text">Tipo de Banner</label>
+            <select
+              id="banner-type"
+              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+            >
+              <option value="hero">Hero (Slider Principal)</option>
+              <option value="accessories">Banner Sección Accesorios</option>
+              <option value="spare_parts">Banner Sección Repuestos</option>
+            </select>
+            <p class="text-xs text-ktm-text/60 mt-1">Los banners de sección aparecen en la página de tienda</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="banner-position" class="block text-sm font-bold mb-2 text-ktm-text">Posición</label>
+              <input
+                type="number"
+                id="banner-position"
+                min="0"
+                value="0"
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              />
+              <p class="text-xs text-ktm-text/60 mt-1">Menor número = aparece primero (solo para hero)</p>
+            </div>
+
+            <div>
+              <label for="banner-active" class="block text-sm font-bold mb-2 text-ktm-text">Estado</label>
+              <select
+                id="banner-active"
+                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              >
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3">
+            <button
+              type="submit"
+              class="flex-1 px-4 py-3 rounded-lg bg-ktm-accent text-ktm-text font-bold hover:bg-ktm-accent-600 transition-colors"
+            >
+              Guardar
+            </button>
+            <button
+              type="button"
+              id="cancel-form"
+              class="flex-1 px-4 py-3 rounded-lg border-2 border-primary/30 text-ktm-text hover:bg-gray-800 transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+
+          <p id="form-error" class="text-xs text-red-400"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    import { supabaseClient } from '../../lib/supabase/client.ts';
+    import { uploadImage, deleteImage } from '../../lib/supabase/storage.ts';
+
+    let editingBannerId: number | null = null;
+    let selectedImageFile: File | null = null;
+    let currentBannerType: string = 'hero';
+
+    async function checkAdminAccess() {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session) {
+        window.location.href = '/login?return=/admin/banners';
+        return false;
+      }
+
+      const { data: profile } = await supabaseClient
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile?.role !== 'admin') {
+        alert('No tienes permisos para acceder a esta página');
+        window.location.href = '/';
+        return false;
+      }
+
+      return true;
+    }
+
+    async function loadBanners(type: string = 'hero') {
+      const hasAccess = await checkAdminAccess();
+      if (!hasAccess) return;
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('banners')
+          .select('*')
+          .eq('banner_type', type)
+          .order('position', { ascending: true });
+
+        if (error) throw error;
+
+        const listEl = document.getElementById('banners-list')!;
+        if (!data || data.length === 0) {
+          listEl.innerHTML = '<p class="text-ktm-text/70">No hay banners</p>';
+          return;
+        }
+
+        const typeLabels: Record<string, string> = {
+          hero: 'Hero',
+          accessories: 'Accesorios',
+          spare_parts: 'Repuestos'
+        };
+
+        listEl.innerHTML = data
+          .map(
+            (b) => `
+          <div class="border-2 border-primary/30 rounded-xl p-4 bg-ktm-surface/50 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-lg">
+            <img src="${b.image_url}" alt="${b.title || 'Banner'}" class="w-full sm:w-32 h-32 sm:h-20 object-cover rounded border border-primary/20" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'128\\' height=\\'80\\'%3E%3Crect fill=\\'%23333\\' width=\\'128\\' height=\\'80\\'/%3E%3Ctext fill=\\'%23999\\' x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3ESin imagen%3C/text%3E%3C/svg%3E'">
+            <div class="flex-1 min-w-0">
+              <h3 class="font-bold text-ktm-text">${b.title || 'Sin título'}</h3>
+              <p class="text-sm text-ktm-text/70">${b.subtitle || 'Sin subtítulo'}</p>
+              <p class="text-xs text-ktm-text/60 mt-1">
+                Tipo: ${typeLabels[b.banner_type] || b.banner_type} | 
+                ${b.position !== undefined ? `Posición: ${b.position} | ` : ''}
+                ${b.active ? 'Activo' : 'Inactivo'}
+              </p>
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto">
+              <button class="edit-banner flex-1 sm:flex-none px-4 py-2 rounded-lg bg-ktm-accent hover:bg-ktm-accent-600 text-ktm-text text-sm font-semibold transition-colors" data-id="${b.id}">Editar</button>
+              <button class="delete-banner flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-400 font-semibold transition-colors" data-id="${b.id}">Eliminar</button>
+            </div>
+          </div>
+        `
+          )
+          .join('');
+
+        // Agregar event listeners
+        document.querySelectorAll('.edit-banner').forEach((btn) => {
+          btn.addEventListener('click', (e) => {
+            const id = Number((e.target as HTMLElement).getAttribute('data-id'));
+            editBanner(id, data.find((b) => b.id === id)!);
+          });
+        });
+
+        document.querySelectorAll('.delete-banner').forEach((btn) => {
+          btn.addEventListener('click', async (e) => {
+            const id = Number((e.target as HTMLElement).getAttribute('data-id'));
+            if (confirm('¿Estás seguro de eliminar este banner?')) {
+              await deleteBanner(id);
+            }
+          });
+        });
+      } catch (err) {
+        console.error('Error cargando banners:', err);
+      }
+    }
+
+    function openModal(isEdit = false) {
+      const modal = document.getElementById('banner-modal')!;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('modal-title')!.textContent = isEdit ? 'Editar Banner' : 'Nuevo Banner';
+      editingBannerId = null;
+      selectedImageFile = null;
+      (document.getElementById('banner-form') as HTMLFormElement).reset();
+      document.getElementById('banner-image-preview')!.classList.add('hidden');
+      
+      // Establecer el tipo de banner según la pestaña activa
+      if (!isEdit) {
+        (document.getElementById('banner-type') as HTMLSelectElement).value = currentBannerType;
+      }
+    }
+
+    function closeModal() {
+      const modal = document.getElementById('banner-modal')!;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      editingBannerId = null;
+    }
+
+    function editBanner(id: number, banner: any) {
+      editingBannerId = id;
+      selectedImageFile = null;
+      (document.getElementById('banner-id') as HTMLInputElement).value = id.toString();
+      (document.getElementById('banner-title') as HTMLInputElement).value = banner.title || '';
+      (document.getElementById('banner-subtitle') as HTMLInputElement).value = banner.subtitle || '';
+      (document.getElementById('banner-image-url') as HTMLInputElement).value = banner.image_url;
+      (document.getElementById('banner-link-url') as HTMLInputElement).value = banner.link_url || '';
+      (document.getElementById('banner-type') as HTMLSelectElement).value = banner.banner_type || 'hero';
+      (document.getElementById('banner-position') as HTMLInputElement).value = banner.position || 0;
+      (document.getElementById('banner-active') as HTMLSelectElement).value = banner.active ? 'true' : 'false';
+      
+      // Mostrar preview de imagen existente
+      if (banner.image_url) {
+        const previewEl = document.getElementById('banner-image-preview')!;
+        const previewImg = document.getElementById('banner-image-preview-img') as HTMLImageElement;
+        previewImg.src = banner.image_url;
+        previewEl.classList.remove('hidden');
+      } else {
+        document.getElementById('banner-image-preview')!.classList.add('hidden');
+      }
+      
+      openModal(true);
+    }
+
+    async function deleteBanner(id: number) {
+      try {
+        // Primero obtener el banner para eliminar su imagen
+        const { data: banner } = await supabaseClient
+          .from('banners')
+          .select('image_url')
+          .eq('id', id)
+          .single();
+
+        // Eliminar el banner de la base de datos
+        const { error } = await supabaseClient.from('banners').delete().eq('id', id);
+        if (error) throw error;
+
+        // Eliminar la imagen del storage si existe
+        if (banner?.image_url) {
+          try {
+            await deleteImage(banner.image_url, 'banners');
+          } catch (imgErr) {
+            console.warn('No se pudo eliminar la imagen del storage:', imgErr);
+          }
+        }
+
+        loadBanners(currentBannerType);
+      } catch (err) {
+        alert('Error al eliminar banner');
+        console.error(err);
+      }
+    }
+
+    // Manejar selección de imagen
+    document.getElementById('banner-image-file')?.addEventListener('change', (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        selectedImageFile = file;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const previewEl = document.getElementById('banner-image-preview')!;
+          const previewImg = document.getElementById('banner-image-preview-img') as HTMLImageElement;
+          previewImg.src = event.target?.result as string;
+          previewEl.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Manejar tabs
+    document.querySelectorAll('[data-type]').forEach((tab) => {
+      tab.addEventListener('click', () => {
+        const type = (tab as HTMLElement).getAttribute('data-type')!;
+        currentBannerType = type;
+        
+        // Actualizar estilos de tabs
+        document.querySelectorAll('[data-type]').forEach((t) => {
+          t.classList.remove('border-primary', 'text-ktm-accent', 'font-semibold');
+          t.classList.add('border-transparent', 'text-gray-600');
+        });
+        tab.classList.remove('border-transparent', 'text-gray-600');
+        tab.classList.add('border-primary', 'text-ktm-accent', 'font-semibold');
+        
+        loadBanners(type);
+      });
+    });
+
+    document.getElementById('new-banner-btn')?.addEventListener('click', () => openModal());
+    document.getElementById('close-modal')?.addEventListener('click', closeModal);
+    document.getElementById('cancel-form')?.addEventListener('click', closeModal);
+
+    document.getElementById('banner-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const errorEl = document.getElementById('form-error')!;
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+      try {
+        submitBtn.disabled = true;
+        errorEl.textContent = '';
+
+        let imageUrl = (document.getElementById('banner-image-url') as HTMLInputElement).value;
+
+        // Si hay un archivo seleccionado, subirlo primero
+        if (selectedImageFile) {
+          if (!imageUrl) {
+            errorEl.textContent = 'Subiendo imagen...';
+          }
+          imageUrl = await uploadImage(selectedImageFile, 'banners');
+        }
+
+        if (!imageUrl) {
+          throw new Error('Debes seleccionar una imagen');
+        }
+
+        const data = {
+          title: (form.querySelector('#banner-title') as HTMLInputElement).value || null,
+          subtitle: (form.querySelector('#banner-subtitle') as HTMLInputElement).value || null,
+          image_url: imageUrl,
+          link_url: (form.querySelector('#banner-link-url') as HTMLInputElement).value || null,
+          banner_type: (form.querySelector('#banner-type') as HTMLSelectElement).value,
+          position: Number((form.querySelector('#banner-position') as HTMLInputElement).value),
+          active: (form.querySelector('#banner-active') as HTMLSelectElement).value === 'true',
+        };
+
+        if (editingBannerId) {
+          // Si estamos editando y hay una nueva imagen, eliminar la imagen anterior
+          if (imageUrl && selectedImageFile) {
+            const oldImageUrl = (document.getElementById('banner-image-url') as HTMLInputElement).value;
+            if (oldImageUrl && oldImageUrl !== imageUrl) {
+              try {
+                await deleteImage(oldImageUrl, 'banners');
+              } catch (imgErr) {
+                console.warn('No se pudo eliminar la imagen anterior:', imgErr);
+              }
+            }
+          }
+
+          const { error } = await supabaseClient
+            .from('banners')
+            .update(data)
+            .eq('id', editingBannerId);
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient.from('banners').insert(data);
+          if (error) throw error;
+        }
+
+        closeModal();
+        loadBanners();
+      } catch (err: any) {
+        errorEl.textContent = err.message || 'Error al guardar banner';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadBanners('hero');
+    });
+  </script>
+</BaseLayout>
+
