@@ -387,8 +387,14 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
       <!-- Servicio destacado - Motor -->
-      <div class="lg:col-span-2 lg:row-span-2 bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-8 md:p-12 group hover:border-ktm-accent transition-all">
-        <div class="mb-6">
+      <div class="lg:col-span-2 lg:row-span-2 bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-8 md:p-12 group hover:border-ktm-accent transition-all relative overflow-hidden">
+        <div class="absolute inset-0 motor-slider">
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 motor-slide active" style="background-image: url('/accesorios-repuestos/motor.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 motor-slide" style="background-image: url('/accesorios-repuestos/transmision.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 motor-slide" style="background-image: url('/servicios/MotoryTransmision.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 motor-slide" style="background-image: url('/accesorios-repuestos/aceitesylubricantes.png');"></div>
+        </div>
+        <div class="relative z-10 mb-6">
           <span class="text-ktm-accent font-bold text-sm uppercase tracking-wider">Servicio Técnico</span>
           <h3 class="text-3xl md:text-4xl font-black text-ktm-light-text dark:text-ktm-text mt-4 mb-4 uppercase tracking-tight">Motor y Transmisión</h3>
           <p class="text-ktm-light-text dark:text-ktm-text/80 text-lg leading-relaxed">
@@ -418,9 +424,15 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
       </div>
 
       <!-- Servicio - Frenos -->
-      <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 md:p-8 group hover:border-ktm-accent transition-all">
-        <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Servicio</span>
-        <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mt-3 mb-3 uppercase tracking-tight">Sistema de Frenos</h3>
+      <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 md:p-8 group hover:border-ktm-accent transition-all relative overflow-hidden">
+        <div class="absolute inset-0 frenos-slider">
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 frenos-slide active" style="background-image: url('/accesorios-repuestos/frenos.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 frenos-slide" style="background-image: url('/servicios/frenos.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 frenos-slide" style="background-image: url('/imagenes-repuestos-accesorios/PastillasdeFrenoGOLDfrenCeramicCarbon.png');"></div>
+        </div>
+        <div class="relative z-10">
+          <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Servicio</span>
+          <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mt-3 mb-3 uppercase tracking-tight">Sistema de Frenos</h3>
         <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm mb-4">
           Cambio de pastillas, purga, revisión de discos y ajuste completo.
         </p>
@@ -433,9 +445,15 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
       </div>
 
       <!-- Servicio - Suspensión -->
-      <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 md:p-8 group hover:border-ktm-accent transition-all">
-        <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Servicio</span>
-        <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mt-3 mb-3 uppercase tracking-tight">Suspensión</h3>
+      <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 md:p-8 group hover:border-ktm-accent transition-all relative overflow-hidden">
+        <div class="absolute inset-0 suspension-slider">
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 suspension-slide active" style="background-image: url('/accesorios-repuestos/suspension.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 suspension-slide" style="background-image: url('/servicios/suspencionyChasis.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 suspension-slide" style="background-image: url('/servicios/banner-suspencionychasis.png');"></div>
+        </div>
+        <div class="relative z-10">
+          <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Servicio</span>
+          <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mt-3 mb-3 uppercase tracking-tight">Suspensión</h3>
         <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm mb-4">
           Servicio de horquillas, revisión de amortiguador y ajuste de geometría.
         </p>
@@ -485,9 +503,15 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
       ) : null}
 
       <!-- Servicio - Mantención -->
-      <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 md:p-8 group hover:border-ktm-accent transition-all">
-        <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Servicio</span>
-        <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mt-3 mb-3 uppercase tracking-tight">Mantenciones</h3>
+      <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 md:p-8 group hover:border-ktm-accent transition-all relative overflow-hidden">
+        <div class="absolute inset-0 mantencion-slider">
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 mantencion-slide active" style="background-image: url('/servicios/MantencionProgramada.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 mantencion-slide" style="background-image: url('/accesorios-repuestos/filtros.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center opacity-20 mantencion-slide" style="background-image: url('/accesorios-repuestos/aceitesylubricantes.png');"></div>
+        </div>
+        <div class="relative z-10">
+          <span class="text-ktm-accent font-bold text-xs uppercase tracking-wider">Servicio</span>
+          <h3 class="text-2xl font-black text-ktm-light-text dark:text-ktm-text mt-3 mb-3 uppercase tracking-tight">Mantenciones</h3>
         <p class="text-ktm-light-text dark:text-ktm-text/70 text-sm mb-4">
           Cambio de aceite, filtros, revisión completa y lubricación.
         </p>
@@ -606,10 +630,15 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
   <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
     <div class="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
       <div class="relative">
-        <div
-          class="aspect-[4/3] bg-cover bg-center "
-          style="background-image: url('https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=800&q=80');"
-        ></div>
+        <div class="aspect-[4/3] relative overflow-hidden sobre-nosotros-slider">
+          <div class="absolute inset-0 bg-cover bg-center sobre-nosotros-slide active" style="background-image: url('/SOBRE-NOSOTROS/SOBRENOSOTROS.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center sobre-nosotros-slide" style="background-image: url('/SOBRE-NOSOTROS/01PRECISION.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center sobre-nosotros-slide" style="background-image: url('/SOBRE-NOSOTROS/02TRANSPARENCIA.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center sobre-nosotros-slide" style="background-image: url('/SOBRE-NOSOTROS/03CALIDAD.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center sobre-nosotros-slide" style="background-image: url('/SOBRE-NOSOTROS/04EXPERIENCIA.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center sobre-nosotros-slide" style="background-image: url('/SOBRE-NOSOTROS/05COMPROMISO.png');"></div>
+          <div class="absolute inset-0 bg-cover bg-center sobre-nosotros-slide" style="background-image: url('/SOBRE-NOSOTROS/06PASION.png');"></div>
+        </div>
         <div class="absolute -bottom-6 -right-6 bg-ktm-accent p-6 border-2 border-white">
           <div class="text-3xl font-black text-ktm-light-text dark:text-ktm-text mb-1">31</div>
           <div class="text-ktm-light-text dark:text-ktm-text/90 text-xs uppercase tracking-wider">Años</div>
