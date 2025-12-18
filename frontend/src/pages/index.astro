@@ -906,12 +906,97 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
         }, 3000);
       }
 
+      // Slider de Motor - Cambia cada 4.2 segundos
+      function initMotorSlider() {
+        const slides = document.querySelectorAll('.motor-slide');
+        if (slides.length === 0) return;
+        
+        let currentIndex = 0;
+        
+        setTimeout(() => {
+          setInterval(() => {
+            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + 1) % slides.length;
+            slides[currentIndex].classList.add('active');
+          }, 4200);
+        }, 500);
+      }
+
+      // Slider de Frenos - Cambia cada 3.8 segundos
+      function initFrenosSlider() {
+        const slides = document.querySelectorAll('.frenos-slide');
+        if (slides.length === 0) return;
+        
+        let currentIndex = 0;
+        
+        setTimeout(() => {
+          setInterval(() => {
+            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + 1) % slides.length;
+            slides[currentIndex].classList.add('active');
+          }, 3800);
+        }, 800);
+      }
+
+      // Slider de Suspensión - Cambia cada 4.5 segundos
+      function initSuspensionSlider() {
+        const slides = document.querySelectorAll('.suspension-slide');
+        if (slides.length === 0) return;
+        
+        let currentIndex = 0;
+        
+        setTimeout(() => {
+          setInterval(() => {
+            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + 1) % slides.length;
+            slides[currentIndex].classList.add('active');
+          }, 4500);
+        }, 1200);
+      }
+
+      // Slider de Mantención - Cambia cada 3.5 segundos
+      function initMantencionSlider() {
+        const slides = document.querySelectorAll('.mantencion-slide');
+        if (slides.length === 0) return;
+        
+        let currentIndex = 0;
+        
+        setTimeout(() => {
+          setInterval(() => {
+            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + 1) % slides.length;
+            slides[currentIndex].classList.add('active');
+          }, 3500);
+        }, 1500);
+      }
+
+      // Slider de Sobre Nosotros - Cambia cada 5 segundos
+      function initSobreNosotrosSlider() {
+        const slides = document.querySelectorAll('.sobre-nosotros-slide');
+        if (slides.length === 0) return;
+        
+        let currentIndex = 0;
+        
+        setTimeout(() => {
+          setInterval(() => {
+            slides[currentIndex].classList.remove('active');
+            currentIndex = (currentIndex + 1) % slides.length;
+            slides[currentIndex].classList.add('active');
+          }, 5000);
+        }, 2000);
+      }
+
       // Inicializar todos los sliders
       initHeroBannerSlider();
       initServiciosSlider();
       initRepuestosSlider();
       initAccesoriosSlider();
       initMotosSlider();
+      initMotorSlider();
+      initFrenosSlider();
+      initSuspensionSlider();
+      initMantencionSlider();
+      initSobreNosotrosSlider();
     });
   </script>
   
@@ -943,6 +1028,24 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
       opacity: 1;
       z-index: 1;
       pointer-events: auto;
+    }
+
+    /* Sliders de Servicios y Productos */
+    .motor-slide,
+    .frenos-slide,
+    .suspension-slide,
+    .mantencion-slide,
+    .sobre-nosotros-slide {
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+
+    .motor-slide.active,
+    .frenos-slide.active,
+    .suspension-slide.active,
+    .mantencion-slide.active,
+    .sobre-nosotros-slide.active {
+      opacity: 1;
     }
   </style>
 </BaseLayout>
