@@ -15,7 +15,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   </section>
 
   <script>
-    import { supabaseClient } from '../../../lib/supabase/client';
+    import { supabaseClient } from '../../lib/supabase/client';
 
     async function handleAuthCallback() {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
