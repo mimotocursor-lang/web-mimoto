@@ -179,10 +179,10 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
           <div
             key={banner.id || index}
             class={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out hero-banner-slide ${index === 0 ? 'active' : ''}`}
-            style={`background-image: url('${banner.image_url}'); z-index: ${index === 0 ? 1 : 0};`}
+            style={`background-image: url('${banner.image_url || ''}'); z-index: ${index === 0 ? 1 : 0};`}
             data-banner-index={index}
           >
-            <div class="absolute inset-0 bg-gradient-to-b from-ktm-light-bg dark:from-ktm-bg/70 via-ktm-light-bg dark:via-ktm-bg/50 to-ktm-light-bg dark:to-ktm-bg/80"></div>
+            <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60"></div>
           </div>
         ))}
         <div class="relative z-10 h-full flex items-center justify-center">
@@ -191,12 +191,12 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
               {banners.map((banner, index) => (
                 <div key={`content-${banner.id || index}`} class={`hero-banner-content-item ${index === 0 ? 'active' : ''}`} data-banner-index={index}>
                   {banner.title && (
-                    <h1 class="text-5xl md:text-7xl lg:text-8xl xl:text-9xl font-black mb-6 text-white leading-tight tracking-tight drop-shadow-2xl" style="text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 2px 10px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 0, 0, 0.4);">
+                    <h1 class="text-3xl md:text-5xl lg:text-6xl font-black mb-4 text-white leading-tight tracking-tight drop-shadow-2xl" style="text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 2px 10px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 0, 0, 0.4);">
                       {banner.title}
                     </h1>
                   )}
                   {banner.subtitle && (
-                    <p class="text-xl md:text-2xl lg:text-3xl text-white/95 mb-8 font-light leading-relaxed drop-shadow-lg" style="text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7), 0 1px 5px rgba(0, 0, 0, 0.5);">
+                    <p class="text-lg md:text-xl lg:text-2xl text-white/95 mb-8 font-light leading-relaxed drop-shadow-lg" style="text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7), 0 1px 5px rgba(0, 0, 0, 0.5);">
                       {banner.subtitle}
                     </p>
                   )}
