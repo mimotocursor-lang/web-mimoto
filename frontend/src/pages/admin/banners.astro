@@ -370,11 +370,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         
         // Actualizar estilos de tabs
         document.querySelectorAll('[data-type]').forEach((t) => {
-          t.classList.remove('border-primary', 'text-ktm-accent', 'font-semibold');
-          t.classList.add('border-transparent', 'text-gray-600');
+          t.classList.remove('border-ktm-accent', 'dark:border-primary', 'text-ktm-accent', 'dark:text-ktm-accent', 'font-semibold');
+          t.classList.add('border-transparent', 'text-ktm-light-text/80', 'dark:text-ktm-text/80');
         });
-        tab.classList.remove('border-transparent', 'text-gray-600');
-        tab.classList.add('border-primary', 'text-ktm-accent', 'font-semibold');
+        tab.classList.remove('border-transparent', 'text-ktm-light-text/80', 'dark:text-ktm-text/80');
+        tab.classList.add('border-ktm-accent', 'dark:border-primary', 'text-ktm-accent', 'dark:text-ktm-accent', 'font-semibold');
         
         loadBanners(type);
       });
