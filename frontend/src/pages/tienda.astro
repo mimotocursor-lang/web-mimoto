@@ -122,7 +122,7 @@ try {
             <!-- Botón para abrir filtros en móvil -->
             <button
               id="btn-filtros-mobile-accesorios"
-              class="md:hidden w-full px-6 py-4 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-accent/30 text-ktm-light-text dark:text-ktm-text font-bold hover:border-ktm-accent/50 transition-all uppercase tracking-wider flex items-center justify-center gap-2"
+              class="md:hidden w-full px-6 py-4 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-ktm-accent/50 dark:border-ktm-accent/30 text-gray-900 dark:text-ktm-text font-bold hover:border-ktm-accent hover:ring-2 hover:ring-ktm-accent/20 transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm dark:shadow-lg"
             >
               <span>🔍</span> Filtros y Búsqueda
             </button>
@@ -136,7 +136,7 @@ try {
                     type="text"
                     id="search-accesorios"
                     placeholder="Buscar accesorios por nombre, SKU o descripción..."
-                    class="w-full px-6 py-4 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text placeholder-white/50 focus:border-ktm-accent/50 focus:outline-none transition-all uppercase tracking-wide text-sm"
+                    class="w-full px-6 py-4 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-gray-300 dark:border-ktm-border/50 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/50 focus:border-ktm-accent focus:ring-2 focus:ring-ktm-accent/20 focus:outline-none transition-all uppercase tracking-wide text-sm shadow-sm dark:shadow-lg"
                   />
                   <div id="autocomplete-suggestions-accesorios" class="hidden absolute z-50 w-full mt-1 bg-ktm-light-surface/95 dark:bg-ktm-surface/95 backdrop-blur-md rounded-lg border border-ktm-accent/30 shadow-xl max-h-60 overflow-y-auto"></div>
                 </div>
@@ -156,7 +156,7 @@ try {
                   <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Categoría</label>
                   <select
                     id="filter-categoria-accesorios"
-                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                    class="w-full px-4 py-3 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-gray-300 dark:border-ktm-border/50 text-gray-900 dark:text-ktm-text focus:border-ktm-accent focus:ring-2 focus:ring-ktm-accent/20 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm shadow-sm dark:shadow-lg"
                   >
                     <option value="all">Todas las categorías</option>
                     {availableCategories.map(cat => (
@@ -170,7 +170,7 @@ try {
                   <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Marca</label>
                   <select
                     id="filter-marca-accesorios"
-                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                    class="w-full px-4 py-3 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-gray-300 dark:border-ktm-border/50 text-gray-900 dark:text-ktm-text focus:border-ktm-accent focus:ring-2 focus:ring-ktm-accent/20 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm shadow-sm dark:shadow-lg"
                   >
                     <option value="all">Todas las marcas</option>
                     {availableBrands.map(brand => (
@@ -184,7 +184,7 @@ try {
                   <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Modelo</label>
                   <select
                     id="filter-modelo-accesorios"
-                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                    class="w-full px-4 py-3 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-gray-300 dark:border-ktm-border/50 text-gray-900 dark:text-ktm-text focus:border-ktm-accent focus:ring-2 focus:ring-ktm-accent/20 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm shadow-sm dark:shadow-lg"
                   >
                     <option value="all">Todos los modelos</option>
                   </select>
@@ -203,7 +203,7 @@ try {
       <!-- Botón Volver para Accesorios (oculto inicialmente) -->
       <button
         id="btn-volver-accesorios"
-        class="hidden mb-6 inline-flex items-center gap-2 px-6 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-accent/30 text-ktm-light-text dark:text-ktm-text font-bold hover:border-ktm-accent/50 transition-all uppercase tracking-wider"
+        class="hidden mb-6 inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-ktm-accent/50 dark:border-ktm-accent/30 text-gray-900 dark:text-ktm-text font-bold hover:border-ktm-accent hover:ring-2 hover:ring-ktm-accent/20 transition-all uppercase tracking-wider shadow-sm dark:shadow-lg"
       >
         <span>←</span> Volver a Categorías
       </button>
@@ -274,7 +274,7 @@ try {
             <!-- Botón para abrir filtros en móvil -->
             <button
               id="btn-filtros-mobile-repuestos"
-              class="md:hidden w-full px-6 py-4 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-accent/30 text-ktm-light-text dark:text-ktm-text font-bold hover:border-ktm-accent/50 transition-all uppercase tracking-wider flex items-center justify-center gap-2"
+              class="md:hidden w-full px-6 py-4 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-ktm-accent/50 dark:border-ktm-accent/30 text-gray-900 dark:text-ktm-text font-bold hover:border-ktm-accent hover:ring-2 hover:ring-ktm-accent/20 transition-all uppercase tracking-wider flex items-center justify-center gap-2 shadow-sm dark:shadow-lg"
             >
               <span>🔍</span> Filtros y Búsqueda
             </button>
@@ -288,7 +288,7 @@ try {
                     type="text"
                     id="search-repuestos"
                     placeholder="Buscar repuestos por nombre, SKU o descripción..."
-                    class="w-full px-6 py-4 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text placeholder-white/50 focus:border-ktm-accent/50 focus:outline-none transition-all uppercase tracking-wide text-sm"
+                    class="w-full px-6 py-4 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-gray-300 dark:border-ktm-border/50 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/50 focus:border-ktm-accent focus:ring-2 focus:ring-ktm-accent/20 focus:outline-none transition-all uppercase tracking-wide text-sm shadow-sm dark:shadow-lg"
                   />
                   <div id="autocomplete-suggestions" class="hidden absolute z-50 w-full mt-1 bg-ktm-light-surface/95 dark:bg-ktm-surface/95 backdrop-blur-md rounded-lg border border-ktm-accent/30 shadow-xl max-h-60 overflow-y-auto"></div>
                 </div>
@@ -308,7 +308,7 @@ try {
                   <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Categoría</label>
                   <select
                     id="filter-categoria"
-                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                    class="w-full px-4 py-3 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-gray-300 dark:border-ktm-border/50 text-gray-900 dark:text-ktm-text focus:border-ktm-accent focus:ring-2 focus:ring-ktm-accent/20 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm shadow-sm dark:shadow-lg"
                   >
                     <option value="all">Todas las categorías</option>
                     {availableCategories.map(cat => (
@@ -322,7 +322,7 @@ try {
                   <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Marca</label>
                   <select
                     id="filter-marca"
-                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                    class="w-full px-4 py-3 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-gray-300 dark:border-ktm-border/50 text-gray-900 dark:text-ktm-text focus:border-ktm-accent focus:ring-2 focus:ring-ktm-accent/20 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm shadow-sm dark:shadow-lg"
                   >
                     <option value="all">Todas las marcas</option>
                     {availableBrands.map(brand => (
@@ -336,7 +336,7 @@ try {
                   <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Modelo</label>
                   <select
                     id="filter-modelo"
-                    class="w-full px-4 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-light-border/30 dark:border-ktm-border/30 text-ktm-light-text dark:text-ktm-text focus:border-ktm-accent/50 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm"
+                    class="w-full px-4 py-3 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-gray-300 dark:border-ktm-border/50 text-gray-900 dark:text-ktm-text focus:border-ktm-accent focus:ring-2 focus:ring-ktm-accent/20 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm shadow-sm dark:shadow-lg"
                   >
                     <option value="all">Todos los modelos</option>
                   </select>
@@ -355,7 +355,7 @@ try {
       <!-- Botón Volver para Repuestos (oculto inicialmente) -->
       <button
         id="btn-volver-repuestos"
-        class="hidden mb-6 inline-flex items-center gap-2 px-6 py-3 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-lg border border-ktm-accent/30 text-ktm-light-text dark:text-ktm-text font-bold hover:border-ktm-accent/50 transition-all uppercase tracking-wider"
+        class="hidden mb-6 inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-ktm-accent/50 dark:border-ktm-accent/30 text-gray-900 dark:text-ktm-text font-bold hover:border-ktm-accent hover:ring-2 hover:ring-ktm-accent/20 transition-all uppercase tracking-wider shadow-sm dark:shadow-lg"
       >
         <span>←</span> Volver a Categorías
       </button>
