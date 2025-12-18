@@ -898,9 +898,11 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
     
     .hero-banner-content-item {
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 100%;
+      max-width: 64rem;
       opacity: 0;
       transition: opacity 1s ease-in-out;
       z-index: 0;
