@@ -437,18 +437,31 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             }
           }
 
-          const { error } = await supabaseClient
+          const { error: updateError } = await supabaseClient
             .from('banners')
             .update(data)
             .eq('id', editingBannerId);
-          if (error) throw error;
+          if (updateError) {
+            console.error('Error actualizando banner:', updateError);
+            throw updateError;
+          }
+          alert('Banner actualizado correctamente');
         } else {
-          const { error } = await supabaseClient.from('banners').insert(data);
-          if (error) throw error;
+          const { data: insertedData, error: insertError } = await supabaseClient
+            .from('banners')
+            .insert(data)
+            .select()
+            .single();
+          if (insertError) {
+            console.error('Error creando banner:', insertError);
+            throw insertError;
+          }
+          console.log('Banner creado:', insertedData);
+          alert('Banner creado correctamente');
         }
 
         closeModal();
-        loadBanners();
+        loadBanners(currentBannerType);
       } catch (err: any) {
         errorEl.textContent = err.message || 'Error al guardar banner';
       } finally {
