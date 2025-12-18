@@ -120,7 +120,15 @@ const { title = 'Mimoto', description = '' } = Astro.props;
       <nav class="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
         <a href="/" class="flex items-center gap-3 relative z-10">
           <div class="absolute -left-4 -top-2 -right-4 -bottom-2 bg-ktm-accent/30 blur-2xl -z-10 rounded-full"></div>
-          <img id="main-logo" src="/logo.png" alt="Mimoto" class="object-contain object-left drop-shadow-2xl filter brightness-110 transition-opacity duration-300" />
+          <div class="flex items-center gap-3">
+            <img id="main-logo" src="/logo.png" alt="Mimoto" class="object-contain object-left drop-shadow-2xl filter brightness-110 transition-opacity duration-300" />
+            <div class="flex flex-col items-center gap-1.5 border-l border-ktm-light-border/30 dark:border-ktm-border/30 pl-3 ml-3">
+              <img src="/KTM-logo.png" alt="KTM" class="h-7 md:h-9 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity drop-shadow-md" />
+              <span class="text-[7px] md:text-[9px] font-black uppercase tracking-[0.2em] text-ktm-accent dark:text-ktm-accent leading-tight whitespace-nowrap" style="font-family: 'Arial Black', 'Helvetica Neue', 'Arial', sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                Servicio Técnico Autorizado
+              </span>
+            </div>
+          </div>
         </a>
         <div id="nav-links" class="hidden md:flex items-center gap-6 text-sm font-medium">
           <a href="/servicios" class="nav-link text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors font-semibold">Servicios</a>
@@ -247,13 +255,21 @@ const { title = 'Mimoto', description = '' } = Astro.props;
     <footer class="relative border-t border-ktm-light-border/20 dark:border-ktm-border/20 bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-md mt-12">
       <div class="max-w-7xl mx-auto px-4 md:px-6 py-8">
         <div class="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 mb-6">
-          <div class="flex-shrink-0">
-            <img
-              id="footer-logo"
-              src="/logo.png"
-              alt="Mimoto Logo"
-              class="w-32 md:w-40 h-auto"
-            />
+          <div class="flex-shrink-0 flex flex-col items-center md:items-start gap-3">
+            <div class="flex items-center gap-3">
+              <img
+                id="footer-logo"
+                src="/logo.png"
+                alt="Mimoto Logo"
+                class="w-32 md:w-40 h-auto"
+              />
+              <div class="flex flex-col items-center gap-2 border-l border-ktm-light-border/30 dark:border-ktm-border/30 pl-4 ml-4">
+                <img src="/KTM-logo.png" alt="KTM" class="h-12 md:h-14 w-auto object-contain opacity-90 drop-shadow-md" />
+                <span class="text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] text-ktm-accent dark:text-ktm-accent leading-tight whitespace-nowrap" style="font-family: 'Arial Black', 'Helvetica Neue', 'Arial', sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+                  Servicio Técnico Autorizado
+                </span>
+              </div>
+            </div>
           </div>
           <div class="flex flex-col gap-4 text-sm text-ktm-light-textMuted dark:text-ktm-textMuted text-center md:text-left">
             <p class="font-semibold text-ktm-light-text dark:text-ktm-text">
