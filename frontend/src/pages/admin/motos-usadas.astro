@@ -5,12 +5,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 <BaseLayout title="Gestión de Motos Usadas - Mimoto">
   <section class="max-w-6xl mx-auto px-4 py-16">
     <div class="flex items-center justify-between mb-8">
-      <h1 class="text-3xl font-bold text-ktm-text">Gestión de Motos Usadas</h1>
+      <h1 class="text-3xl font-bold text-ktm-light-text dark:text-ktm-text">Gestión de Motos Usadas</h1>
       <nav class="flex gap-4 text-sm">
-        <a href="/admin" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Dashboard</a>
-        <a href="/admin/productos" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Productos</a>
+        <a href="/admin" class="text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold">Dashboard</a>
+        <a href="/admin/productos" class="text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold">Productos</a>
         <a href="/admin/motos-usadas" class="text-ktm-accent font-bold">Motos Usadas</a>
-        <a href="/admin/banners" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Banners</a>
+        <a href="/admin/banners" class="text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold">Banners</a>
       </nav>
     </div>
 
@@ -24,7 +24,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     </div>
 
     <div id="motos-list" class="space-y-4">
-      <p class="text-ktm-text/70">Cargando motos...</p>
+      <p class="text-ktm-light-text/70 dark:text-ktm-text/70">Cargando motos...</p>
     </div>
 
     <!-- Modal para crear/editar moto -->
@@ -32,45 +32,45 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       id="moto-modal"
       class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center backdrop-blur-sm p-4"
     >
-      <div class="bg-gradient-to-b from-gray-900 to-gray-950 border-2 border-primary rounded-xl p-4 md:p-5 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div class="flex items-center justify-between mb-3 border-b-2 border-primary pb-2">
-          <h2 id="modal-title" class="text-lg md:text-xl font-bold text-ktm-text">Nueva Moto</h2>
-          <button id="close-modal" class="text-ktm-text/80 hover:text-ktm-text text-xl md:text-2xl font-bold">✕</button>
+      <div class="bg-white dark:bg-gradient-to-b dark:from-gray-900 dark:to-gray-950 border-2 border-gray-300 dark:border-primary rounded-xl p-4 md:p-5 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="flex items-center justify-between mb-3 border-b-2 border-gray-300 dark:border-primary pb-2">
+          <h2 id="modal-title" class="text-lg md:text-xl font-bold text-gray-900 dark:text-ktm-text">Nueva Moto</h2>
+          <button id="close-modal" class="text-gray-600 dark:text-ktm-text/80 hover:text-gray-900 dark:hover:text-ktm-text text-xl md:text-2xl font-bold">✕</button>
         </div>
 
         <form id="moto-form" class="space-y-3">
           <input type="hidden" id="moto-id" />
 
           <div>
-            <label for="moto-title" class="block text-sm font-bold mb-2 text-ktm-text">Título</label>
+            <label for="moto-title" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Título</label>
             <input
               type="text"
               id="moto-title"
               required
-              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
               placeholder="Ej: KTM 1090 Adventure"
             />
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label for="moto-brand" class="block text-sm font-bold mb-2 text-ktm-text">Marca</label>
+              <label for="moto-brand" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Marca</label>
               <input
                 type="text"
                 id="moto-brand"
                 required
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
                 placeholder="Ej: KTM"
               />
             </div>
 
             <div>
-              <label for="moto-model" class="block text-sm font-bold mb-2 text-ktm-text">Modelo</label>
+              <label for="moto-model" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Modelo</label>
               <input
                 type="text"
                 id="moto-model"
                 required
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
                 placeholder="Ej: 1090 Adventure"
               />
             </div>
@@ -78,61 +78,61 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label for="moto-year" class="block text-sm font-bold mb-2 text-ktm-text">Año</label>
+              <label for="moto-year" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Año</label>
               <input
                 type="number"
                 id="moto-year"
                 min="1900"
                 max="2030"
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
                 placeholder="2024"
               />
             </div>
 
             <div>
-              <label for="moto-mileage" class="block text-sm font-bold mb-2 text-ktm-text">Kilometraje</label>
+              <label for="moto-mileage" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Kilometraje</label>
               <input
                 type="number"
                 id="moto-mileage"
                 min="0"
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
                 placeholder="0"
               />
-              <p class="text-xs text-ktm-text/60 mt-1">0 = Nueva (0 kms)</p>
+              <p class="text-xs text-gray-600 dark:text-ktm-text/60 mt-1">0 = Nueva (0 kms)</p>
             </div>
 
             <div>
-              <label for="moto-price" class="block text-sm font-bold mb-2 text-ktm-text">Precio</label>
+              <label for="moto-price" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Precio</label>
               <input
                 type="number"
                 id="moto-price"
                 step="0.01"
                 min="0"
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
                 placeholder="Dejar vacío para consultar"
               />
             </div>
           </div>
 
           <div>
-            <label for="moto-description" class="block text-sm font-bold mb-2 text-ktm-text">Descripción</label>
+            <label for="moto-description" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Descripción</label>
             <textarea
               id="moto-description"
               rows="4"
-              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
               placeholder="Descripción de la moto, estado, características..."
             ></textarea>
           </div>
 
           <div>
-            <label for="moto-main-image" class="block text-sm font-bold mb-2 text-ktm-text">Imagen Principal (Portada)</label>
+            <label for="moto-main-image" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Imagen Principal (Portada)</label>
             <input
               type="file"
               id="moto-main-image"
               accept="image/*"
-              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-ktm-accent file:text-ktm-text hover:file:bg-ktm-accent-600"
+              class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-ktm-accent file:text-white hover:file:bg-ktm-accent-600"
             />
-            <p class="text-xs text-ktm-text/60 mt-1">Imagen principal que se mostrará en el listado y hero</p>
+            <p class="text-xs text-gray-600 dark:text-ktm-text/60 mt-1">Imagen principal que se mostrará en el listado y hero</p>
             <div id="moto-main-image-preview" class="mt-2 hidden">
               <img id="moto-main-image-preview-img" src="" alt="Preview" class="max-w-xs rounded-lg border-2 border-primary/30" />
             </div>
@@ -140,26 +140,26 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           </div>
 
           <div>
-            <label class="block text-sm font-bold mb-2 text-ktm-text">Imágenes Adicionales</label>
+            <label class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Imágenes Adicionales</label>
             <input
               type="file"
               id="moto-additional-images"
               accept="image/*"
               multiple
-              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-ktm-accent file:text-ktm-text hover:file:bg-ktm-accent-600"
+              class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-ktm-accent file:text-white hover:file:bg-ktm-accent-600"
             />
-            <p class="text-xs text-ktm-text/60 mt-1">Puedes seleccionar múltiples imágenes (Lateral, Trasera, Tablero, etc.)</p>
+            <p class="text-xs text-gray-600 dark:text-ktm-text/60 mt-1">Puedes seleccionar múltiples imágenes (Lateral, Trasera, Tablero, etc.)</p>
             <div id="moto-additional-images-preview" class="mt-2 grid grid-cols-2 md:grid-cols-4 gap-2"></div>
             <input type="hidden" id="moto-additional-images-urls" />
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label for="moto-status" class="block text-sm font-bold mb-2 text-ktm-text">Estado</label>
+              <label for="moto-status" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Estado</label>
               <select
                 id="moto-status"
                 required
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
               >
                 <option value="active">Activa</option>
                 <option value="inactive">Inactiva</option>
@@ -170,9 +170,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               <input
                 type="checkbox"
                 id="moto-featured"
-                class="w-5 h-5 rounded border-2 border-primary/30 bg-gray-800 text-ktm-accent focus:ring-2 focus:ring-primary"
+                class="w-5 h-5 rounded border-2 border-gray-300 dark:border-primary/30 bg-white dark:bg-gray-800 text-ktm-accent focus:ring-2 focus:ring-ktm-accent/20"
               />
-              <label for="moto-featured" class="text-sm font-bold text-ktm-text">Destacada</label>
+              <label for="moto-featured" class="text-sm font-bold text-gray-900 dark:text-ktm-text">Destacada</label>
             </div>
           </div>
 
@@ -186,7 +186,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <button
               type="button"
               id="cancel-btn"
-              class="px-6 py-3 rounded-lg bg-gray-700 text-ktm-text font-bold hover:bg-gray-600 transition-colors"
+              class="px-6 py-3 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-ktm-text font-bold hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
             >
               Cancelar
             </button>
@@ -238,7 +238,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
         const listEl = document.getElementById('motos-list')!;
         if (!data || data.length === 0) {
-          listEl.innerHTML = '<p class="text-ktm-text/70">No hay motos registradas</p>';
+          listEl.innerHTML = '<p class="text-ktm-light-text/70 dark:text-ktm-text/70">No hay motos registradas</p>';
           return;
         }
 
@@ -251,8 +251,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             const isNew = mileage === 0;
             
             return `
-              <div class="bg-ktm-surface border-2 border-primary/30 rounded-xl p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                <div class="w-32 h-24 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-gray-800 border-2 border-primary/20 flex-shrink-0">
+              <div class="bg-white dark:bg-ktm-surface border-2 border-gray-300 dark:border-primary/30 rounded-xl p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center shadow-sm dark:shadow-lg">
+                <div class="w-32 h-24 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-800 border-2 border-gray-200 dark:border-primary/20 flex-shrink-0">
                   ${hasImage ? `
                     <img 
                       src="${imageUrl}" 
@@ -260,29 +260,29 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
                       class="w-full h-full object-cover"
                       loading="lazy"
                       crossorigin="anonymous"
-                      onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
+                      onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-gray-500 dark:text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
                     >
                   ` : `
-                    <div class="w-full h-full flex items-center justify-center text-ktm-text/40 text-xs">Sin imagen</div>
+                    <div class="w-full h-full flex items-center justify-center text-gray-500 dark:text-ktm-text/40 text-xs">Sin imagen</div>
                   `}
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-start gap-2 mb-1">
-                    <h3 class="font-bold text-ktm-text">${moto.title || `${moto.brand} ${moto.model}`}</h3>
-                    ${isNew ? '<span class="px-2 py-1 bg-green-600 text-ktm-text text-xs font-bold uppercase">Nueva 0 kms</span>' : ''}
-                    ${moto.featured ? '<span class="px-2 py-1 bg-ktm-accent text-ktm-text text-xs font-bold uppercase">Destacada</span>' : ''}
+                    <h3 class="font-bold text-gray-900 dark:text-ktm-text">${moto.title || `${moto.brand} ${moto.model}`}</h3>
+                    ${isNew ? '<span class="px-2 py-1 bg-green-600 text-white dark:text-ktm-text text-xs font-bold uppercase">Nueva 0 kms</span>' : ''}
+                    ${moto.featured ? '<span class="px-2 py-1 bg-ktm-accent text-white dark:text-ktm-text text-xs font-bold uppercase">Destacada</span>' : ''}
                   </div>
-                  <p class="text-sm text-ktm-text/70">
+                  <p class="text-sm text-gray-600 dark:text-ktm-text/70">
                     ${moto.brand} ${moto.model} | ${moto.year || 'N/A'} | ${mileage.toLocaleString('es-CL')} km
                     ${price > 0 ? `| $${price.toLocaleString('es-CL')}` : '| Precio a consultar'}
                   </p>
-                  <p class="text-xs text-ktm-text/50 mt-1">
-                    ${moto.status === 'active' ? '<span class="text-green-400">Activa</span>' : '<span class="text-red-400">Inactiva</span>'}
+                  <p class="text-xs text-gray-500 dark:text-ktm-text/50 mt-1">
+                    ${moto.status === 'active' ? '<span class="text-green-600 dark:text-green-400">Activa</span>' : '<span class="text-red-600 dark:text-red-400">Inactiva</span>'}
                   </p>
                 </div>
                 <div class="flex gap-2 w-full sm:w-auto">
-                  <button class="edit-moto flex-1 sm:flex-none px-4 py-2 rounded-lg bg-ktm-accent/20 hover:bg-ktm-accent/30 text-ktm-accent text-sm font-semibold transition-colors shadow-md hover:scale-105" data-id="${moto.id}">Editar</button>
-                  <button class="delete-moto flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-400 font-semibold transition-colors shadow-md hover:scale-105" data-id="${moto.id}">Eliminar</button>
+                  <button class="edit-moto flex-1 sm:flex-none px-4 py-2 rounded-lg bg-ktm-accent/20 hover:bg-ktm-accent/30 text-ktm-accent dark:text-ktm-accent text-sm font-semibold transition-colors shadow-md hover:scale-105" data-id="${moto.id}">Editar</button>
+                  <button class="delete-moto flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-600 dark:text-red-400 font-semibold transition-colors shadow-md hover:scale-105" data-id="${moto.id}">Eliminar</button>
                 </div>
               </div>
             `;

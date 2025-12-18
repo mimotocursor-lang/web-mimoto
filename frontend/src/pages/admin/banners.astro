@@ -5,10 +5,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 <BaseLayout title="Gestión de Banners - Mimoto">
   <section class="max-w-6xl mx-auto px-4 py-16">
     <div class="flex items-center justify-between mb-8">
-      <h1 class="text-3xl font-bold text-ktm-text">Gestión de Banners</h1>
+      <h1 class="text-3xl font-bold text-ktm-light-text dark:text-ktm-text">Gestión de Banners</h1>
       <nav class="flex gap-4 text-sm">
-        <a href="/admin" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Dashboard</a>
-        <a href="/admin/productos" class="text-ktm-text/80 hover:text-ktm-accent font-semibold">Productos</a>
+        <a href="/admin" class="text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold">Dashboard</a>
+        <a href="/admin/productos" class="text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold">Productos</a>
         <a href="/admin/banners" class="text-ktm-accent font-bold">Banners</a>
       </nav>
     </div>
@@ -24,14 +24,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       </button>
       <button
         id="tab-accessories"
-        class="px-4 py-2 border-b-2 border-transparent text-ktm-text/80 hover:text-ktm-accent font-semibold whitespace-nowrap"
+        class="px-4 py-2 border-b-2 border-transparent text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold whitespace-nowrap"
         data-type="accessories"
       >
         Banner Accesorios
       </button>
       <button
         id="tab-spare-parts"
-        class="px-4 py-2 border-b-2 border-transparent text-ktm-text/80 hover:text-ktm-accent font-semibold whitespace-nowrap"
+        class="px-4 py-2 border-b-2 border-transparent text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold whitespace-nowrap"
         data-type="spare_parts"
       >
         Banner Repuestos
@@ -48,7 +48,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     </div>
 
     <div id="banners-list" class="space-y-4">
-      <p class="text-ktm-text/70">Cargando banners...</p>
+      <p class="text-ktm-light-text/70 dark:text-ktm-text/70">Cargando banners...</p>
     </div>
 
     <!-- Modal para crear/editar banner -->
@@ -56,44 +56,44 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       id="banner-modal"
       class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center backdrop-blur-sm p-4"
     >
-      <div class="bg-gradient-to-b from-gray-900 to-gray-950 border-2 border-primary rounded-xl p-4 md:p-5 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[85vh] overflow-y-auto shadow-2xl">
-        <div class="flex items-center justify-between mb-3 border-b-2 border-primary pb-2">
-          <h2 id="modal-title" class="text-lg md:text-xl font-bold text-ktm-text">Nuevo Banner</h2>
-          <button id="close-modal" class="text-ktm-text/80 hover:text-ktm-text text-xl md:text-2xl font-bold">✕</button>
+      <div class="bg-white dark:bg-gradient-to-b dark:from-gray-900 dark:to-gray-950 border-2 border-gray-300 dark:border-primary rounded-xl p-4 md:p-5 w-full max-w-sm sm:max-w-md md:max-w-lg lg:max-w-xl max-h-[85vh] overflow-y-auto shadow-2xl">
+        <div class="flex items-center justify-between mb-3 border-b-2 border-gray-300 dark:border-primary pb-2">
+          <h2 id="modal-title" class="text-lg md:text-xl font-bold text-gray-900 dark:text-ktm-text">Nuevo Banner</h2>
+          <button id="close-modal" class="text-gray-600 dark:text-ktm-text/80 hover:text-gray-900 dark:hover:text-ktm-text text-xl md:text-2xl font-bold">✕</button>
         </div>
 
         <form id="banner-form" class="space-y-3">
           <input type="hidden" id="banner-id" />
 
           <div>
-            <label for="banner-title" class="block text-sm font-bold mb-2 text-ktm-text">Título</label>
+            <label for="banner-title" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Título</label>
             <input
               type="text"
               id="banner-title"
-              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
               placeholder="Título del banner"
             />
           </div>
 
           <div>
-            <label for="banner-subtitle" class="block text-sm font-bold mb-2 text-ktm-text">Subtítulo</label>
+            <label for="banner-subtitle" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Subtítulo</label>
             <input
               type="text"
               id="banner-subtitle"
-              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
               placeholder="Subtítulo del banner"
             />
           </div>
 
           <div>
-            <label for="banner-image-file" class="block text-sm font-bold mb-2 text-ktm-text">Imagen del Banner</label>
+            <label for="banner-image-file" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Imagen del Banner</label>
             <input
               type="file"
               id="banner-image-file"
               accept="image/*"
-              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-ktm-accent file:text-ktm-text hover:file:bg-ktm-accent-600"
+              class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-ktm-accent file:text-white hover:file:bg-ktm-accent-600"
             />
-            <p class="text-xs text-ktm-text/60 mt-1">Selecciona una imagen desde tu dispositivo (recomendado: 1920x1080px para hero, 1920x600px para secciones)</p>
+            <p class="text-xs text-gray-600 dark:text-ktm-text/60 mt-1">Selecciona una imagen desde tu dispositivo (recomendado: 1920x1080px para hero, 1920x600px para secciones)</p>
             <div id="banner-image-preview" class="mt-2 hidden">
               <img id="banner-image-preview-img" src="" alt="Preview" class="max-w-full rounded-lg border-2 border-primary/30" />
             </div>
@@ -101,46 +101,46 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           </div>
 
           <div>
-            <label for="banner-link-url" class="block text-sm font-bold mb-2 text-ktm-text">URL de Enlace (opcional)</label>
+            <label for="banner-link-url" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">URL de Enlace (opcional)</label>
             <input
               type="url"
               id="banner-link-url"
-              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
               placeholder="https://ejemplo.com/destino"
             />
           </div>
 
           <div>
-            <label for="banner-type" class="block text-sm font-bold mb-2 text-ktm-text">Tipo de Banner</label>
+            <label for="banner-type" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Tipo de Banner</label>
             <select
               id="banner-type"
-              class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
             >
               <option value="hero">Hero (Slider Principal)</option>
               <option value="accessories">Banner Sección Accesorios</option>
               <option value="spare_parts">Banner Sección Repuestos</option>
             </select>
-            <p class="text-xs text-ktm-text/60 mt-1">Los banners de sección aparecen en la página de tienda</p>
+            <p class="text-xs text-gray-600 dark:text-ktm-text/60 mt-1">Los banners de sección aparecen en la página de tienda</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label for="banner-position" class="block text-sm font-bold mb-2 text-ktm-text">Posición</label>
+              <label for="banner-position" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Posición</label>
               <input
                 type="number"
                 id="banner-position"
                 min="0"
                 value="0"
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
               />
               <p class="text-xs text-ktm-text/60 mt-1">Menor número = aparece primero (solo para hero)</p>
             </div>
 
             <div>
-              <label for="banner-active" class="block text-sm font-bold mb-2 text-ktm-text">Estado</label>
+              <label for="banner-active" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Estado</label>
               <select
                 id="banner-active"
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
               >
                 <option value="true">Activo</option>
                 <option value="false">Inactivo</option>
@@ -158,7 +158,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <button
               type="button"
               id="cancel-form"
-              class="flex-1 px-4 py-3 rounded-lg border-2 border-primary/30 text-ktm-text hover:bg-gray-800 transition-colors"
+              class="flex-1 px-4 py-3 rounded-lg border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               Cancelar
             </button>
@@ -215,7 +215,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
         const listEl = document.getElementById('banners-list')!;
         if (!data || data.length === 0) {
-          listEl.innerHTML = '<p class="text-ktm-text/70">No hay banners</p>';
+          listEl.innerHTML = '<p class="text-ktm-light-text/70 dark:text-ktm-text/70">No hay banners</p>';
           return;
         }
 
@@ -228,20 +228,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         listEl.innerHTML = data
           .map(
             (b) => `
-          <div class="border-2 border-primary/30 rounded-xl p-4 bg-ktm-surface/50 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-lg">
-            <img src="${b.image_url}" alt="${b.title || 'Banner'}" class="w-full sm:w-32 h-32 sm:h-20 object-cover rounded border border-primary/20" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'128\\' height=\\'80\\'%3E%3Crect fill=\\'%23333\\' width=\\'128\\' height=\\'80\\'/%3E%3Ctext fill=\\'%23999\\' x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3ESin imagen%3C/text%3E%3C/svg%3E'">
+          <div class="border-2 border-gray-300 dark:border-primary/30 rounded-xl p-4 bg-white dark:bg-ktm-surface/50 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-lg">
+            <img src="${b.image_url}" alt="${b.title || 'Banner'}" class="w-full sm:w-32 h-32 sm:h-20 object-cover rounded border border-gray-200 dark:border-primary/20" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'128\\' height=\\'80\\'%3E%3Crect fill=\\'%23333\\' width=\\'128\\' height=\\'80\\'/%3E%3Ctext fill=\\'%23999\\' x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\'%3ESin imagen%3C/text%3E%3C/svg%3E'">
             <div class="flex-1 min-w-0">
-              <h3 class="font-bold text-ktm-text">${b.title || 'Sin título'}</h3>
-              <p class="text-sm text-ktm-text/70">${b.subtitle || 'Sin subtítulo'}</p>
-              <p class="text-xs text-ktm-text/60 mt-1">
+              <h3 class="font-bold text-gray-900 dark:text-ktm-text">${b.title || 'Sin título'}</h3>
+              <p class="text-sm text-gray-600 dark:text-ktm-text/70">${b.subtitle || 'Sin subtítulo'}</p>
+              <p class="text-xs text-gray-500 dark:text-ktm-text/60 mt-1">
                 Tipo: ${typeLabels[b.banner_type] || b.banner_type} | 
                 ${b.position !== undefined ? `Posición: ${b.position} | ` : ''}
-                ${b.active ? 'Activo' : 'Inactivo'}
+                ${b.active ? '<span class="text-green-600 dark:text-green-400">Activo</span>' : '<span class="text-red-600 dark:text-red-400">Inactivo</span>'}
               </p>
             </div>
             <div class="flex gap-2 w-full sm:w-auto">
-              <button class="edit-banner flex-1 sm:flex-none px-4 py-2 rounded-lg bg-ktm-accent hover:bg-ktm-accent-600 text-ktm-text text-sm font-semibold transition-colors" data-id="${b.id}">Editar</button>
-              <button class="delete-banner flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-400 font-semibold transition-colors" data-id="${b.id}">Eliminar</button>
+              <button class="edit-banner flex-1 sm:flex-none px-4 py-2 rounded-lg bg-ktm-accent hover:bg-ktm-accent-600 text-white dark:text-ktm-text text-sm font-semibold transition-colors" data-id="${b.id}">Editar</button>
+              <button class="delete-banner flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-600 dark:text-red-400 font-semibold transition-colors" data-id="${b.id}">Eliminar</button>
             </div>
           </div>
         `
