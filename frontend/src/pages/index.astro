@@ -177,16 +177,20 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
   <section class="dark-section relative w-full overflow-hidden">
     {banners.length > 0 ? (
       <div class="relative w-full h-[50vh] md:h-[60vh] hero-banner-slider">
-        {banners.map((banner, index) => (
+        {banners.map((banner, index) => {
+          const slideClass = `absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out hero-banner-slide ${index === 0 ? 'active' : ''}`;
+          const slideStyle = `background-image: url('${banner.image_url || ''}'); z-index: ${index === 0 ? 1 : 0};`;
+          return (
           <div
             key={banner.id || index}
-            class={`absolute inset-0 bg-cover bg-center transition-opacity duration-1000 ease-in-out hero-banner-slide ${index === 0 ? 'active' : ''}`}
-            style={`background-image: url('${banner.image_url || ''}'); z-index: ${index === 0 ? 1 : 0};`}
+            class={slideClass}
+            style={slideStyle}
             data-banner-index={index}
           >
             <div class="absolute inset-0 bg-gradient-to-b from-black/50 via-black/40 to-black/60"></div>
           </div>
-        ))}
+          );
+        })}
         <div class="relative z-10 h-full">
           <div class="max-w-7xl mx-auto px-4 md:px-8 w-full h-full relative">
             <div class="hero-banner-content relative h-full">
@@ -201,12 +205,10 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
                 let displaySubtitle = banner.subtitle;
                 
                 if (isKTMServiceBanner) {
-                  // Cambiar el título a "Servicio tecnico oficial KTM"
-                  displayTitle = 'Servicio tecnico oficial KTM';
-                  // Mantener el subtítulo original o cambiarlo si es necesario
-                  if (banner.subtitle?.toLowerCase().includes('partner oficial')) {
-                    displaySubtitle = 'Partner oficial KTM';
-                  }
+                  // Mantener el título original "VISITA NUESTRO TALLER"
+                  displayTitle = banner.title || 'VISITA NUESTRO TALLER';
+                  // Cambiar el subtítulo a "SERVICIO TECNICO OFICIAL KTM"
+                  displaySubtitle = 'SERVICIO TECNICO OFICIAL KTM';
                 }
                 
                 // Generar HTML para título con logo KTM
@@ -214,12 +216,14 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
                 if (displayTitle && displayTitle.includes('KTM')) {
                   const titleParts = displayTitle.split('KTM');
                   titleHTML = '';
-                  titleParts.forEach((part, i) => {
-                    if (part) titleHTML += `<span>${part}</span>`;
+                  for (let i = 0; i < titleParts.length; i++) {
+                    if (titleParts[i]) {
+                      titleHTML += `<span>${titleParts[i]}</span>`;
+                    }
                     if (i < titleParts.length - 1) {
                       titleHTML += '<img src="/KTM-logo.png" alt="KTM" class="inline-block align-middle h-8 md:h-12 lg:h-16 w-auto mx-1" style="filter: brightness(0) invert(1);" />';
                     }
-                  });
+                  }
                 }
                 
                 // Generar HTML para subtítulo con logo KTM
@@ -227,48 +231,54 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
                 if (displaySubtitle && displaySubtitle.includes('KTM')) {
                   const subtitleParts = displaySubtitle.split('KTM');
                   subtitleHTML = '';
-                  subtitleParts.forEach((part, i) => {
-                    if (part) subtitleHTML += `<span>${part}</span>`;
+                  for (let i = 0; i < subtitleParts.length; i++) {
+                    if (subtitleParts[i]) {
+                      subtitleHTML += `<span>${subtitleParts[i]}</span>`;
+                    }
                     if (i < subtitleParts.length - 1) {
                       subtitleHTML += '<img src="/KTM-logo.png" alt="KTM" class="inline-block align-middle h-6 md:h-8 lg:h-10 w-auto mx-1" style="filter: brightness(0) invert(1);" />';
                     }
-                  });
+                  }
                 }
                 
+                const contentKey = `content-${banner.id || index}`;
+                const contentClass = `hero-banner-content-item ${index === 0 ? 'active' : ''}`;
+                
                 return (
-                <div key={`content-${banner.id || index}`} class={`hero-banner-content-item ${index === 0 ? 'active' : ''}`} data-banner-index={index}>
-                  {displayTitle && (
-                      <h1 
-                        class="text-3xl md:text-5xl lg:text-6xl font-black mb-4 text-white leading-tight tracking-tight drop-shadow-2xl flex flex-wrap items-center justify-center gap-2" 
-                        style="text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 2px 10px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 0, 0, 0.4);"
-                        set:html={titleHTML}
-                      ></h1>
-                  )}
-                  {displaySubtitle && (
-                      <p 
-                        class="text-lg md:text-xl lg:text-2xl text-white/95 mb-8 font-light leading-relaxed drop-shadow-lg flex flex-wrap items-center justify-center gap-2" 
-                        style="text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7), 0 1px 5px rgba(0, 0, 0, 0.5);"
-                        set:html={subtitleHTML}
-                      ></p>
-                  )}
-                  <div class="flex flex-wrap gap-4 justify-center">
-                    {banner.link_url ? (
+                  <div key={contentKey} class={contentClass} data-banner-index={index}>
+                    {displayTitle && (
+                        <h1 
+                          class="text-3xl md:text-5xl lg:text-6xl font-black mb-4 text-white leading-tight tracking-tight drop-shadow-2xl flex flex-wrap items-center justify-center gap-2" 
+                          style="text-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 2px 10px rgba(0, 0, 0, 0.6), 0 0 40px rgba(0, 0, 0, 0.4);"
+                          set:html={titleHTML}
+                        ></h1>
+                    )}
+                    {displaySubtitle && (
+                        <p 
+                          class="text-lg md:text-xl lg:text-2xl text-white/95 mb-8 font-light leading-relaxed drop-shadow-lg flex flex-wrap items-center justify-center gap-2" 
+                          style="text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7), 0 1px 5px rgba(0, 0, 0, 0.5);"
+                          set:html={subtitleHTML}
+                        ></p>
+                    )}
+                    <div class="flex flex-wrap gap-4 justify-center">
+                      {banner.link_url ? (
+                        <a
+                          href={banner.link_url}
+                          class="inline-flex items-center gap-3 px-8 py-4 bg-ktm-accent text-black dark:text-white font-bold text-base hover:bg-ktm-accentSoft transition-all uppercase tracking-wider shadow-lg"
+                        >
+                          Explorar →
+                        </a>
+                      ) : null}
                       <a
-                        href={banner.link_url}
-                        class="inline-flex items-center gap-3 px-8 py-4 bg-ktm-accent text-black dark:text-white font-bold text-base hover:bg-ktm-accentSoft transition-all uppercase tracking-wider shadow-lg"
+                        href={PUBLIC_WHATSAPP_URL}
+                        class="inline-flex items-center gap-3 px-8 py-4 border-2 border-white text-white font-bold text-base hover:bg-white hover:text-black dark:hover:text-ktm-bg transition-all uppercase tracking-wider"
                       >
-                        Explorar →
+                        Contactar
                       </a>
-                    ) : null}
-                    <a
-                      href={PUBLIC_WHATSAPP_URL}
-                      class="inline-flex items-center gap-3 px-8 py-4 border-2 border-white text-white font-bold text-base hover:bg-white hover:text-black dark:hover:text-ktm-bg transition-all uppercase tracking-wider"
-                    >
-                      Contactar
-                    </a>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
