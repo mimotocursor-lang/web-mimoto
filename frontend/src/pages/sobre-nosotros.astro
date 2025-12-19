@@ -28,9 +28,16 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
                 const parts = subtitle.split('KTM');
                 let html = '';
                 for (let i = 0; i < parts.length; i++) {
-                  if (parts[i]) html += `<span>${parts[i]}</span>`;
+                  if (parts[i]) {
+                    // Si es la segunda parte (después de KTM), agregar salto de línea antes
+                    if (i === 1) {
+                      html += `<br /><span>${parts[i]}</span>`;
+                    } else {
+                      html += `<span>${parts[i]}</span>`;
+                    }
+                  }
                   if (i < parts.length - 1) {
-                    html += '<img src="/KTM-logo.png" alt="KTM" class="inline-block align-middle h-4 md:h-6 lg:h-8 w-auto mx-1" style="filter: brightness(0) invert(1); vertical-align: middle;" />';
+                    html += '<img src="/KTM-logo.png" alt="KTM" class="inline-block align-middle h-6 md:h-8 lg:h-10 w-auto mx-1" style="filter: brightness(0) invert(1); vertical-align: middle;" />';
                   }
                 }
                 return html;
