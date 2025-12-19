@@ -164,8 +164,6 @@ const { data: productosRepuestosData } = await supabaseClient
   .order('created_at', { ascending: false })
   .limit(4);
 const productosRepuestos = productosRepuestosData || [];
-
-const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
 ---
 <style>
   /* Sliders automáticos para las cards */
