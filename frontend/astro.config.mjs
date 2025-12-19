@@ -1,6 +1,7 @@
 import { defineConfig } from 'astro/config';
 import tailwind from '@astrojs/tailwind';
 import vercel from '@astrojs/vercel/serverless';
+import path from 'node:path';
 
 export default defineConfig({
   srcDir: './src',
@@ -13,11 +14,14 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
-        '@': '/src',
+        '@': path.resolve('./src'),
       },
     },
     ssr: {
       noExternal: ['@supabase/supabase-js'],
+    },
+    optimizeDeps: {
+      exclude: ['@supabase/supabase-js'],
     },
   },
 });
