@@ -14,29 +14,46 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     </div>
   </section>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Crear cliente de Supabase directamente
-    import { createClient } from '@supabase/supabase-js';
+    // Esperar a que Supabase se cargue desde el CDN
+    let supabaseClient = null;
+    let supabaseLoadAttempts = 0;
+    const MAX_ATTEMPTS = 50;
     
-    // Obtener variables con múltiples fallbacks
-    const supabaseUrl = 
-      import.meta.env.PUBLIC_SUPABASE_URL || 
-      (typeof window !== 'undefined' ? (window as any).PUBLIC_SUPABASE_URL : '') ||
-      'https://prizpqahcluomioxnmex.supabase.co';
-    
-    const supabaseAnonKey = 
-      import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 
-      (typeof window !== 'undefined' ? (window as any).PUBLIC_SUPABASE_ANON_KEY : '') ||
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
-    
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-        storage: typeof window !== 'undefined' ? window.localStorage : undefined
+    function initSupabase() {
+      if (typeof supabase === 'undefined') {
+        supabaseLoadAttempts++;
+        if (supabaseLoadAttempts > MAX_ATTEMPTS) {
+          console.error('❌ Timeout: Supabase no se cargó');
+          window.location.href = '/login?error=Error cargando Supabase';
+          return;
+        }
+        setTimeout(initSupabase, 100);
+        return;
       }
-    });
+      
+      // Obtener variables con múltiples fallbacks
+      const supabaseUrl = 
+        (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_URL) ||
+        'https://prizpqahcluomioxnmex.supabase.co';
+      
+      const supabaseAnonKey = 
+        (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_ANON_KEY) ||
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+      
+      supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true,
+          storage: typeof window !== 'undefined' ? window.localStorage : undefined
+        }
+      });
+      
+      console.log('✅ Supabase inicializado en callback');
+      handleAuthCallback();
+    }
 
     async function handleAuthCallback() {
       console.log('🔄 Procesando callback de autenticación...');
@@ -124,18 +141,39 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
     }
 
-    // También verificar el hash de la URL para OAuth
-    if (window.location.hash) {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const error = hashParams.get('error');
+    // Verificar el hash de la URL para OAuth antes de inicializar
+    function checkForHashError() {
+      if (window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const error = hashParams.get('error');
+        
+        if (error) {
+          console.error('❌ Error en hash:', error);
+          window.location.href = `/login?error=${encodeURIComponent(error)}`;
+          return true; // Indica que hay un error
+        }
+      }
+      return false; // No hay error
+    }
+
+    // Inicializar Supabase cuando esté listo
+    function startCallback() {
+      // Verificar errores en el hash primero
+      if (checkForHashError()) {
+        return; // Si hay error, no continuar
+      }
       
-      if (error) {
-        console.error('❌ Error en hash:', error);
-        window.location.href = `/login?error=${encodeURIComponent(error)}`;
-        return;
+      // Inicializar Supabase
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(initSupabase, 100);
+        });
+      } else {
+        setTimeout(initSupabase, 100);
       }
     }
 
-    handleAuthCallback();
+    // Iniciar el proceso
+    startCallback();
   </script>
 </BaseLayout>
