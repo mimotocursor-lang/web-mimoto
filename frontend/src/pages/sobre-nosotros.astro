@@ -5,48 +5,71 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
 ---
 
 <BaseLayout title="Sobre Nosotros - Mimoto" description="Conoce nuestra historia, valores y compromiso con el servicio técnico especializado para motos.">
-  <!-- Hero Humano -->
+  <!-- Hero Slider -->
   <section class="relative w-full min-h-[85vh] overflow-hidden">
-    <div class="absolute inset-0">
-      <div
-        class="absolute inset-0 bg-cover bg-center"
-        style="background-image: url('/local-entrada_upscayl_4x.jpg');"
-      ></div>
-      <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/80 via-ktm-bg/70 to-ktm-bg/90"></div>
-    </div>
-    <div class="relative z-10 h-full flex items-center justify-center pt-32 md:pt-40">
-      <div class="max-w-7xl mx-auto px-4 md:px-8 w-full text-center">
-        <div class="max-w-4xl mx-auto">
-          <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-6 text-white leading-tight tracking-tight drop-shadow-lg">
-            Sobre Nosotros
-          </h1>
-          <p 
-            class="text-xl md:text-2xl lg:text-3xl text-white/95 mb-8 font-light leading-relaxed drop-shadow-md text-center"
-            set:html={(() => {
-              const subtitle = 'Nuestro taller cuenta con tecnicos calificados y certificados por la marca KTM. ADEMAS ATENDEMOS MARCAS COMO HONDA, YAMAHA, SUZUKI';
-              if (subtitle.includes('KTM')) {
-                const parts = subtitle.split('KTM');
-                let html = '';
-                for (let i = 0; i < parts.length; i++) {
-                  if (parts[i]) {
-                    // Si es la segunda parte (después de KTM), agregar salto de línea antes
-                    if (i === 1) {
-                      html += `<br /><span>${parts[i]}</span>`;
-                    } else {
-                      html += `<span>${parts[i]}</span>`;
+    <div class="relative w-full h-full sobre-nosotros-hero-slider">
+      <!-- Banner 1: Sobre Nosotros -->
+      <div class="absolute inset-0 sobre-nosotros-hero-slide active" style="z-index: 1;">
+        <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('/local-entrada_upscayl_4x.jpg');"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/80 via-ktm-bg/70 to-ktm-bg/90"></div>
+        <div class="relative z-10 h-full flex items-center justify-center pt-32 md:pt-40">
+          <div class="max-w-7xl mx-auto px-4 md:px-8 w-full text-center">
+            <div class="max-w-4xl mx-auto">
+              <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-6 text-white leading-tight tracking-tight drop-shadow-lg">
+                Sobre Nosotros
+              </h1>
+              <p 
+                class="text-xl md:text-2xl lg:text-3xl text-white/95 mb-8 font-light leading-relaxed drop-shadow-md text-center"
+                set:html={(() => {
+                  const subtitle = 'Nuestro taller cuenta con tecnicos calificados y certificados por la marca KTM ADEMAS ATENDEMOS MARCAS COMO HONDA, YAMAHA, SUZUKI, KAWASAKI';
+                  if (subtitle.includes('KTM')) {
+                    const parts = subtitle.split('KTM');
+                    let html = '';
+                    for (let i = 0; i < parts.length; i++) {
+                      if (parts[i]) {
+                        if (i === 1) {
+                          html += `<br /><span>${parts[i]}</span>`;
+                        } else {
+                          html += `<span>${parts[i]}</span>`;
+                        }
+                      }
+                      if (i < parts.length - 1) {
+                        html += '<img src="/KTM-logo.png" alt="KTM" class="inline-block align-middle h-6 md:h-8 lg:h-10 w-auto mx-1" style="filter: brightness(0) invert(1); vertical-align: middle;" />';
+                      }
                     }
+                    return html;
                   }
-                  if (i < parts.length - 1) {
-                    html += '<img src="/KTM-logo.png" alt="KTM" class="inline-block align-middle h-6 md:h-8 lg:h-10 w-auto mx-1" style="filter: brightness(0) invert(1); vertical-align: middle;" />';
-                  }
-                }
-                return html;
-              }
-              return subtitle;
-            })()}
-          ></p>
+                  return subtitle;
+                })()}
+              ></p>
+            </div>
+          </div>
         </div>
       </div>
+      
+      <!-- Banner 2: Más que un taller -->
+      <div class="absolute inset-0 sobre-nosotros-hero-slide" style="z-index: 0;">
+        <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('/banner-visitanuestrotaller.jpg');"></div>
+        <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/80 via-ktm-bg/70 to-ktm-bg/90"></div>
+        <div class="relative z-10 h-full flex items-center justify-center pt-32 md:pt-40">
+          <div class="max-w-7xl mx-auto px-4 md:px-8 w-full text-center">
+            <div class="max-w-4xl mx-auto">
+              <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-6 text-white leading-tight tracking-tight drop-shadow-lg">
+                Mas que un taller, somos apasionados por las motos y estamos comprometidos con hacer que cada reparacion cada mantencion cada ajuste sea nuestro mejor esfuerzo.
+              </h1>
+              <h3 class="text-xl md:text-2xl lg:text-3xl text-white/95 mb-8 font-light leading-relaxed drop-shadow-md">
+                porque entendemos que tu moto no es solo un vehiculo: es tu libertad, tu sentir, tu pasion... En MiMoto la cuidamos como si fuera nuestra moto.
+              </h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Indicadores de banners -->
+    <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20 flex gap-2">
+      <button class="w-2 h-2 rounded-full transition-all sobre-nosotros-hero-indicator bg-white" data-slide-index="0" aria-label="Banner 1"></button>
+      <button class="w-2 h-2 rounded-full transition-all sobre-nosotros-hero-indicator bg-white/40" data-slide-index="1" aria-label="Banner 2"></button>
     </div>
   </section>
 
@@ -329,5 +352,66 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
       </div>
     </div>
   </section>
+
+  <!-- Script para slider del hero -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const slides = document.querySelectorAll('.sobre-nosotros-hero-slide');
+      const indicators = document.querySelectorAll('.sobre-nosotros-hero-indicator');
+      
+      if (slides.length <= 1) return;
+      
+      let currentIndex = 0;
+      
+      function showSlide(index: number) {
+        slides.forEach((slide, i) => {
+          if (i === index) {
+            slide.classList.add('active');
+            (slide as HTMLElement).style.opacity = '1';
+            (slide as HTMLElement).style.zIndex = '1';
+          } else {
+            slide.classList.remove('active');
+            (slide as HTMLElement).style.opacity = '0';
+            (slide as HTMLElement).style.zIndex = '0';
+          }
+        });
+        
+        indicators.forEach((indicator, i) => {
+          if (i === index) {
+            indicator.classList.remove('bg-white/40');
+            indicator.classList.add('bg-white');
+          } else {
+            indicator.classList.remove('bg-white');
+            indicator.classList.add('bg-white/40');
+          }
+        });
+      }
+      
+      // Cambiar banner cada 5 segundos
+      setInterval(() => {
+        currentIndex = (currentIndex + 1) % slides.length;
+        showSlide(currentIndex);
+      }, 5000);
+      
+      // Permitir click en indicadores
+      indicators.forEach((indicator, index) => {
+        indicator.addEventListener('click', () => {
+          currentIndex = index;
+          showSlide(currentIndex);
+        });
+      });
+    });
+  </script>
+  
+  <style>
+    .sobre-nosotros-hero-slide {
+      opacity: 0;
+      transition: opacity 1s ease-in-out;
+    }
+    
+    .sobre-nosotros-hero-slide.active {
+      opacity: 1;
+    }
+  </style>
 </BaseLayout>
 
