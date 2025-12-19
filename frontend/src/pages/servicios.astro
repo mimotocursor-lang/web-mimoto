@@ -13,7 +13,7 @@ const servicios = [
     story: {
       intro: 'Tu moto es una máquina de precisión. Cada kilómetro recorrido, cada ruta completada, cada aventura vivida deja su huella. Las mantenciones programadas no son solo un checklist: son el ritual que mantiene viva la conexión entre tú y tu moto.',
       importancia: 'Una mantención preventiva a tiempo puede evitar reparaciones costosas y mantener tu moto funcionando como el primer día. No es solo cambiar aceite: es revisar cada sistema, detectar desgastes tempranos y asegurar que cada componente esté en su punto óptimo.',
-      cuando: 'Cada 5.000 km o cada 6 meses, lo que ocurra primero. Si usas tu moto intensivamente o en condiciones extremas, reduce estos intervalos. La clave está en la constancia: mejor una mantención pequeña frecuente que una reparación grande ocasional.'
+      cuando: 'LOS SERVICIOS PREVENTIVOS SE REALIZAN ANTES DE CADA PASEO O SALIDA Y LUEGO AL LLEGAR. Y LOS SERVICIOS SE REALIZAN 1 VEZ AL AÑO O AL CUMPLIR LOS KILOMETROS DE SU PAUTA PROPUESTA POR CADA FABRICANTE.'
     },
     incluye: [
       'Cambio de aceite y filtros (motor y transmisión)',
@@ -27,28 +27,6 @@ const servicios = [
     ],
     productosRelacionados: ['Aceites y Lubricantes', 'Filtros', 'Bujías'],
     image: '/servicios/MantencionProgramada.png'
-  },
-  {
-    id: 'motor',
-    title: 'Motor y Transmisión',
-    heroImage: '/servicios/Banner-MotoryTransmision.png',
-    story: {
-      intro: 'El corazón de tu moto late en cada explosión del motor. Cada válvula que se abre, cada pistón que sube y baja, cada engranaje que transmite potencia. Cuando algo no suena bien, cuando falta potencia, cuando algo no encaja, es el momento de confiar en especialistas.',
-      importancia: 'Un motor bien mantenido no solo rinde más: dura más. La regulación de válvulas, el ajuste de carburación o inyección, el diagnóstico electrónico profundo: todo esto no es solo reparar, es optimizar. Es devolverle a tu moto su verdadero potencial.',
-      cuando: 'Si notas pérdida de potencia, ruidos extraños, consumo excesivo de aceite o dificultades al arrancar, es momento de revisar. También cada 15.000 km para regulación de válvulas, o si planeas un viaje largo. La prevención aquí es crítica.'
-    },
-    incluye: [
-      'Regulación de válvulas (ajuste de holguras)',
-      'Ajuste de carburador o diagnóstico de inyección',
-      'Reparación y reconstrucción de motor',
-      'Diagnóstico electrónico completo (ECU, sensores)',
-      'Puesta a punto completa (encendido, compresión)',
-      'Cambio de aceite de caja y transmisión',
-      'Ajuste y reparación de embrague',
-      'Revisión de sistema de refrigeración'
-    ],
-    productosRelacionados: ['Motor', 'Aceites y Lubricantes', 'Bujías'],
-    image: '/servicios/MotoryTransmision.png'
   },
   {
     id: 'suspension',
@@ -256,6 +234,14 @@ const serviciosConProductos = await Promise.all(
 
   <!-- Storytelling Section -->
   <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <div class="mb-16 text-center">
+      <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">
+        ¿QUE SERVICIOS REALIZAMOS?
+      </h2>
+      <p class="text-xl md:text-2xl text-ktm-light-text dark:text-ktm-text/80 leading-relaxed max-w-3xl mx-auto">
+        REALIZAREMOS LOS SERVICIOS DE MANTENCION CON PAUTAS ENTREGADAS POR LA MARCA.
+      </p>
+    </div>
     <div class="grid md:grid-cols-2 gap-12 md:gap-16 items-center">
       <div>
         <h2 class="text-4xl md:text-5xl font-black text-ktm-light-text dark:text-ktm-text mb-6 uppercase tracking-tight">
