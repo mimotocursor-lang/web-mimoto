@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS public.products (
   is_spare_part BOOLEAN NOT NULL DEFAULT FALSE,
   category_id BIGINT REFERENCES public.categories (id),
   main_image_url TEXT,
+  featured BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -50,6 +51,7 @@ CREATE TABLE IF NOT EXISTS public.products (
 CREATE INDEX IF NOT EXISTS products_status_idx ON public.products (status);
 CREATE INDEX IF NOT EXISTS products_category_idx ON public.products (category_id);
 CREATE INDEX IF NOT EXISTS products_stock_idx ON public.products (stock);
+CREATE INDEX IF NOT EXISTS products_featured_idx ON public.products (featured);
 
 CREATE TABLE IF NOT EXISTS public.used_motorcycles (
   id BIGSERIAL PRIMARY KEY,

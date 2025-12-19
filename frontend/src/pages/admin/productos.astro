@@ -3,10 +3,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Gestión de Productos - Mimoto">
-  <section class="max-w-6xl mx-auto px-4 py-16">
-    <div class="flex items-center justify-between mb-8">
-      <h1 class="text-3xl font-bold text-ktm-light-text dark:text-ktm-text">Gestión de Productos</h1>
-      <nav class="flex gap-4 text-sm">
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-20">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+      <h1 class="text-3xl md:text-4xl font-bold text-ktm-light-text dark:text-ktm-text">Gestión de Productos</h1>
+      <nav class="flex gap-4 text-sm flex-wrap">
         <a href="/admin" class="text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold">Dashboard</a>
         <a href="/admin/productos" class="text-ktm-accent dark:text-ktm-accent font-bold">Productos</a>
         <a href="/admin/motos-usadas" class="text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold">Motos Usadas</a>
@@ -14,14 +14,58 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       </nav>
     </div>
 
-    <div class="mb-6">
+    <div class="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
       <button
         id="new-product-btn"
         class="px-6 py-3 rounded-lg bg-ktm-accent text-ktm-text font-bold hover:bg-ktm-accent-600 transition-colors shadow-lg"
       >
         + Nuevo Producto
       </button>
+      <div class="text-sm text-ktm-light-text/70 dark:text-ktm-text/70">
+        <span id="result-count">0</span> producto<span id="result-count-plural">s</span>
+      </div>
     </div>
+
+    <!-- Barra de búsqueda y filtros -->
+    <div class="mb-8 space-y-4">
+      <div class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1 relative">
+          <input
+            type="text"
+            id="search-products"
+            placeholder="Buscar productos por nombre, SKU o descripción..."
+            class="w-full px-6 py-4 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-gray-300 dark:border-ktm-border/50 text-gray-900 dark:text-ktm-text placeholder-gray-400 dark:placeholder-white/50 focus:border-ktm-accent focus:ring-2 focus:ring-ktm-accent/20 focus:outline-none transition-all uppercase tracking-wide text-sm shadow-sm dark:shadow-lg"
+          />
+          <div id="autocomplete-suggestions" class="hidden absolute z-50 w-full mt-1 bg-ktm-light-surface/95 dark:bg-ktm-surface/95 backdrop-blur-md rounded-lg border border-ktm-accent/30 shadow-xl max-h-60 overflow-y-auto"></div>
+        </div>
+        <button
+          type="button"
+          id="btn-buscar"
+          class="px-8 py-4 bg-ktm-accent text-ktm-light-text dark:text-ktm-text font-bold hover:bg-ktm-accent-600 transition-all whitespace-nowrap uppercase tracking-wider"
+        >
+          Buscar
+        </button>
+      </div>
+      
+      <!-- Filtro por Categoría -->
+      <div class="w-full md:w-auto">
+        <label class="block text-ktm-light-text dark:text-ktm-text/70 text-xs mb-2 uppercase tracking-wider">Categoría</label>
+        <select
+          id="filter-categoria"
+          class="w-full md:w-auto min-w-[200px] px-4 py-3 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-gray-300 dark:border-ktm-border/50 text-gray-900 dark:text-ktm-text focus:border-ktm-accent focus:ring-2 focus:ring-ktm-accent/20 focus:outline-none transition-all cursor-pointer uppercase tracking-wide text-sm shadow-sm dark:shadow-lg"
+        >
+          <option value="all">Todas las categorías</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Botón Volver (oculto inicialmente) -->
+    <button
+      id="btn-volver"
+      class="hidden mb-6 inline-flex items-center gap-2 px-6 py-3 bg-white dark:bg-ktm-surface/90 backdrop-blur-sm rounded-lg border-2 border-ktm-accent/50 dark:border-ktm-accent/30 text-gray-900 dark:text-ktm-text font-bold hover:border-ktm-accent hover:ring-2 hover:ring-ktm-accent/20 transition-all uppercase tracking-wider shadow-sm dark:shadow-lg"
+    >
+      <span>←</span> Volver a Categorías
+    </button>
 
     <div id="products-list" class="space-y-4">
       <p class="text-ktm-light-text/70 dark:text-ktm-text/70">Cargando productos...</p>
@@ -162,7 +206,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   </section>
 
   <script>
-    import { supabaseClient } from '../../lib/supabase/client.ts';
+    // Crear cliente de Supabase directamente
+    import { createClient } from '@supabase/supabase-js';
+    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
+    const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    
+    // Importar funciones de storage (estas deberían funcionar porque no se usan en el cliente)
     import { uploadImage, deleteImage } from '../../lib/supabase/storage.ts';
 
     let editingProductId: number | null = null;
@@ -190,6 +240,99 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       return true;
     }
 
+    // Funciones de categorización (inline, igual que en tienda.astro)
+    const CATEGORIES_INLINE = [
+      { id: 'Aceites y Lubricantes', keywords: ['aceite', 'oil', 'lubricante', 'motorex', 'liqui moly', 'liquimoly', 'coolant', 'refrigerante', 'fork oil', 'chain lube', 'chainclean', 'brake clean'] },
+      { id: 'Filtros', keywords: ['filtro', 'filter', 'aire', 'aceite', 'air'] },
+      { id: 'Frenos', keywords: ['pastilla', 'freno', 'brake', 'disco', 'bomba de freno', 'bomba freno', 'caliper', 'calipe'] },
+      { id: 'Motor', keywords: ['empaquetadura', 'gasket', 'piston', 'anillo', 'valvula', 'valvulas', 'reten', 'retenes', 'cigueñal', 'cigüeñal', 'culata', 'cilindro', 'juego anillos', 'kit piston'] },
+      { id: 'Transmisión', keywords: ['cadena', 'chain', 'catalina', 'piñon', 'sprocket', 'candado', 'transmision', 'embrague'] },
+      { id: 'Suspensión', keywords: ['horquilla', 'fork', 'resorte', 'spring', 'suspension', 'amortiguador', 'shock'] },
+      { id: 'Eléctrico', keywords: ['relay', 'rele', 'regulador', 'voltage', 'voltaje', 'switch', 'cable', 'intermitente', 'señalizador'] },
+      { id: 'Neumáticos y Cámaras', keywords: ['neumatico', 'tire', 'camara', 'mousse', 'aro'] },
+      { id: 'Baterías', keywords: ['bateria', 'battery', 'ytx', 'ytz', 'ftx', 'ftz', 'litio'] },
+      { id: 'Bujías', keywords: ['bujia', 'bujía', 'spark', 'ngk', 'bosch', 'cachimba'] },
+      { id: 'Iluminación', keywords: ['ampolleta', 'bulb', 'foco', 'led', 'h3', 'h4', 'halogen'] },
+      { id: 'Accesorios', keywords: ['protector', 'espejo', 'mirror', 'bolso', 'funda', 'manilla', 'manubrio', 'calienta puños', 'cubrepuños', 'phone case', 'bundle'] }
+    ];
+
+    function categorizeProduct(name: string): string {
+      const nameLower = (name || '').toLowerCase();
+      for (const category of CATEGORIES_INLINE) {
+        for (const keyword of category.keywords) {
+          if (nameLower.includes(keyword.toLowerCase())) {
+            return category.id;
+          }
+        }
+      }
+      return 'Otros';
+    }
+
+    function getAvailableCategoriesInline(products: any[]): string[] {
+      const categorySet = new Set<string>();
+      products.forEach(p => {
+        const category = categorizeProduct(p.name);
+        if (category) categorySet.add(category);
+      });
+      return Array.from(categorySet).sort();
+    }
+
+    function filterByCategoryInline(products: any[], category: string): any[] {
+      if (category === 'all') return products;
+      return products.filter(p => categorizeProduct(p.name) === category);
+    }
+
+    function searchProductsInline(products: any[], searchText: string): any[] {
+      if (!searchText.trim()) return products;
+      const searchLower = searchText.toLowerCase().trim();
+      return products.filter(p => {
+        const name = (p.name || '').toLowerCase();
+        const description = (p.description || '').toLowerCase();
+        const sku = (p.sku || '').toLowerCase();
+        return name.includes(searchLower) || description.includes(searchLower) || sku.includes(searchLower);
+      });
+    }
+
+    function getAutocompleteSuggestionsInline(products: any[], searchText: string, limit: number = 5): string[] {
+      if (!searchText.trim()) return [];
+      const searchLower = searchText.toLowerCase().trim();
+      const suggestions = new Set<string>();
+      for (const product of products) {
+        const name = (product.name || '').toLowerCase();
+        if (name.includes(searchLower)) {
+          suggestions.add(product.name);
+          if (suggestions.size >= limit) break;
+        }
+      }
+      return Array.from(suggestions).slice(0, limit);
+    }
+
+    // Función para obtener la imagen de una categoría
+    function getCategoryImage(category: string): string {
+      const categoryMap: Record<string, string> = {
+        'Aceites y Lubricantes': 'aceitesylubricantes.png',
+        'Filtros': 'filtros.png',
+        'Frenos': 'frenos.png',
+        'Motor': 'motor.png',
+        'Transmisión': 'transmision.png',
+        'Suspensión': 'suspension.png',
+        'Eléctrico': 'electrico.png',
+        'Neumáticos y Cámaras': 'NEUMATICOSYCAMARAS.png',
+        'Baterías': 'baterias.png',
+        'Bujías': 'bujias.png',
+        'Iluminación': 'iluminacion.png',
+        'Accesorios': 'accesorios.png',
+        'Otros': 'otros-repuestos.png'
+      };
+      const imageName = categoryMap[category] || 'otros-repuestos.png';
+      return `/accesorios-repuestos/${imageName}`;
+    }
+
+    let allProducts: any[] = [];
+    let currentCategory = 'all';
+    let currentSearch = '';
+    let viewMode: 'categories' | 'products' = 'categories';
+
     async function loadProducts() {
       const hasAccess = await checkAdminAccess();
       if (!hasAccess) return;
@@ -205,103 +348,202 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           throw error;
         }
 
-        // Debug: Verificar datos
-        console.log('Productos cargados:', data?.length || 0);
-        if (data && data.length > 0) {
-          console.log('Primer producto:', data[0]);
-          console.log('URL imagen primer producto:', data[0]?.main_image_url);
-          console.log('Tipo de main_image_url:', typeof data[0]?.main_image_url);
+        allProducts = data || [];
+        
+        // Actualizar select de categorías
+        const categorySelect = document.getElementById('filter-categoria') as HTMLSelectElement;
+        if (categorySelect) {
+          const availableCategories = getAvailableCategoriesInline(allProducts);
+          categorySelect.innerHTML = '<option value="all">Todas las categorías</option>';
+          availableCategories.forEach(cat => {
+            const option = document.createElement('option');
+            option.value = cat;
+            option.textContent = cat;
+            categorySelect.appendChild(option);
+          });
         }
 
-        const listEl = document.getElementById('products-list')!;
-        if (!data || data.length === 0) {
-          listEl.innerHTML = '<p class="text-ktm-light-text/70 dark:text-ktm-text/70">No hay productos</p>';
-          return;
-        }
+        renderView();
+      } catch (err) {
+        console.error('Error cargando productos:', err);
+      }
+    }
 
-        listEl.innerHTML = data
-          .map(
-            (p) => {
-              // Verificar si tiene imagen de forma más robusta
-              const rawImageUrl = p.main_image_url;
-              const hasImage = !!(rawImageUrl && String(rawImageUrl).trim() !== '' && rawImageUrl !== null && rawImageUrl !== undefined);
-              // No escapar la URL, solo usar directamente
-              const imageUrl = hasImage ? String(rawImageUrl).trim() : '';
-              const productName = (p.name || 'Producto').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-              
-              if (hasImage && imageUrl) {
-                return `
-          <div class="border-2 border-gray-300 dark:border-primary/30 rounded-xl p-4 bg-white dark:bg-ktm-surface/50 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-lg backdrop-blur-sm">
-            <div class="w-28 h-28 flex-shrink-0 rounded-lg overflow-hidden border-2 border-primary/30 bg-gray-800" style="width: 112px; height: 112px; min-width: 112px; min-height: 112px;">
+    function renderView() {
+      const listEl = document.getElementById('products-list')!;
+      const btnVolver = document.getElementById('btn-volver')!;
+      const resultCount = document.getElementById('result-count')!;
+      const resultCountPlural = document.getElementById('result-count-plural')!;
+
+      if (!allProducts || allProducts.length === 0) {
+        listEl.innerHTML = '<p class="text-ktm-light-text/70 dark:text-ktm-text/70">No hay productos</p>';
+        if (resultCount) resultCount.textContent = '0';
+        return;
+      }
+
+      // Si no hay filtros activos, mostrar cards de categorías
+      if (currentCategory === 'all' && !currentSearch.trim() && viewMode === 'categories') {
+        btnVolver.classList.add('hidden');
+        renderCategoryCards();
+        return;
+      }
+
+      // Mostrar productos filtrados
+      btnVolver.classList.remove('hidden');
+      viewMode = 'products';
+      
+      let filtered = [...allProducts];
+      
+      if (currentCategory !== 'all') {
+        filtered = filterByCategoryInline(filtered, currentCategory);
+      }
+      
+      if (currentSearch.trim()) {
+        filtered = searchProductsInline(filtered, currentSearch);
+      }
+
+      if (resultCount) {
+        resultCount.textContent = filtered.length.toString();
+        resultCountPlural.textContent = filtered.length !== 1 ? 's' : '';
+      }
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<p class="text-ktm-light-text/70 dark:text-ktm-text/70 text-center py-12">No se encontraron productos con los filtros seleccionados.</p>';
+        return;
+      }
+
+      renderProductsList(filtered);
+    }
+
+    function renderCategoryCards() {
+      const listEl = document.getElementById('products-list')!;
+      const resultCount = document.getElementById('result-count')!;
+      const resultCountPlural = document.getElementById('result-count-plural')!;
+
+      const categories = getAvailableCategoriesInline(allProducts);
+      
+      if (categories.length === 0) {
+        listEl.innerHTML = '<p class="text-ktm-light-text/70 dark:text-ktm-text/70">No hay categorías disponibles.</p>';
+        return;
+      }
+
+      const grid = document.createElement('div');
+      grid.className = 'grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8';
+
+      categories.forEach(category => {
+        const categoryProducts = filterByCategoryInline(allProducts, category);
+        const featuredInCategory = categoryProducts.filter((p: any) => p.featured).length;
+        const card = document.createElement('div');
+        card.className = 'relative overflow-hidden bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-xl hover:shadow-xl transition-all cursor-pointer group min-h-[280px]';
+        card.addEventListener('click', () => {
+          currentCategory = category;
+          const categorySelect = document.getElementById('filter-categoria') as HTMLSelectElement;
+          if (categorySelect) categorySelect.value = category;
+          viewMode = 'products';
+          renderView();
+        });
+        
+        const categoryImage = getCategoryImage(category);
+        
+        card.innerHTML = `
+          <div class="absolute inset-0 bg-cover bg-center transition-opacity opacity-100 dark:opacity-80 group-hover:opacity-100 dark:group-hover:opacity-95" style="background-image: url('${categoryImage}');"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-ktm-bg/40 via-ktm-bg/20 to-transparent"></div>
+          <div class="relative z-10 h-full flex flex-col justify-center items-center p-6 text-center">
+            <h3 class="text-2xl md:text-3xl font-black text-white mb-2 uppercase tracking-tight drop-shadow-2xl" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.3), 0 0 40px rgba(255,255,255,0.2); filter: brightness(1.1);">${category}</h3>
+            <p class="text-white/90 text-sm uppercase tracking-wider drop-shadow-lg mb-1" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">${categoryProducts.length} producto${categoryProducts.length !== 1 ? 's' : ''}</p>
+            ${featuredInCategory > 0 ? `<p class="text-ktm-accent font-bold text-xs uppercase tracking-wider drop-shadow-lg flex items-center justify-center gap-1" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8);"><span>⭐</span> ${featuredInCategory} destacado${featuredInCategory !== 1 ? 's' : ''}</p>` : ''}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+      
+      listEl.innerHTML = '';
+      listEl.appendChild(grid);
+      
+      if (resultCount) {
+        resultCount.textContent = categories.length.toString();
+        resultCountPlural.textContent = 'categorías';
+      }
+    }
+
+    function renderProductsList(products: any[]) {
+      const listEl = document.getElementById('products-list')!;
+      
+      const grid = document.createElement('div');
+      grid.className = 'grid sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+
+      products.forEach((p) => {
+        const rawImageUrl = p.main_image_url;
+        const hasImage = !!(rawImageUrl && String(rawImageUrl).trim() !== '' && rawImageUrl !== null && rawImageUrl !== undefined);
+        const imageUrl = hasImage ? String(rawImageUrl).trim() : '';
+        const productName = (p.name || 'Producto').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        
+        const card = document.createElement('div');
+        card.className = 'border-2 border-gray-300 dark:border-primary/30 rounded-xl p-4 bg-white dark:bg-ktm-surface/50 flex flex-col gap-4 shadow-lg backdrop-blur-sm hover:shadow-xl transition-all';
+        
+        card.innerHTML = `
+          ${hasImage ? `
+            <div class="w-full h-48 rounded-lg overflow-hidden border-2 border-primary/30 bg-gray-800">
               <img 
                 src="${imageUrl}" 
                 alt="${productName}" 
                 class="w-full h-full object-cover"
-                style="width: 100%; height: 100%; object-fit: cover; display: block;"
                 loading="lazy"
                 crossorigin="anonymous"
-                onerror="console.error('Error cargando imagen:', '${imageUrl}'); this.style.display='none'; const next = this.nextElementSibling; if(next) next.style.display='flex';"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
               >
-              <div class="w-full h-full hidden items-center justify-center text-ktm-text/50 text-xs bg-gray-700/50" style="display: none; width: 100%; height: 100%;">
-                Error al cargar
+              <div class="w-full h-full hidden items-center justify-center text-ktm-text/50 text-xs bg-gray-700/50">
+                Sin imagen
               </div>
             </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <h3 class="font-bold text-gray-900 dark:text-ktm-text">${productName}</h3>
-                ${p.featured ? '<span class="px-2 py-1 bg-ktm-accent text-white dark:text-ktm-text text-xs font-bold uppercase rounded">Destacado</span>' : ''}
-              </div>
-              <p class="text-sm text-gray-600 dark:text-ktm-text/70">$${Number(p.price).toLocaleString('es-CL')} | Stock: ${p.stock} | ${p.status === 'active' ? '<span class="text-green-600 dark:text-green-400">Activo</span>' : '<span class="text-red-600 dark:text-red-400">Inactivo</span>'}</p>
-            </div>
-            <div class="flex gap-2 w-full sm:w-auto">
-              <button class="edit-product flex-1 sm:flex-none px-4 py-2 rounded-lg bg-ktm-accent/20 hover:bg-ktm-accent/30 text-ktm-accent text-sm font-semibold transition-colors shadow-md hover:scale-105" data-id="${p.id}">Editar</button>
-              <button class="delete-product flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-400 font-semibold transition-colors shadow-md hover:scale-105" data-id="${p.id}">Eliminar</button>
-            </div>
-          </div>
-        `;
-              } else {
-                return `
-          <div class="border-2 border-gray-300 dark:border-primary/30 rounded-xl p-4 bg-white dark:bg-ktm-surface/50 flex flex-col sm:flex-row items-start sm:items-center gap-4 shadow-lg backdrop-blur-sm">
-            <div class="w-full sm:w-28 h-28 flex-shrink-0 rounded-lg overflow-hidden border-2 border-primary/30 bg-gray-800 flex items-center justify-center">
+          ` : `
+            <div class="w-full h-48 rounded-lg border-2 border-primary/30 bg-gray-800 flex items-center justify-center">
               <div class="text-gray-500 dark:text-ktm-text/50 text-xs">Sin imagen</div>
             </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-center gap-2 mb-1">
-                <h3 class="font-bold text-gray-900 dark:text-ktm-text">${productName}</h3>
-                ${p.featured ? '<span class="px-2 py-1 bg-ktm-accent text-white dark:text-ktm-text text-xs font-bold uppercase rounded">Destacado</span>' : ''}
-              </div>
-              <p class="text-sm text-gray-600 dark:text-ktm-text/70">$${Number(p.price).toLocaleString('es-CL')} | Stock: ${p.stock} | ${p.status === 'active' ? '<span class="text-green-600 dark:text-green-400">Activo</span>' : '<span class="text-red-600 dark:text-red-400">Inactivo</span>'}</p>
+          `}
+          <div class="flex-1 flex flex-col gap-2">
+            <div class="flex items-center gap-2 mb-1 flex-wrap">
+              <h3 class="font-bold text-gray-900 dark:text-ktm-text text-lg line-clamp-2 flex-1 min-w-0">${productName}</h3>
+              ${p.featured ? '<span class="px-2 py-1 bg-ktm-accent text-white dark:text-ktm-text text-xs font-bold uppercase rounded flex-shrink-0 flex items-center gap-1"><span>⭐</span> Destacado</span>' : ''}
             </div>
-            <div class="flex gap-2 w-full sm:w-auto">
-              <button class="edit-product flex-1 sm:flex-none px-4 py-2 rounded-lg bg-ktm-accent/20 hover:bg-ktm-accent/30 text-ktm-accent text-sm font-semibold transition-colors shadow-md hover:scale-105" data-id="${p.id}">Editar</button>
-              <button class="delete-product flex-1 sm:flex-none px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-400 font-semibold transition-colors shadow-md hover:scale-105" data-id="${p.id}">Eliminar</button>
+            <p class="text-sm text-gray-600 dark:text-ktm-text/70 line-clamp-2">${(p.description || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;')}</p>
+            <div class="mt-auto pt-2 border-t border-gray-300 dark:border-primary/30">
+              <p class="text-sm text-gray-600 dark:text-ktm-text/70 mb-3">
+                <span class="font-bold text-ktm-accent">$${Number(p.price).toLocaleString('es-CL')}</span> | 
+                Stock: <span class="font-semibold">${p.stock}</span> | 
+                ${p.status === 'active' ? '<span class="text-green-600 dark:text-green-400">Activo</span>' : '<span class="text-red-600 dark:text-red-400">Inactivo</span>'}
+                ${p.featured ? ' | <span class="text-ktm-accent font-bold">⭐ Destacado</span>' : ''}
+              </p>
+              <div class="flex gap-2">
+                <button class="edit-product flex-1 px-4 py-2 rounded-lg bg-ktm-accent/20 hover:bg-ktm-accent/30 text-ktm-accent text-sm font-semibold transition-colors shadow-md hover:scale-105" data-id="${p.id}">Editar</button>
+                <button class="delete-product flex-1 px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-sm text-red-400 font-semibold transition-colors shadow-md hover:scale-105" data-id="${p.id}">Eliminar</button>
+              </div>
             </div>
           </div>
         `;
-              }
-            }
-          )
-          .join('');
+        
+        grid.appendChild(card);
+      });
 
-        // Agregar event listeners
-        document.querySelectorAll('.edit-product').forEach((btn) => {
-          btn.addEventListener('click', (e) => {
-            const id = Number((e.target as HTMLElement).getAttribute('data-id'));
-            editProduct(id, data.find((p) => p.id === id)!);
-          });
-        });
+      listEl.innerHTML = '';
+      listEl.appendChild(grid);
 
-        document.querySelectorAll('.delete-product').forEach((btn) => {
-          btn.addEventListener('click', async (e) => {
-            const id = Number((e.target as HTMLElement).getAttribute('data-id'));
-            if (confirm('¿Estás seguro de eliminar este producto?')) {
-              await deleteProduct(id);
-            }
-          });
+      // Agregar event listeners
+      document.querySelectorAll('.edit-product').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          const id = Number((e.target as HTMLElement).getAttribute('data-id'));
+          editProduct(id, allProducts.find((p) => p.id === id)!);
         });
-      } catch (err) {
-        console.error('Error cargando productos:', err);
-      }
+      });
+
+      document.querySelectorAll('.delete-product').forEach((btn) => {
+        btn.addEventListener('click', async (e) => {
+          const id = Number((e.target as HTMLElement).getAttribute('data-id'));
+          if (confirm('¿Estás seguro de eliminar este producto?')) {
+            await deleteProduct(id);
+          }
+        });
+      });
     }
 
     function openModal(isEdit = false) {
@@ -413,6 +655,114 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         reader.readAsDataURL(file);
       }
     });
+
+    // Event listeners para búsqueda y filtros
+    const searchInput = document.getElementById('search-products') as HTMLInputElement;
+    const btnBuscar = document.getElementById('btn-buscar');
+    const categorySelect = document.getElementById('filter-categoria') as HTMLSelectElement;
+    const autocompleteDiv = document.getElementById('autocomplete-suggestions');
+    const btnVolver = document.getElementById('btn-volver');
+
+    // Búsqueda con autocompletado
+    if (searchInput) {
+      let autocompleteTimeout: any;
+      
+      const showSuggestions = (value: string) => {
+        clearTimeout(autocompleteTimeout);
+        if (value.trim() && autocompleteDiv) {
+          autocompleteTimeout = setTimeout(() => {
+            const suggestions = getAutocompleteSuggestionsInline(allProducts, value, 5);
+            showAutocomplete(suggestions);
+          }, 200);
+        } else {
+          hideAutocomplete();
+        }
+      };
+      
+      searchInput.addEventListener('input', (e) => {
+        const value = (e.target as HTMLInputElement).value;
+        currentSearch = value;
+        showSuggestions(value);
+        renderView();
+      });
+      
+      searchInput.addEventListener('focus', (e) => {
+        const value = (e.target as HTMLInputElement).value;
+        showSuggestions(value);
+      });
+
+      searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          renderView();
+          hideAutocomplete();
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (autocompleteDiv && !autocompleteDiv.contains(e.target as Node) && e.target !== searchInput) {
+          hideAutocomplete();
+        }
+      });
+    }
+
+    // Botón buscar
+    if (btnBuscar) {
+      btnBuscar.addEventListener('click', () => {
+        renderView();
+        hideAutocomplete();
+      });
+    }
+
+    function showAutocomplete(suggestions: string[]) {
+      if (!autocompleteDiv) return;
+      if (suggestions.length === 0) {
+        hideAutocomplete();
+        return;
+      }
+      autocompleteDiv.innerHTML = '';
+      autocompleteDiv.classList.remove('hidden');
+      suggestions.forEach(suggestion => {
+        const item = document.createElement('div');
+        item.className = 'px-4 py-2 text-ktm-light-text dark:text-ktm-text hover:bg-ktm-accent/30 cursor-pointer transition-colors border-b border-ktm-accent/20 last:border-b-0';
+        item.textContent = suggestion;
+        item.addEventListener('click', () => {
+          if (searchInput) {
+            searchInput.value = suggestion;
+            currentSearch = suggestion;
+            hideAutocomplete();
+            renderView();
+          }
+        });
+        autocompleteDiv.appendChild(item);
+      });
+    }
+
+    function hideAutocomplete() {
+      if (autocompleteDiv) {
+        autocompleteDiv.classList.add('hidden');
+      }
+    }
+
+    // Filtro de categoría
+    if (categorySelect) {
+      categorySelect.addEventListener('change', (e) => {
+        currentCategory = (e.target as HTMLSelectElement).value;
+        renderView();
+      });
+    }
+
+    // Botón volver
+    if (btnVolver) {
+      btnVolver.addEventListener('click', () => {
+        currentCategory = 'all';
+        currentSearch = '';
+        if (categorySelect) categorySelect.value = 'all';
+        if (searchInput) searchInput.value = '';
+        viewMode = 'categories';
+        renderView();
+      });
+    }
 
     document.getElementById('new-product-btn')?.addEventListener('click', () => openModal());
     document.getElementById('close-modal')?.addEventListener('click', closeModal);

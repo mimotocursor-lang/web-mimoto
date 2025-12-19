@@ -129,21 +129,27 @@ const { data: productosRepuestosDestacadosData } = await supabaseClient
   .order('created_at', { ascending: false })
   .limit(100);
 
-// Combinar y filtrar: solo productos con imágenes reales
+// Combinar todos los productos destacados
 const todosProductosDestacados = [
   ...(productosAccesoriosDestacadosData || []), 
   ...(productosRepuestosDestacadosData || [])
 ];
 
+// Ordenar productos: primero los que tienen imágenes reales, luego por fecha
 let productosDestacados = todosProductosDestacados
-  .filter((producto: any) => hasRealImage(producto))
   .sort((a, b) => {
-    // Ordenar por fecha de creación (más recientes primero)
+    // Primero ordenar por si tienen imagen real
+    const aHasReal = hasRealImage(a);
+    const bHasReal = hasRealImage(b);
+    if (aHasReal !== bHasReal) {
+      return aHasReal ? -1 : 1; // Los que tienen imagen real van primero
+    }
+    // Si ambos tienen o no tienen imagen, ordenar por fecha de creación (más recientes primero)
     const dateA = new Date(a.created_at || 0).getTime();
     const dateB = new Date(b.created_at || 0).getTime();
     return dateB - dateA;
   })
-  .slice(0, 12); // Mostrar hasta 12 productos destacados con imágenes reales
+  .slice(0, 12); // Mostrar hasta 12 productos destacados
 
 // Cargar algunos accesorios para el masonry grid
 const { data: productosAccesoriosData } = await supabaseClient
@@ -602,50 +608,61 @@ const productosRepuestos = productosRepuestosData || [];
   </section>
 
   <!-- Productos Destacados - Curaduría Visual -->
-  {productosDestacados.length > 0 && (
-    <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
-      <!-- Banner para título de sección -->
-      <div class="relative mb-12 h-48 md:h-56 rounded-lg overflow-hidden">
-        <div class="absolute inset-0 bg-[url('/banner.jpg')] bg-cover bg-center"></div>
-        <!-- Overlay para dar estilo manteniendo textura -->
-        <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-red-900/40 to-orange-900/30 dark:from-black/60 dark:via-red-800/30 dark:to-orange-800/20"></div>
-        <!-- Contenedor para PNGs de productos (preparado para futuro) -->
-        <div class="absolute inset-0 flex items-center justify-end pr-8 md:pr-16 pointer-events-none">
-          <div class="banner-product-placeholder w-32 h-32 md:w-40 md:h-40 opacity-0"></div>
-        </div>
-        <!-- Contenido del título -->
-        <div class="relative z-10 h-full flex flex-col justify-center pl-8 md:pl-16">
-          <div class="flex items-end justify-between w-full pr-8 md:pr-16">
-            <div>
-              <h2 class="text-4xl md:text-5xl font-black text-white mb-2 uppercase tracking-tight drop-shadow-lg">Productos Destacados</h2>
-              <p class="text-xl text-white/90 drop-shadow-md">Selección curada de lo mejor</p>
-            </div>
-            <a
-              href="/tienda"
-              class="text-white bg-ktm-accent/90 hover:bg-ktm-accent px-4 py-2 rounded-md font-bold uppercase tracking-wider text-sm hover:gap-2 transition-all inline-flex items-center gap-1 drop-shadow-lg"
-            >
-              Ver todo →
-            </a>
+  <section class="max-w-7xl mx-auto px-4 md:px-8 py-20">
+    <!-- Banner para título de sección -->
+    <div class="relative mb-12 h-48 md:h-56 rounded-lg overflow-hidden">
+      <div class="absolute inset-0 bg-[url('/banner.jpg')] bg-cover bg-center"></div>
+      <!-- Overlay para dar estilo manteniendo textura -->
+      <div class="absolute inset-0 bg-gradient-to-r from-black/70 via-red-900/40 to-orange-900/30 dark:from-black/60 dark:via-red-800/30 dark:to-orange-800/20"></div>
+      <!-- Contenedor para PNGs de productos (preparado para futuro) -->
+      <div class="absolute inset-0 flex items-center justify-end pr-8 md:pr-16 pointer-events-none">
+        <div class="banner-product-placeholder w-32 h-32 md:w-40 md:h-40 opacity-0"></div>
+      </div>
+      <!-- Contenido del título -->
+      <div class="relative z-10 h-full flex flex-col justify-center pl-8 md:pl-16">
+        <div class="flex items-end justify-between w-full pr-8 md:pr-16">
+          <div>
+            <h2 class="text-4xl md:text-5xl font-black text-white mb-2 uppercase tracking-tight drop-shadow-lg">Productos Destacados</h2>
+            <p class="text-xl text-white/90 drop-shadow-md">Selección curada de lo mejor</p>
           </div>
+          <a
+            href="/tienda"
+            class="text-white bg-ktm-accent/90 hover:bg-ktm-accent px-4 py-2 rounded-md font-bold uppercase tracking-wider text-sm hover:gap-2 transition-all inline-flex items-center gap-1 drop-shadow-lg"
+          >
+            Ver todo →
+          </a>
         </div>
       </div>
+    </div>
 
+    {productosDestacados && productosDestacados.length > 0 ? (
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {productosDestacados.map((producto: any) => {
           const imageUrl = producto.main_image_url || '';
           const price = Number(producto.price) || 0;
           
           return (
-            <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 group hover:border-ktm-accent transition-all">
+            <div class="bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl p-6 group hover:border-ktm-accent transition-all relative">
+              <div class="absolute top-4 right-4 z-10">
+                <span class="px-2 py-1 bg-ktm-accent text-white dark:text-ktm-text text-xs font-bold uppercase rounded flex items-center gap-1">
+                  <span>⭐</span> Destacado
+                </span>
+              </div>
               <div class="aspect-square mb-4 overflow-hidden bg-ktm-light-surfaceAlt dark:bg-ktm-surfaceAlt">
-                <img
-                  src={imageUrl}
-                  alt={producto.name}
-                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                  crossorigin="anonymous"
-                  onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
-                />
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={producto.name}
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                    crossorigin="anonymous"
+                    onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs\\'>Sin imagen</div>';"
+                  />
+                ) : (
+                  <div class="w-full h-full flex items-center justify-center text-ktm-light-text dark:text-ktm-text/40 text-xs">
+                    Sin imagen
+                  </div>
+                )}
               </div>
               <h3 class="text-lg font-black text-ktm-light-text dark:text-ktm-text mb-2 uppercase tracking-tight line-clamp-2">{producto.name}</h3>
               {producto.description && (
@@ -662,8 +679,19 @@ const productosRepuestos = productosRepuestosData || [];
           );
         })}
       </div>
-    </section>
-  )}
+    ) : (
+      <div class="text-center py-12 bg-ktm-light-surface/60 dark:bg-ktm-surface/60 backdrop-blur-md rounded-xl">
+        <p class="text-ktm-light-text dark:text-ktm-text/70 text-lg mb-4">No hay productos destacados en este momento.</p>
+        <p class="text-ktm-light-text dark:text-ktm-text/60 text-sm mb-6">Marca productos como "Destacado" en el panel de administración para que aparezcan aquí.</p>
+        <a
+          href="/tienda"
+          class="inline-flex items-center gap-2 text-ktm-accent font-bold uppercase tracking-wider text-sm hover:gap-4 transition-all"
+        >
+          Ver todos los productos →
+        </a>
+      </div>
+    )}
+  </section>
 
   <!-- Motos Usadas - Sección Editorial -->
   <section class="max-w-7xl mx-auto px-4 md:px-8 py-20 bg-ktm-light-surfaceAlt/50 dark:bg-ktm-surface/30">

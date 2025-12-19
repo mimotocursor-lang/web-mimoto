@@ -197,7 +197,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   </section>
 
   <script>
-    import { supabaseClient } from '../../lib/supabase/client';
+    // Crear cliente de Supabase directamente
+    import { createClient } from '@supabase/supabase-js';
+    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
+    const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
     async function checkAdminAccess() {
       const { data: { user } } = await supabaseClient.auth.getUser();

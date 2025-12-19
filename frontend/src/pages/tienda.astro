@@ -391,11 +391,36 @@ try {
       try {
         const jsonText = dataScript.textContent || dataScript.innerHTML || '[]';
         repuestos = JSON.parse(jsonText);
-        console.log('Repuestos cargados:', repuestos.length);
       } catch (e) {
         console.error('Error parseando datos de repuestos:', e);
         return;
       }
+      
+      // Obtener URLs de WhatsApp - Definir en scope global del script
+      const whatsappScript = document.getElementById('whatsapp-urls');
+      let WHATSAPP_REPUESTOS_URL = '';
+      if (whatsappScript) {
+        try {
+          const whatsappData = JSON.parse(whatsappScript.textContent || whatsappScript.innerHTML || '{}');
+          WHATSAPP_REPUESTOS_URL = whatsappData.repuestos || '';
+          console.log('✅ WhatsApp URL cargada:', WHATSAPP_REPUESTOS_URL ? 'Sí' : 'No');
+        } catch (e) {
+          console.error('❌ Error parseando URLs de WhatsApp:', e);
+          // Fallback: intentar obtener desde window si está disponible
+          if (typeof window !== 'undefined' && (window as any).WHATSAPP_REPUESTOS_URL) {
+            WHATSAPP_REPUESTOS_URL = (window as any).WHATSAPP_REPUESTOS_URL;
+          }
+        }
+      } else {
+        console.warn('⚠️ Script whatsapp-urls no encontrado en el DOM');
+        // Fallback: intentar obtener desde window si está disponible
+        if (typeof window !== 'undefined' && (window as any).WHATSAPP_REPUESTOS_URL) {
+          WHATSAPP_REPUESTOS_URL = (window as any).WHATSAPP_REPUESTOS_URL;
+        }
+      }
+      
+      // Asegurar que la variable esté disponible globalmente en el scope del script
+      (window as any).WHATSAPP_REPUESTOS_URL = WHATSAPP_REPUESTOS_URL;
 
       // Funciones de categorización (inline)
       const CATEGORIES = [
@@ -693,10 +718,6 @@ try {
         const allCategories = getAvailableCategories(allRepuestos);
         const categories = allCategories.filter(cat => cat !== 'Accesorios');
         
-        console.log('Total repuestos:', allRepuestos.length);
-        console.log('Categorías encontradas:', allCategories);
-        console.log('Categorías filtradas:', categories);
-        
         if (categories.length === 0) {
           repuestosContainer.innerHTML = '<p class="text-ktm-light-text dark:text-ktm-text/70 text-center py-12">No hay categorías disponibles.</p>';
           return;
@@ -706,7 +727,10 @@ try {
         grid.className = 'grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8';
         
         categories.forEach(category => {
+          // Recalcular productos de la categoría cada vez para asegurar que esté actualizado
           const categoryProducts = filterByCategory(allRepuestos, category);
+          const productCount = categoryProducts.length;
+          
           const card = document.createElement('div');
           card.className = 'relative overflow-hidden bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-xl hover:shadow-xl transition-all cursor-pointer group min-h-[280px]';
           card.addEventListener('click', () => {
@@ -730,7 +754,7 @@ try {
             <div class="absolute inset-0 bg-gradient-to-t from-ktm-bg/40 via-ktm-bg/20 to-transparent"></div>
             <div class="relative z-10 h-full flex flex-col justify-center items-center p-6 text-center">
               <h3 class="text-2xl md:text-3xl font-black text-white mb-2 uppercase tracking-tight drop-shadow-2xl" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.3), 0 0 40px rgba(255,255,255,0.2); filter: brightness(1.1);">${category}</h3>
-              <p class="text-white/90 text-sm uppercase tracking-wider drop-shadow-lg" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">${categoryProducts.length} repuesto${categoryProducts.length !== 1 ? 's' : ''}</p>
+              <p class="text-white/90 text-sm uppercase tracking-wider drop-shadow-lg" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">${productCount} repuesto${productCount !== 1 ? 's' : ''}</p>
             </div>
           `;
           grid.appendChild(card);
@@ -806,7 +830,8 @@ try {
           const hasImage = imageUrl && imageUrl.trim() !== '';
           const price = Number(p.price) || 0;
           const stock = Number(p.stock) || 0;
-          const whatsappUrl = WHATSAPP_REPUESTOS_URL;
+          // Obtener WhatsApp URL del scope o window como fallback
+          const whatsappUrl = WHATSAPP_REPUESTOS_URL || (typeof window !== 'undefined' ? (window as any).WHATSAPP_REPUESTOS_URL : '') || '';
 
           const article = document.createElement('article');
           article.className = 'bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-xl flex flex-col gap-3 hover:shadow-xl transition-all group';
@@ -1743,7 +1768,10 @@ try {
         grid.className = gridCols;
         
         categories.forEach(category => {
+          // Recalcular productos de la categoría cada vez para asegurar que esté actualizado
           const categoryProducts = filterByCategory(allAccesorios, category);
+          const productCount = categoryProducts.length;
+          
           const card = document.createElement('div');
           card.className = 'relative overflow-hidden bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-xl hover:shadow-xl transition-all cursor-pointer group min-h-[280px]';
           card.addEventListener('click', () => {
@@ -1760,7 +1788,7 @@ try {
             <div class="absolute inset-0 bg-gradient-to-t from-ktm-bg/40 via-ktm-bg/20 to-transparent"></div>
             <div class="relative z-10 h-full flex flex-col justify-center items-center p-6 text-center">
               <h3 class="text-2xl md:text-3xl font-black text-white mb-2 uppercase tracking-tight drop-shadow-2xl" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.5), 0 0 30px rgba(255,255,255,0.3), 0 0 40px rgba(255,255,255,0.2); filter: brightness(1.1);">${category}</h3>
-              <p class="text-white/90 text-sm uppercase tracking-wider drop-shadow-lg" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">${categoryProducts.length} accesorio${categoryProducts.length !== 1 ? 's' : ''}</p>
+              <p class="text-white/90 text-sm uppercase tracking-wider drop-shadow-lg" style="text-shadow: 1px 1px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,0.5);">${productCount} accesorio${productCount !== 1 ? 's' : ''}</p>
             </div>
           `;
           grid.appendChild(card);
@@ -1800,7 +1828,8 @@ try {
           const hasImage = imageUrl && imageUrl.trim() !== '';
           const price = Number(p.price) || 0;
           const stock = Number(p.stock) || 0;
-          const whatsappUrl = WHATSAPP_REPUESTOS_URL;
+          // Obtener WhatsApp URL del scope o window como fallback
+          const whatsappUrl = WHATSAPP_REPUESTOS_URL || (typeof window !== 'undefined' ? (window as any).WHATSAPP_REPUESTOS_URL : '') || '';
 
           const article = document.createElement('article');
           article.className = 'bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-xl flex flex-col gap-3 hover:shadow-xl transition-all group';
@@ -2158,6 +2187,21 @@ try {
   
   <script type="application/json" id="repuestos-data" set:html={JSON.stringify(repuestos)}></script>
   <script type="application/json" id="accesorios-data" set:html={JSON.stringify(accesorios)}></script>
+  <script type="application/json" id="whatsapp-urls" set:html={JSON.stringify({ repuestos: WHATSAPP_REPUESTOS_URL || '' })}></script>
+  <script>
+    // Asegurar que la variable esté disponible globalmente antes de que se ejecute el código
+    (function() {
+      const whatsappScript = document.getElementById('whatsapp-urls');
+      if (whatsappScript) {
+        try {
+          const whatsappData = JSON.parse(whatsappScript.textContent || whatsappScript.innerHTML || '{}');
+          (window as any).WHATSAPP_REPUESTOS_URL = whatsappData.repuestos || '';
+        } catch (e) {
+          console.error('Error parseando URLs de WhatsApp en script inicial:', e);
+        }
+      }
+    })();
+  </script>
 </BaseLayout>
 
 

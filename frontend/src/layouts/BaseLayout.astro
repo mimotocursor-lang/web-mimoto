@@ -3,6 +3,10 @@ import '../styles/global.css';
 import WhatsAppModal from '../components/WhatsAppModal.astro';
 
 const { title = 'Mimoto', description = '' } = Astro.props;
+
+// Inyectar variables de entorno de Supabase en el HTML para que estén disponibles en el cliente
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
+const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
 ---
 
 <!doctype html>
@@ -26,7 +30,13 @@ const { title = 'Mimoto', description = '' } = Astro.props;
     <link rel="apple-touch-icon" sizes="57x57" href="/icono-pestana.png" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
-    <script is:inline>
+    <script is:inline define:vars={{ supabaseUrl, supabaseAnonKey }}>
+      // Inyectar variables de Supabase en window para que estén disponibles globalmente
+      if (typeof window !== 'undefined') {
+        window.PUBLIC_SUPABASE_URL = supabaseUrl;
+        window.PUBLIC_SUPABASE_ANON_KEY = supabaseAnonKey;
+      }
+      
       // Inicializar tema ANTES de renderizar para evitar flash
       (function() {
         try {
@@ -133,13 +143,13 @@ const { title = 'Mimoto', description = '' } = Astro.props;
     
     <header id="main-header" class="relative border-b-4 border-ktm-light-border dark:border-[#F97316] backdrop-blur-md sticky top-0 z-40 shadow-lg bg-ktm-light-surface dark:bg-gradient-to-r dark:from-[#0F0F0F] dark:via-[#DC2626] dark:to-[#0F0F0F] transition-colors duration-300">
       <nav class="max-w-7xl mx-auto px-4 md:px-6 h-16 md:h-20 flex items-center justify-between">
-        <a href="/" class="flex items-center gap-3 relative z-10">
+        <a href="/" class="flex items-center gap-2 md:gap-3 relative z-10">
           <div class="absolute -left-4 -top-2 -right-4 -bottom-2 bg-ktm-accent/30 blur-2xl -z-10 rounded-full"></div>
-          <div class="flex items-center gap-2">
-            <img id="main-logo" src="/logo.png" alt="Mimoto" class="object-contain object-left drop-shadow-2xl filter brightness-110 transition-opacity duration-300" />
-              <div class="flex items-center gap-2 border-l border-ktm-light-border/30 dark:border-ktm-border/30 pl-3 ml-3">
-                <img src="/KTM-logo.png" alt="KTM" class="h-10 md:h-14 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity drop-shadow-md dark:hidden" />
-                <img src="/ktm-logo-light.png" alt="KTM" class="h-10 md:h-14 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity drop-shadow-md hidden dark:block" />
+          <div class="flex items-center gap-1 md:gap-2">
+            <img id="main-logo" src="/logo.png" alt="Mimoto" class="object-contain object-left drop-shadow-2xl filter brightness-110 transition-opacity duration-300 w-24 md:w-auto" />
+              <div class="flex items-center gap-1 md:gap-2 border-l border-ktm-light-border/30 dark:border-ktm-border/30 pl-1 md:pl-3 ml-1 md:ml-3">
+                <img src="/KTM-logo.png" alt="KTM" class="h-8 md:h-14 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity drop-shadow-md dark:hidden" />
+                <img src="/ktm-logo-light.png" alt="KTM" class="h-8 md:h-14 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity drop-shadow-md hidden dark:block" />
                 <div class="flex flex-col items-start leading-tight">
                   <span class="text-[7px] md:text-[9px] font-black uppercase tracking-[0.15em] text-ktm-accent dark:text-white dark:text-opacity-90 whitespace-nowrap" style="font-family: 'Arial Black', 'Helvetica Neue', 'Arial', sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
                     servicio tecnico
@@ -157,6 +167,22 @@ const { title = 'Mimoto', description = '' } = Astro.props;
           <a href="/motos-usadas" class="nav-link text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors font-semibold">Motos usadas</a>
           <a href="/sobre-nosotros" class="nav-link text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors font-semibold">Sobre Nosotros</a>
           <div class="flex items-center gap-3">
+            <!-- Carrito -->
+            <button
+              id="cart-button"
+              class="relative p-2 text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors"
+              aria-label="Carrito de compras"
+            >
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L4.5 5M7 13l-2.5 5m0 0h12M17 13v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6" />
+              </svg>
+              <span
+                id="cart-count"
+                class="hidden absolute -top-1 -right-1 w-5 h-5 bg-ktm-accent text-white text-xs rounded-full flex items-center justify-center font-bold"
+              >
+                0
+              </span>
+            </button>
             <div id="auth-status" class="flex items-center gap-2">
               <a href="/login" id="auth-link" class="nav-link text-ktm-light-text/70 dark:text-white/80 hover:text-ktm-accent transition-colors">Iniciar sesión</a>
             </div>
@@ -210,37 +236,20 @@ const { title = 'Mimoto', description = '' } = Astro.props;
         </div>
         <!-- Menú móvil -->
         <div class="md:hidden flex items-center gap-2">
+          <!-- Carrito móvil -->
           <button
-            type="button"
-            id="theme-toggle-mobile"
-            class="relative inline-flex items-center w-14 h-7 rounded-full bg-ktm-light-border dark:bg-ktm-border transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-ktm-accent focus:ring-offset-2"
-            aria-label="Cambiar tema"
-            role="switch"
-            aria-checked="true"
+            id="cart-button-mobile"
+            class="relative p-2 text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors"
+            aria-label="Carrito de compras"
           >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L4.5 5M7 13l-2.5 5m0 0h12M17 13v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6" />
+            </svg>
             <span
-              id="theme-toggle-slider-mobile"
-              class="absolute left-1 top-1 w-5 h-5 bg-white dark:bg-ktm-accent rounded-full shadow-md transform transition-transform duration-500 ease-in-out translate-x-0 dark:translate-x-7 z-10"
-            ></span>
-            <!-- Icono Sol (visible en light mode, a la derecha) -->
-            <span id="theme-icon-mobile" class="absolute right-1.5 top-1/2 -translate-y-1/2 transition-opacity duration-300 z-0" style="opacity: 1;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-black">
-                <circle cx="12" cy="12" r="5"></circle>
-                <line x1="12" y1="1" x2="12" y2="3"></line>
-                <line x1="12" y1="21" x2="12" y2="23"></line>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                <line x1="1" y1="12" x2="3" y2="12"></line>
-                <line x1="21" y1="12" x2="23" y2="12"></line>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-              </svg>
-            </span>
-            <!-- Icono Luna (visible en dark mode, a la izquierda) -->
-            <span id="theme-icon-dark-mobile" class="absolute left-1.5 top-1/2 -translate-y-1/2 transition-opacity duration-300 z-0" style="opacity: 0;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-              </svg>
+              id="cart-count-mobile"
+              class="hidden absolute -top-1 -right-1 w-5 h-5 bg-ktm-accent text-white text-xs rounded-full flex items-center justify-center font-bold"
+            >
+              0
             </span>
           </button>
           <button id="mobile-menu-btn" class="w-10 h-10 flex items-center justify-center text-ktm-light-text dark:text-white">
@@ -255,8 +264,45 @@ const { title = 'Mimoto', description = '' } = Astro.props;
           <a href="/tienda" class="block text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors font-semibold">Accesorios y Repuestos</a>
           <a href="/motos-usadas" class="block text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors font-semibold">Motos usadas</a>
           <a href="/sobre-nosotros" class="block text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors font-semibold">Sobre Nosotros</a>
-            <div id="auth-status-mobile" class="pt-3 border-t border-ktm-light-border/20 dark:border-ktm-border/20">
-            <a href="/login" class="block text-ktm-light-text/70 dark:text-white/80 hover:text-ktm-accent transition-colors">Iniciar sesión</a>
+          <div class="pt-3 border-t border-ktm-light-border/20 dark:border-ktm-border/20 flex items-center justify-between">
+            <div id="auth-status-mobile">
+              <a href="/login" class="block text-ktm-light-text/70 dark:text-white/80 hover:text-ktm-accent transition-colors">Iniciar sesión</a>
+            </div>
+            <!-- Toggle de tema dentro del menú móvil -->
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-ktm-light-text/70 dark:text-white/80 uppercase tracking-wider">Tema:</span>
+              <button
+                type="button"
+                id="theme-toggle-mobile-menu"
+                class="relative inline-flex items-center w-14 h-7 rounded-full bg-ktm-light-border dark:bg-ktm-border transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-ktm-accent focus:ring-offset-2"
+                aria-label="Cambiar tema"
+                role="switch"
+                aria-checked="true"
+              >
+                <span
+                  id="theme-toggle-slider-mobile-menu"
+                  class="absolute left-1 top-1 w-5 h-5 bg-white dark:bg-ktm-accent rounded-full shadow-md transform transition-transform duration-500 ease-in-out translate-x-0 dark:translate-x-7 z-10"
+                ></span>
+                <span id="theme-icon-mobile-menu" class="absolute right-1.5 top-1/2 -translate-y-1/2 transition-opacity duration-300 z-0" style="opacity: 1;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-black">
+                    <circle cx="12" cy="12" r="5"></circle>
+                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                  </svg>
+                </span>
+                <span id="theme-icon-dark-mobile-menu" class="absolute left-1.5 top-1/2 -translate-y-1/2 transition-opacity duration-300 z-0" style="opacity: 0;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-white">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                  </svg>
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -561,18 +607,25 @@ const { title = 'Mimoto', description = '' } = Astro.props;
         const isDark = document.documentElement.classList.contains('dark');
         const toggle = document.getElementById('theme-toggle');
         const toggleMobile = document.getElementById('theme-toggle-mobile');
+        const toggleMobileMenu = document.getElementById('theme-toggle-mobile-menu');
         const slider = document.getElementById('theme-toggle-slider');
         const sliderMobile = document.getElementById('theme-toggle-slider-mobile');
+        const sliderMobileMenu = document.getElementById('theme-toggle-slider-mobile-menu');
         const iconSun = document.getElementById('theme-icon');
         const iconMoon = document.getElementById('theme-icon-dark');
         const iconSunMobile = document.getElementById('theme-icon-mobile');
         const iconMoonMobile = document.getElementById('theme-icon-dark-mobile');
+        const iconSunMobileMenu = document.getElementById('theme-icon-mobile-menu');
+        const iconMoonMobileMenu = document.getElementById('theme-icon-dark-mobile-menu');
         
         if (toggle) {
           toggle.setAttribute('aria-checked', isDark ? 'true' : 'false');
         }
         if (toggleMobile) {
           toggleMobile.setAttribute('aria-checked', isDark ? 'true' : 'false');
+        }
+        if (toggleMobileMenu) {
+          toggleMobileMenu.setAttribute('aria-checked', isDark ? 'true' : 'false');
         }
         
         // Actualizar posición del slider manualmente para asegurar que funcione con animación suave
@@ -592,6 +645,15 @@ const { title = 'Mimoto', description = '' } = Astro.props;
           } else {
             sliderMobile.style.transform = 'translateX(0)';
             sliderMobile.style.transition = 'transform 0.5s ease-in-out';
+          }
+        }
+        if (sliderMobileMenu) {
+          if (isDark) {
+            sliderMobileMenu.style.transform = 'translateX(1.75rem)';
+            sliderMobileMenu.style.transition = 'transform 0.5s ease-in-out';
+          } else {
+            sliderMobileMenu.style.transform = 'translateX(0)';
+            sliderMobileMenu.style.transition = 'transform 0.5s ease-in-out';
           }
         }
         
@@ -630,6 +692,24 @@ const { title = 'Mimoto', description = '' } = Astro.props;
           } else {
             iconMoonMobile.style.opacity = '0';
             iconMoonMobile.style.pointerEvents = 'none';
+          }
+        }
+        if (iconSunMobileMenu) {
+          if (isDark) {
+            iconSunMobileMenu.style.opacity = '0';
+            iconSunMobileMenu.style.pointerEvents = 'none';
+          } else {
+            iconSunMobileMenu.style.opacity = '1';
+            iconSunMobileMenu.style.pointerEvents = 'auto';
+          }
+        }
+        if (iconMoonMobileMenu) {
+          if (isDark) {
+            iconMoonMobileMenu.style.opacity = '1';
+            iconMoonMobileMenu.style.pointerEvents = 'auto';
+          } else {
+            iconMoonMobileMenu.style.opacity = '0';
+            iconMoonMobileMenu.style.pointerEvents = 'none';
           }
         }
         
@@ -764,10 +844,12 @@ const { title = 'Mimoto', description = '' } = Astro.props;
         // Configurar event listeners
         const themeToggle = document.getElementById('theme-toggle');
         const themeToggleMobile = document.getElementById('theme-toggle-mobile');
+        const themeToggleMobileMenu = document.getElementById('theme-toggle-mobile-menu');
         
         console.log('🔍 Toggle buttons encontrados:', {
           desktop: !!themeToggle,
-          mobile: !!themeToggleMobile
+          mobile: !!themeToggleMobile,
+          mobileMenu: !!themeToggleMobileMenu
         });
         
         if (themeToggle) {
@@ -787,6 +869,17 @@ const { title = 'Mimoto', description = '' } = Astro.props;
             e.stopPropagation();
             e.stopImmediatePropagation();
             console.log('🖱️ Click en toggle mobile');
+            toggleTheme();
+            return false;
+          };
+        }
+        
+        if (themeToggleMobileMenu) {
+          themeToggleMobileMenu.onclick = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            console.log('🖱️ Click en toggle mobile menu');
             toggleTheme();
             return false;
           };
@@ -857,10 +950,36 @@ const { title = 'Mimoto', description = '' } = Astro.props;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(cart));
       }
 
+      function updateCartCount(cart) {
+        const count = cart.reduce((sum, item) => sum + (item.quantity || 1), 0);
+        const cartCountEl = document.getElementById('cart-count');
+        const cartCountMobileEl = document.getElementById('cart-count-mobile');
+        
+        if (cartCountEl) {
+          if (count > 0) {
+            cartCountEl.textContent = count;
+            cartCountEl.classList.remove('hidden');
+          } else {
+            cartCountEl.classList.add('hidden');
+          }
+        }
+        
+        if (cartCountMobileEl) {
+          if (count > 0) {
+            cartCountMobileEl.textContent = count;
+            cartCountMobileEl.classList.remove('hidden');
+          } else {
+            cartCountMobileEl.classList.add('hidden');
+          }
+        }
+      }
+
       function renderCart(cart) {
         const itemsEl = document.getElementById('cart-items');
         const totalEl = document.getElementById('cart-total');
         if (!itemsEl || !totalEl) return;
+
+        updateCartCount(cart);
 
         if (cart.length === 0) {
           itemsEl.innerHTML = '<p class="text-ktm-light-textMuted dark:text-ktm-textMuted text-center py-8">Tu carrito está vacío.</p>';
@@ -927,7 +1046,26 @@ const { title = 'Mimoto', description = '' } = Astro.props;
       }
 
       document.addEventListener('DOMContentLoaded', () => {
-        renderCart(loadCart());
+        const initialCart = loadCart();
+        renderCart(initialCart);
+
+        // Conectar botones del carrito en el navbar
+        const cartButton = document.getElementById('cart-button');
+        const cartButtonMobile = document.getElementById('cart-button-mobile');
+        
+        if (cartButton) {
+          cartButton.addEventListener('click', () => {
+            renderCart(loadCart());
+            openCart();
+          });
+        }
+        
+        if (cartButtonMobile) {
+          cartButtonMobile.addEventListener('click', () => {
+            renderCart(loadCart());
+            openCart();
+          });
+        }
 
         document.querySelectorAll('[data-cart-open]').forEach((btn) => {
           btn.addEventListener('click', () => {
@@ -1006,7 +1144,11 @@ const { title = 'Mimoto', description = '' } = Astro.props;
 
     <!-- Script para manejar autenticación en navbar -->
     <script type="module">
-      import { supabaseClient } from '../../lib/supabase/client';
+      // Crear cliente de Supabase directamente
+      import { createClient } from '@supabase/supabase-js';
+      const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
+      const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+      const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
       async function updateAuthStatus() {
         const authStatusEl = document.getElementById('auth-status');

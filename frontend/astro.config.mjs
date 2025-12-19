@@ -8,6 +8,16 @@ export default defineConfig({
   server: {
     port: 4321,
   },
+  vite: {
+    resolve: {
+      alias: {
+        '@': '/src',
+      },
+    },
+    ssr: {
+      noExternal: ['@supabase/supabase-js'],
+    },
+  },
 });
 
 
