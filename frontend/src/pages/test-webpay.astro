@@ -1,0 +1,208 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Prueba de Webpay - Mimoto">
+  <section class="max-w-4xl mx-auto px-4 py-12 md:py-16 space-y-8">
+    <div class="text-center mb-8">
+      <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">🧪 Prueba de Webpay</h1>
+      <p class="text-white/80">Prueba la integración de Transbank Webpay Plus</p>
+    </div>
+
+    <div class="bg-gray-900/50 border-2 border-primary rounded-xl p-8 shadow-lg space-y-6 backdrop-blur-sm">
+      <!-- Información del Ambiente -->
+      <div class="bg-blue-500/10 border-l-4 border-blue-500 p-4 rounded">
+        <h2 class="text-lg font-bold text-white mb-2">ℹ️ Información del Ambiente</h2>
+        <div class="text-sm text-white/90 space-y-1">
+          <p><strong>Ambiente:</strong> <span id="environment">Cargando...</span></p>
+          <p><strong>Commerce Code:</strong> <span id="commerce-code">Cargando...</span></p>
+          <p><strong>Host:</strong> <span id="host">Cargando...</span></p>
+        </div>
+      </div>
+
+      <!-- Botón de Prueba -->
+      <div class="text-center">
+        <button
+          id="test-button"
+          class="px-8 py-4 bg-primary text-white font-bold rounded-lg hover:bg-primary-600 transition-colors shadow-lg text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          🧪 Probar Conexión con Webpay
+        </button>
+      </div>
+
+      <!-- Resultado -->
+      <div id="result" class="hidden space-y-4">
+        <div id="success-result" class="hidden bg-green-500/10 border-l-4 border-green-500 p-4 rounded">
+          <h3 class="text-lg font-bold text-green-400 mb-2">✅ ¡Éxito!</h3>
+          <div id="success-content" class="text-sm text-white/90"></div>
+          
+          <!-- Token destacado -->
+          <div id="token-display" class="hidden mt-4 bg-gray-800/50 border-2 border-green-500/50 rounded-lg p-4">
+            <h4 class="font-bold text-green-400 mb-2">🔑 Token Generado:</h4>
+            <div class="flex items-center gap-2 mb-2">
+              <code id="token-value" class="flex-1 bg-gray-900/50 p-2 rounded text-xs font-mono text-green-300 break-all"></code>
+              <button 
+                id="copy-token-btn" 
+                class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded transition-colors"
+                title="Copiar token"
+              >
+                📋 Copiar
+              </button>
+            </div>
+            <p class="text-xs text-white/70 mt-2">
+              💡 <strong>Este es el token que Transbank te pide.</strong> Cópialo y úsalo donde te lo soliciten.
+            </p>
+          </div>
+        </div>
+
+        <div id="error-result" class="hidden bg-red-500/10 border-l-4 border-red-500 p-4 rounded">
+          <h3 class="text-lg font-bold text-red-400 mb-2">❌ Error</h3>
+          <div id="error-content" class="text-sm text-white/90"></div>
+        </div>
+      </div>
+
+      <!-- Tarjetas de Prueba -->
+      <div class="bg-yellow-500/10 border-l-4 border-yellow-500 p-4 rounded">
+        <h2 class="text-lg font-bold text-white mb-3">💳 Tarjetas de Prueba</h2>
+        <div class="text-sm text-white/90 space-y-3">
+          <div>
+            <p class="font-semibold text-green-400">✅ Tarjetas que APROBAN:</p>
+            <ul class="list-disc list-inside ml-4 space-y-1 mt-1">
+              <li><strong>VISA:</strong> 4051 8856 0044 6623 | CVV: 123</li>
+              <li><strong>AMEX:</strong> 3700 0000 0002 032 | CVV: 1234</li>
+              <li><strong>Redcompra:</strong> 4051 8842 3993 7763</li>
+            </ul>
+          </div>
+          <div>
+            <p class="font-semibold text-red-400">❌ Tarjetas que RECHAZAN:</p>
+            <ul class="list-disc list-inside ml-4 space-y-1 mt-1">
+              <li><strong>MASTERCARD:</strong> 5186 0595 5959 0568 | CVV: 123</li>
+              <li><strong>Redcompra:</strong> 5186 0085 4123 3829</li>
+            </ul>
+          </div>
+          <div class="mt-2 pt-2 border-t border-yellow-500/30">
+            <p><strong>RUT de prueba:</strong> 11.111.111-1</p>
+            <p><strong>Clave:</strong> 123</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instrucciones -->
+      <div class="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+        <h2 class="text-lg font-bold text-white mb-2">📋 Instrucciones</h2>
+        <ol class="text-sm text-white/90 space-y-2 list-decimal list-inside">
+          <li>Haz clic en "Probar Conexión" para verificar que Webpay esté funcionando</li>
+          <li>Si la prueba es exitosa, verás un token y URL de Webpay</li>
+          <li>Puedes hacer una transacción completa desde el carrito → checkout → pago</li>
+          <li>Usa las tarjetas de prueba mostradas arriba cuando llegues a Webpay</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const testButton = document.getElementById('test-button');
+      const resultDiv = document.getElementById('result');
+      const successResult = document.getElementById('success-result');
+      const errorResult = document.getElementById('error-result');
+      const successContent = document.getElementById('success-content');
+      const errorContent = document.getElementById('error-content');
+
+      // Mostrar información del ambiente
+      const environment = import.meta.env.PUBLIC_WEBPAY_ENVIRONMENT || 'integration';
+      const commerceCode = import.meta.env.PUBLIC_WEBPAY_COMMERCE_CODE || '597055555532';
+      const host = environment === 'production' 
+        ? 'https://webpay3g.transbank.cl'
+        : 'https://webpay3gint.transbank.cl';
+
+      document.getElementById('environment').textContent = environment === 'production' ? 'Producción' : 'Integración';
+      document.getElementById('commerce-code').textContent = commerceCode;
+      document.getElementById('host').textContent = host;
+
+      testButton?.addEventListener('click', async () => {
+        testButton.disabled = true;
+        testButton.textContent = '⏳ Probando...';
+        resultDiv?.classList.add('hidden');
+        successResult?.classList.add('hidden');
+        errorResult?.classList.add('hidden');
+
+        try {
+          const response = await fetch('/api/webpay/test');
+          const result = await response.json();
+
+          resultDiv?.classList.remove('hidden');
+
+          if (result.success) {
+            successResult?.classList.remove('hidden');
+            
+            // Mostrar el token destacado
+            const tokenDisplay = document.getElementById('token-display');
+            const tokenValue = document.getElementById('token-value');
+            if (tokenDisplay && tokenValue && result.detalles?.token) {
+              tokenDisplay.classList.remove('hidden');
+              tokenValue.textContent = result.detalles.token;
+              
+              // Botón copiar
+              const copyBtn = document.getElementById('copy-token-btn');
+              copyBtn?.addEventListener('click', () => {
+                navigator.clipboard.writeText(result.detalles.token).then(() => {
+                  copyBtn.textContent = '✅ Copiado!';
+                  setTimeout(() => {
+                    copyBtn.textContent = '📋 Copiar';
+                  }, 2000);
+                });
+              });
+            }
+            
+            successContent.innerHTML = `
+              <p class="mb-2"><strong>Mensaje:</strong> ${result.message}</p>
+              <div class="bg-gray-800/50 p-3 rounded mt-2">
+                <p class="font-semibold mb-1">Detalles:</p>
+                <ul class="space-y-1 text-xs">
+                  <li><strong>URL de Webpay:</strong> <a href="${result.detalles.url}" target="_blank" class="text-blue-400 hover:underline">Abrir Webpay</a></li>
+                  <li><strong>Buy Order:</strong> ${result.detalles.buyOrder}</li>
+                  <li><strong>Monto:</strong> ${result.detalles.amount}</li>
+                </ul>
+              </div>
+              <div class="bg-blue-500/10 p-3 rounded mt-2">
+                <p class="font-semibold mb-1">Instrucciones:</p>
+                <ul class="space-y-1 text-xs">
+                  <li>${result.instrucciones.paso1}</li>
+                  <li>${result.instrucciones.paso2}</li>
+                  <li>${result.instrucciones.paso3}</li>
+                </ul>
+              </div>
+            `;
+          } else {
+            errorResult?.classList.remove('hidden');
+            errorContent.innerHTML = `
+              <p class="mb-2"><strong>Error:</strong> ${result.error || result.mensaje}</p>
+              ${result.diagnostico ? `<p class="mb-2"><strong>Diagnóstico:</strong> ${result.diagnostico}</p>` : ''}
+              ${result.solucion ? `<p class="mb-2"><strong>Solución:</strong> ${result.solucion}</p>` : ''}
+              ${result.instrucciones ? `
+                <div class="bg-gray-800/50 p-3 rounded mt-2">
+                  <p class="font-semibold mb-1">Instrucciones:</p>
+                  <ul class="space-y-1 text-xs">
+                    ${Object.values(result.instrucciones).map(inst => `<li>${inst}</li>`).join('')}
+                  </ul>
+                </div>
+              ` : ''}
+            `;
+          }
+        } catch (error: any) {
+          resultDiv?.classList.remove('hidden');
+          errorResult?.classList.remove('hidden');
+          errorContent.innerHTML = `
+            <p><strong>Error inesperado:</strong> ${error.message}</p>
+            <p class="mt-2 text-xs">Verifica la consola del navegador para más detalles.</p>
+          `;
+        } finally {
+          testButton.disabled = false;
+          testButton.textContent = '🧪 Probar Conexión con Webpay';
+        }
+      });
+    });
+  </script>
+</BaseLayout>
+
