@@ -109,7 +109,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               <label for="product-status" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Estado</label>
               <select
                 id="product-status"
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
               >
                 <option value="active">Activo</option>
                 <option value="inactive">Inactivo</option>
@@ -120,12 +120,23 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               <label for="product-category" class="block text-sm font-bold mb-2 text-gray-900 dark:text-ktm-text">Tipo</label>
               <select
                 id="product-category"
-                class="w-full px-4 py-3 rounded-lg bg-gray-800 border-2 border-primary/30 text-ktm-text focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+                class="w-full px-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-800 border-2 border-gray-300 dark:border-primary/30 text-gray-900 dark:text-ktm-text focus:outline-none focus:ring-2 focus:ring-ktm-accent/20 focus:border-ktm-accent"
               >
                 <option value="accessory">Accesorio</option>
                 <option value="spare_part">Repuesto</option>
               </select>
             </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <input
+              type="checkbox"
+              id="product-featured"
+              class="w-5 h-5 rounded border-2 border-gray-300 dark:border-primary/30 text-ktm-accent focus:ring-2 focus:ring-ktm-accent/20 cursor-pointer"
+            />
+            <label for="product-featured" class="text-sm font-bold text-gray-900 dark:text-ktm-text cursor-pointer">
+              Producto Destacado (aparecerá en la página de inicio)
+            </label>
           </div>
 
           <div class="flex flex-col sm:flex-row gap-3">
@@ -236,7 +247,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               </div>
             </div>
             <div class="flex-1 min-w-0">
-              <h3 class="font-bold text-gray-900 dark:text-ktm-text mb-1">${productName}</h3>
+              <div class="flex items-center gap-2 mb-1">
+                <h3 class="font-bold text-gray-900 dark:text-ktm-text">${productName}</h3>
+                ${p.featured ? '<span class="px-2 py-1 bg-ktm-accent text-white dark:text-ktm-text text-xs font-bold uppercase rounded">Destacado</span>' : ''}
+              </div>
               <p class="text-sm text-gray-600 dark:text-ktm-text/70">$${Number(p.price).toLocaleString('es-CL')} | Stock: ${p.stock} | ${p.status === 'active' ? '<span class="text-green-600 dark:text-green-400">Activo</span>' : '<span class="text-red-600 dark:text-red-400">Inactivo</span>'}</p>
             </div>
             <div class="flex gap-2 w-full sm:w-auto">
@@ -252,7 +266,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               <div class="text-gray-500 dark:text-ktm-text/50 text-xs">Sin imagen</div>
             </div>
             <div class="flex-1 min-w-0">
-              <h3 class="font-bold text-gray-900 dark:text-ktm-text mb-1">${productName}</h3>
+              <div class="flex items-center gap-2 mb-1">
+                <h3 class="font-bold text-gray-900 dark:text-ktm-text">${productName}</h3>
+                ${p.featured ? '<span class="px-2 py-1 bg-ktm-accent text-white dark:text-ktm-text text-xs font-bold uppercase rounded">Destacado</span>' : ''}
+              </div>
               <p class="text-sm text-gray-600 dark:text-ktm-text/70">$${Number(p.price).toLocaleString('es-CL')} | Stock: ${p.stock} | ${p.status === 'active' ? '<span class="text-green-600 dark:text-green-400">Activo</span>' : '<span class="text-red-600 dark:text-red-400">Inactivo</span>'}</p>
             </div>
             <div class="flex gap-2 w-full sm:w-auto">
@@ -337,6 +354,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       // Determinar el tipo de producto
       const categoryValue = product.is_accessory ? 'accessory' : (product.is_spare_part ? 'spare_part' : 'accessory');
       (document.getElementById('product-category') as HTMLSelectElement).value = categoryValue;
+      
+      // Cargar el valor de featured
+      (document.getElementById('product-featured') as HTMLInputElement).checked = product.featured || false;
       
       // Mostrar preview de imagen existente
       if (product.main_image_url) {
@@ -486,6 +506,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           status: (form.querySelector('#product-status') as HTMLSelectElement).value,
           is_accessory: (form.querySelector('#product-category') as HTMLSelectElement).value === 'accessory',
           is_spare_part: (form.querySelector('#product-category') as HTMLSelectElement).value === 'spare_part',
+          featured: (document.getElementById('product-featured') as HTMLInputElement).checked || false,
         };
 
         // Solo actualizar la imagen si se seleccionó una nueva o si es un producto nuevo

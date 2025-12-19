@@ -94,22 +94,24 @@ function sortProductsByImage(products: any[]): any[] {
   });
 }
 
-// Cargar productos destacados - Mezclar accesorios y repuestos con imágenes reales
+// Cargar productos destacados - Solo los marcados como featured=true
 const { data: productosAccesoriosDestacadosData } = await supabaseClient
   .from('products')
   .select('*')
   .eq('status', 'active')
+  .eq('featured', true)
   .eq('is_accessory', true)
   .order('created_at', { ascending: false })
-  .limit(100); // Cargar más para tener más opciones con imágenes
+  .limit(100);
 
 const { data: productosRepuestosDestacadosData } = await supabaseClient
   .from('products')
   .select('*')
   .eq('status', 'active')
+  .eq('featured', true)
   .eq('is_spare_part', true)
   .order('created_at', { ascending: false })
-  .limit(100); // Cargar más para tener más opciones con imágenes
+  .limit(100);
 
 // Combinar y filtrar: solo productos con imágenes reales
 const todosProductosDestacados = [
@@ -125,7 +127,7 @@ let productosDestacados = todosProductosDestacados
     const dateB = new Date(b.created_at || 0).getTime();
     return dateB - dateA;
   })
-  .slice(0, 12); // Mostrar hasta 12 productos con imágenes reales
+  .slice(0, 12); // Mostrar hasta 12 productos destacados con imágenes reales
 
 // Cargar algunos accesorios para el masonry grid
 const { data: productosAccesoriosData } = await supabaseClient
