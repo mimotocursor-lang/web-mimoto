@@ -8,9 +8,19 @@ const { WebpayPlus, Options, Environment } = pkg;
  */
 export const GET: APIRoute = async ({ url }) => {
   try {
-    const commerceCode = url.searchParams.get('commerceCode') || import.meta.env.PUBLIC_WEBPAY_COMMERCE_CODE;
-    const apiKey = url.searchParams.get('apiKey') || import.meta.env.PUBLIC_WEBPAY_API_KEY;
-    const environment = url.searchParams.get('environment') || import.meta.env.PUBLIC_WEBPAY_ENVIRONMENT || 'integration';
+    // Usar valores por defecto de integración si no están configurados
+    const defaultCommerceCode = '597055555532';
+    const defaultApiKey = '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C';
+    
+    const commerceCode = url.searchParams.get('commerceCode') 
+      || import.meta.env.PUBLIC_WEBPAY_COMMERCE_CODE 
+      || defaultCommerceCode;
+    const apiKey = url.searchParams.get('apiKey') 
+      || import.meta.env.PUBLIC_WEBPAY_API_KEY 
+      || defaultApiKey;
+    const environment = url.searchParams.get('environment') 
+      || import.meta.env.PUBLIC_WEBPAY_ENVIRONMENT 
+      || 'integration';
 
     if (!commerceCode || !apiKey) {
       return new Response(
@@ -18,7 +28,12 @@ export const GET: APIRoute = async ({ url }) => {
           success: false,
           error: 'Faltan credenciales',
           message: 'Proporciona commerceCode y apiKey como parámetros de URL o variables de entorno',
-          ejemplo: '/api/webpay/test?commerceCode=TU_CODIGO&apiKey=TU_API_KEY&environment=integration'
+          ejemplo: '/api/webpay/test?commerceCode=TU_CODIGO&apiKey=TU_API_KEY&environment=integration',
+          valores_por_defecto: {
+            commerceCode: defaultCommerceCode,
+            apiKey: defaultApiKey.substring(0, 20) + '...',
+            environment: 'integration'
+          }
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );

@@ -3,7 +3,7 @@ import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
   srcDir: './src',
-  output: 'static',
+  output: 'server', // Cambiado de 'static' a 'server' para que las rutas API funcionen
   integrations: [tailwind()],
   server: {
     port: 4321,

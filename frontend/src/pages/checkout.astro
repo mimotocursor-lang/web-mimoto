@@ -1,7 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-
-const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost:3001/api';
 ---
 
 <BaseLayout title="Checkout - Mimoto">
@@ -42,118 +40,254 @@ const BACKEND_URL = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost:3001
     </div>
   </section>
 
-  <script type="module" define:vars={{ backendUrl: BACKEND_URL }}>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
     const STORAGE_KEY = 'mimoto_cart_v1';
-    const BACKEND_URL = backendUrl;
 
     function loadCart() {
       try {
-        const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (Array.isArray(raw)) return raw;
-        if (raw && Array.isArray(raw.items)) return raw.items;
-      } catch {
-        // ignore
+        const rawData = localStorage.getItem(STORAGE_KEY);
+        console.log('🛒 Checkout: Datos en localStorage:', rawData ? 'Encontrado' : 'No encontrado');
+        if (!rawData) {
+          return [];
+        }
+        const raw = JSON.parse(rawData);
+        console.log('🛒 Checkout: Datos parseados:', typeof raw);
+        
+        if (Array.isArray(raw)) {
+          console.log('✅ Carrito es array con', raw.length, 'items');
+          return raw;
+        }
+        if (raw && typeof raw === 'object' && Array.isArray(raw.items)) {
+          console.log('✅ Carrito tiene items con', raw.items.length, 'items');
+          return raw.items;
+        }
+        console.warn('⚠️ Formato inesperado del carrito');
+        return [];
+      } catch (error) {
+        console.error('❌ Error parseando carrito:', error);
+        return [];
       }
-      return [];
     }
 
     function renderSummary(cart) {
       const itemsEl = document.getElementById('checkout-items');
       const totalEl = document.getElementById('checkout-total');
-      if (!itemsEl || !totalEl) return;
+      if (!itemsEl || !totalEl) {
+        console.error('❌ Elementos del DOM no encontrados');
+        return;
+      }
 
       if (cart.length === 0) {
-          itemsEl.innerHTML =
-          '<p class="text-white/70 text-center py-4">Tu carrito está vacío. Agrega productos desde la tienda.</p>';
+        itemsEl.innerHTML = '<p class="text-white/70 text-center py-4">Tu carrito está vacío. Agrega productos desde la tienda.</p>';
         totalEl.textContent = '$0';
         return;
       }
 
       let total = 0;
       itemsEl.innerHTML = cart
-        .map((item) => {
-          const lineTotal = item.price * item.quantity;
+        .map(function(item) {
+          const price = Number(item.price) || 0;
+          const quantity = Number(item.quantity) || 1;
+          const lineTotal = price * quantity;
           total += lineTotal;
-          return `<div class="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg border border-primary/30">
-              <div>
-                <span class="font-semibold text-white">${item.name}</span>
-                <span class="text-white/70 text-xs block">Cantidad: ${item.quantity}</span>
-              </div>
-              <span class="font-bold text-primary text-lg">$${lineTotal.toLocaleString('es-CL')}</span>
-            </div>`;
+          return '<div class="flex justify-between items-center p-3 bg-gray-800/50 rounded-lg border border-primary/30">' +
+            '<div>' +
+            '<span class="font-semibold text-white">' + (item.name || 'Producto') + '</span>' +
+            '<span class="text-white/70 text-xs block">Cantidad: ' + quantity + '</span>' +
+            '</div>' +
+            '<span class="font-bold text-primary text-lg">$' + lineTotal.toLocaleString('es-CL') + '</span>' +
+            '</div>';
         })
         .join('');
-      totalEl.textContent = `$${total.toLocaleString('es-CL')}`;
+      totalEl.textContent = '$' + total.toLocaleString('es-CL');
     }
 
-    document.addEventListener('DOMContentLoaded', async () => {
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🛒 Checkout: Iniciando...');
       const cart = loadCart();
+      console.log('🛒 Checkout: Carrito cargado:', cart.length, 'items');
+      
       renderSummary(cart);
 
       const confirmBtn = document.getElementById('confirm-order-btn');
       const errorEl = document.getElementById('checkout-error');
 
-      if (!confirmBtn) return;
-
-      if (cart.length === 0) {
-        confirmBtn.disabled = true;
+      if (!confirmBtn) {
+        console.error('❌ Botón de confirmar no encontrado');
+        return;
       }
 
-      confirmBtn.addEventListener('click', async () => {
-        if (cart.length === 0) return;
+      if (cart.length === 0) {
+        console.warn('⚠️ Carrito vacío, deshabilitando botón');
         confirmBtn.disabled = true;
-        errorEl.textContent = '';
+      } else {
+        console.log('✅ Carrito tiene items, botón habilitado');
+        confirmBtn.disabled = false;
+      }
+
+      confirmBtn.addEventListener('click', async function() {
+        const currentCart = loadCart();
+        console.log('🛒 Checkout: Confirmando con', currentCart.length, 'items');
+        
+        if (currentCart.length === 0) {
+          if (errorEl) errorEl.textContent = 'Tu carrito está vacío. Agrega productos desde la tienda.';
+          return;
+        }
+        
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Creando pedido...';
+        if (errorEl) errorEl.textContent = '';
 
         try {
-          const items = cart.map((item) => ({
-            productId: Number(item.id),
-            quantity: item.quantity,
-            priceSnapshot: item.price,
-          }));
-
-          let order = null;
-          try {
-            const res = await fetch(`${BACKEND_URL}/orders/from-cart`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ items }),
-            });
-
-            if (res.ok) {
-              order = await res.json();
-            } else {
-              throw new Error('Backend error');
-            }
-          } catch (fetchErr) {
-            const totalAmount = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-            order = {
-              id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-              status: 'pending_payment',
-              totalAmount,
-              items: cart.map((item) => ({
-                productId: Number(item.id),
-                name: item.name,
-                quantity: item.quantity,
-                priceSnapshot: item.price,
-              })),
-              createdAt: new Date().toISOString(),
+          // Validar que el carrito tenga items
+          if (!currentCart || currentCart.length === 0) {
+            throw new Error('El carrito está vacío');
+          }
+          
+          console.log('🛒 Checkout: Carrito original:', JSON.stringify(currentCart, null, 2));
+          
+          const items = currentCart.map(function(item) {
+            const mapped = {
+              productId: Number(item.id) || 0,
+              quantity: Number(item.quantity) || 1,
+              priceSnapshot: Number(item.price) || 0,
             };
+            console.log('🛒 Checkout: Item mapeado:', JSON.stringify(mapped));
+            return mapped;
+          });
 
-            const ordersKey = 'mimoto_orders_v1';
-            const existingOrders = JSON.parse(localStorage.getItem(ordersKey) || '[]');
-            existingOrders.push(order);
-            localStorage.setItem(ordersKey, JSON.stringify(existingOrders));
+          console.log('🛒 Checkout: Creando pedido con items:', items);
+          console.log('🛒 Checkout: Cantidad de items:', items.length);
+          console.log('🛒 Checkout: Items completo:', JSON.stringify(items, null, 2));
+
+          // Validar que items no esté vacío
+          if (!items || items.length === 0) {
+            throw new Error('No hay items en el carrito para crear el pedido');
           }
 
+          // Validar que cada item tenga los campos necesarios
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (!item.productId || item.productId === 0) {
+              console.error('❌ Item inválido en índice', i, ':', item);
+              throw new Error('Uno o más items del carrito no tienen un productId válido');
+            }
+          }
+
+          // Obtener token de sesión si existe (usando CDN de Supabase)
+          let authToken = null;
+          if (typeof supabase !== 'undefined') {
+            try {
+              const SUPABASE_URL = 'https://prizpqahcluomioxnmex.supabase.co';
+              const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+              
+              const supabaseUrl = (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_URL) || SUPABASE_URL;
+              const supabaseAnonKey = (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_ANON_KEY) || SUPABASE_KEY;
+              const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+              
+              const sessionResult = await supabaseClient.auth.getSession();
+              if (sessionResult.data && sessionResult.data.session) {
+                authToken = sessionResult.data.session.access_token;
+              }
+            } catch (supabaseError) {
+              console.warn('⚠️ No se pudo obtener sesión de Supabase:', supabaseError);
+            }
+          }
+
+          // Preparar el body
+          const requestBody = { items: items };
+          const bodyString = JSON.stringify(requestBody);
+          
+          console.log('🛒 Checkout: Body a enviar:', bodyString);
+          console.log('🛒 Checkout: Body length:', bodyString.length);
+          console.log('🛒 Checkout: Items en body:', items.length);
+          console.log('🛒 Checkout: Items detalle:', JSON.stringify(items, null, 2));
+
+          // Validar que el body no esté vacío
+          if (!bodyString || bodyString === '{}' || bodyString === '{"items":[]}') {
+            console.error('❌ Body vacío o inválido:', bodyString);
+            throw new Error('El cuerpo de la petición está vacío o no tiene items válidos');
+          }
+
+          // Validar que bodyString sea un string válido
+          if (typeof bodyString !== 'string') {
+            console.error('❌ Body no es un string:', typeof bodyString, bodyString);
+            throw new Error('El body no es un string válido');
+          }
+
+          const headers = new Headers();
+          headers.set('Content-Type', 'application/json');
+          headers.set('Accept', 'application/json');
+          if (authToken) {
+            headers.set('Authorization', 'Bearer ' + authToken);
+          }
+          
+          console.log('🛒 Checkout: Enviando request a /api/orders/create');
+          console.log('🛒 Checkout: Headers:', Object.fromEntries(headers.entries()));
+          console.log('🛒 Checkout: Body final (tipo):', typeof bodyString);
+          console.log('🛒 Checkout: Body final (valor):', bodyString);
+          console.log('🛒 Checkout: Body final (primeros 500 chars):', bodyString.substring(0, 500));
+          
+          const res = await fetch('/api/orders/create', {
+            method: 'POST',
+            headers: headers,
+            body: bodyString,
+            credentials: 'same-origin',
+            cache: 'no-cache'
+          });
+
+          console.log('🛒 Checkout: Respuesta recibida:', res.status, res.statusText);
+          console.log('🛒 Checkout: Content-Type:', res.headers.get('content-type'));
+
+          // Leer la respuesta como texto primero
+          const responseText = await res.text();
+          console.log('🛒 Checkout: Respuesta raw:', responseText.substring(0, 200));
+
+          if (!res.ok) {
+            console.error('❌ Error HTTP:', res.status, responseText);
+            let errorData;
+            try {
+              errorData = JSON.parse(responseText);
+            } catch (parseError) {
+              console.error('❌ Error parseando respuesta de error:', parseError);
+              errorData = { error: responseText || 'Error al crear el pedido' };
+            }
+            throw new Error(errorData.error || 'Error ' + res.status + ': ' + res.statusText);
+          }
+
+          // Parsear la respuesta exitosa
+          let result;
+          try {
+            result = JSON.parse(responseText);
+            console.log('📋 Checkout: Resultado parseado:', result);
+          } catch (parseError) {
+            console.error('❌ Error parseando respuesta exitosa:', parseError);
+            console.error('❌ Respuesta que falló:', responseText);
+            throw new Error('Error al parsear la respuesta del servidor: ' + (parseError.message || 'Formato inválido'));
+          }
+
+          if (!result.success || !result.order || !result.order.id) {
+            console.error('❌ Respuesta inválida:', result);
+            throw new Error(result.error || 'Error al crear el pedido: respuesta inválida');
+          }
+
+          const order = result.order;
+          console.log('✅ Checkout: Pedido creado:', order.id, 'Total:', order.total_amount);
+
           localStorage.removeItem(STORAGE_KEY);
-          window.location.href = `/pago?orderId=${order.id}`;
+          
+          const orderIdParam = String(order.id);
+          console.log('🔄 Checkout: Redirigiendo a pago con orderId:', orderIdParam);
+          window.location.href = '/pago?orderId=' + orderIdParam;
         } catch (err) {
-          console.error(err);
-          errorEl.textContent =
-            'Ocurrió un error al crear la orden. Intenta nuevamente o contáctanos.';
-          confirmBtn.disabled = false;
+          console.error('❌ Checkout: Error completo:', err);
+          const errorMessage = err && err.message ? err.message : 'Ocurrió un error al crear la orden. Intenta nuevamente o contáctanos.';
+          if (errorEl) errorEl.textContent = errorMessage;
+          if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirmar compra';
+          }
         }
       });
     });

@@ -1143,6 +1143,93 @@ const productosRepuestos = productosRepuestosData || [];
       initSobreNosotrosSlider();
       initMotosUsadasSlider();
     });
+
+    // Manejar agregar al carrito
+    const STORAGE_KEY = 'mimoto_cart_v1';
+    
+    function addToCart(productId, productName, productPrice) {
+      try {
+        const existingCart = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const existingItem = existingCart.find((item: any) => item.id === productId);
+        
+        if (existingItem) {
+          existingItem.quantity += 1;
+        } else {
+          existingCart.push({
+            id: productId,
+            name: productName,
+            price: Number(productPrice),
+            quantity: 1
+          });
+        }
+        
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(existingCart));
+        console.log('✅ Producto agregado al carrito:', productName);
+        
+        // Actualizar contador del carrito si existe
+        updateCartCounter();
+        
+        // Mostrar notificación
+        showCartNotification(productName);
+      } catch (error) {
+        console.error('Error agregando al carrito:', error);
+      }
+    }
+    
+    function updateCartCounter() {
+      try {
+        const cart = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        const totalItems = cart.reduce((sum: number, item: any) => sum + item.quantity, 0);
+        const cartCounter = document.getElementById('cart-counter');
+        if (cartCounter) {
+          cartCounter.textContent = totalItems.toString();
+          cartCounter.style.display = totalItems > 0 ? 'flex' : 'none';
+        }
+      } catch (error) {
+        console.error('Error actualizando contador del carrito:', error);
+      }
+    }
+    
+    function showCartNotification(productName: string) {
+      // Crear notificación temporal
+      const notification = document.createElement('div');
+      notification.className = 'fixed top-4 right-4 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2';
+      notification.innerHTML = `
+        <span>✓</span>
+        <span>${productName} agregado al carrito</span>
+      `;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+    
+    // Event listener para botones de agregar al carrito (delegación de eventos)
+    document.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      const button = target.closest('[data-add-to-cart]') as HTMLElement;
+      
+      if (button && !button.disabled) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const productId = button.getAttribute('data-id');
+        const productName = button.getAttribute('data-name');
+        const productPrice = button.getAttribute('data-price');
+        
+        if (productId && productName && productPrice) {
+          addToCart(productId, productName, productPrice);
+        } else {
+          console.error('❌ Faltan datos del producto:', { productId, productName, productPrice });
+        }
+      }
+    });
+    
+    // Actualizar contador al cargar la página
+    document.addEventListener('DOMContentLoaded', () => {
+      updateCartCounter();
+    });
   </script>
   
   <style>

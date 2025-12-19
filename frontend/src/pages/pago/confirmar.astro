@@ -83,6 +83,10 @@ const { orderId, token_ws } = Astro.url.searchParams;
                   <span class="text-white/90">Monto pagado:</span>
                   <span class="font-bold text-primary">$${(result.amount / 100).toLocaleString('es-CL')}</span>
                 </div>
+                <div class="flex justify-between">
+                  <span class="text-white/90">Token:</span>
+                  <span class="font-mono text-xs text-primary break-all">${tokenWs}</span>
+                </div>
               </div>
               <div class="flex gap-4 justify-center">
                 <a href="/pedido/${result.orderId || orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
@@ -95,7 +99,7 @@ const { orderId, token_ws } = Astro.url.searchParams;
             </div>
           `;
         } else {
-          // Pago rechazado
+          // Pago rechazado - Mostrar token destacado
           statusEl.innerHTML = `
             <div class="text-center">
               <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/10 mb-4">
@@ -106,6 +110,25 @@ const { orderId, token_ws } = Astro.url.searchParams;
               <h2 class="text-2xl font-bold text-white mb-2">Pago Rechazado</h2>
               <p class="text-white/90 mb-2">${result.responseMessage || 'Tu pago no pudo ser procesado.'}</p>
               <p class="text-white/70 text-sm mb-4">Código de respuesta: ${result.responseCode || 'N/A'}</p>
+              
+              <!-- Token destacado para transacciones rechazadas -->
+              <div class="bg-red-500/10 border-2 border-red-500/50 rounded-lg p-4 mb-4">
+                <h3 class="text-lg font-bold text-red-400 mb-2">🔑 Token de Transacción Rechazada</h3>
+                <div class="flex items-center gap-2 mb-2">
+                  <code class="flex-1 bg-gray-900/50 p-2 rounded text-xs font-mono text-red-300 break-all">${tokenWs}</code>
+                  <button 
+                    onclick="navigator.clipboard.writeText('${tokenWs}').then(() => { this.textContent = '✅ Copiado!'; setTimeout(() => { this.textContent = '📋 Copiar'; }, 2000); })"
+                    class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
+                    title="Copiar token"
+                  >
+                    📋 Copiar
+                  </button>
+                </div>
+                <p class="text-xs text-white/70 mt-2">
+                  💡 <strong>Este es el token que Transbank necesita.</strong> Cópialo y envíalo donde te lo soliciten.
+                </p>
+              </div>
+              
               <div class="flex gap-4 justify-center">
                 <a href="/pago?orderId=${orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
                   Intentar nuevamente

@@ -47,40 +47,110 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     </div>
   </section>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Crear cliente de Supabase directamente
-    import { createClient } from '@supabase/supabase-js';
-    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
-    const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    // Valores hardcodeados como fallback
+    const SUPABASE_URL = 'https://prizpqahcluomioxnmex.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+    
+    let supabaseClient = null;
+    let supabaseLoadAttempts = 0;
+    const MAX_ATTEMPTS = 50;
+    
+    function initAdmin() {
+      if (typeof supabase === 'undefined') {
+        supabaseLoadAttempts++;
+        if (supabaseLoadAttempts > MAX_ATTEMPTS) {
+          console.error('❌ Timeout: Supabase no se cargó');
+          alert('Error: No se pudo cargar Supabase. Por favor, recarga la página.');
+          return;
+        }
+        setTimeout(initAdmin, 100);
+        return;
+      }
+      
+      const supabaseUrl = (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_URL) || SUPABASE_URL;
+      const supabaseAnonKey = (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_ANON_KEY) || SUPABASE_KEY;
+      
+      supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      });
+      
+      console.log('✅ Admin: Cliente de Supabase inicializado');
+      
+      // Verificar acceso inmediatamente
+      checkAdminAccess().then(function(hasAccess) {
+        if (!hasAccess) {
+          const adminContent = document.getElementById('admin-content');
+          if (adminContent) {
+            adminContent.innerHTML = '<p class="text-center py-12">Verificando acceso...</p>';
+          }
+        } else {
+          loadDashboardData();
+        }
+      });
+    }
 
     async function checkAdminAccess() {
-      const { data: { session } } = await supabaseClient.auth.getSession();
-      if (!session) {
+      if (!supabaseClient) {
+        console.error('❌ Admin: Cliente de Supabase no inicializado');
         window.location.href = '/login?return=/admin';
         return false;
       }
+      
+      try {
+        const sessionResult = await supabaseClient.auth.getSession();
+        const session = sessionResult.data ? sessionResult.data.session : null;
+        
+        console.log('🔍 Admin: Verificando sesión...', session ? 'Sesión encontrada' : 'Sin sesión');
+        
+        if (!session) {
+          console.log('❌ Admin: No hay sesión, redirigiendo a login');
+          window.location.href = '/login?return=/admin';
+          return false;
+        }
 
-      const { data: profile } = await supabaseClient
-        .from('users')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
+        console.log('🔍 Admin: Verificando rol de usuario...');
+        const profileResult = await supabaseClient
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
 
-      if (profile?.role !== 'admin') {
-        alert('No tienes permisos para acceder a esta página');
-        window.location.href = '/';
+        const profile = profileResult.data;
+        console.log('🔍 Admin: Perfil obtenido:', profile ? 'Perfil encontrado' : 'Sin perfil');
+        console.log('🔍 Admin: Rol:', profile ? profile.role : 'N/A');
+
+        if (!profile || profile.role !== 'admin') {
+          console.log('❌ Admin: Usuario no es admin, redirigiendo');
+          alert('No tienes permisos para acceder a esta página');
+          window.location.href = '/';
+          return false;
+        }
+
+        console.log('✅ Admin: Acceso autorizado');
+        return true;
+      } catch (error) {
+        console.error('❌ Admin: Error verificando acceso:', error);
+        window.location.href = '/login?return=/admin';
         return false;
       }
-
-      return true;
     }
 
     async function loadDashboardData() {
       const hasAccess = await checkAdminAccess();
-      if (!hasAccess) return;
+      if (!hasAccess) {
+        console.log('❌ Admin: Sin acceso, no cargando datos');
+        return;
+      }
 
       try {
+        console.log('📊 Admin: Cargando datos del dashboard...');
+        
         // Cargar KPIs desde Supabase
         const [ordersRes, productsRes, motosRes] = await Promise.all([
           supabaseClient.from('orders').select('total_amount, status'),
@@ -90,45 +160,64 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
         // Calcular total de ventas (solo órdenes pagadas)
         const totalSales = ordersRes.data
-          ?.filter((o) => o.status === 'paid')
-          .reduce((sum, o) => sum + Number(o.total_amount || 0), 0) || 0;
+          ?.filter(function(o) { return o.status === 'paid'; })
+          .reduce(function(sum, o) { return sum + Number(o.total_amount || 0); }, 0) || 0;
 
         // Contar productos activos
-        const productsActive = productsRes.data?.filter((p) => p.status === 'active').length || 0;
+        const productsActive = productsRes.data ? productsRes.data.filter(function(p) { return p.status === 'active'; }).length : 0;
 
         // Contar motos activas
-        const motosActive = motosRes.data?.filter((m) => m.status === 'active').length || 0;
+        const motosActive = motosRes.data ? motosRes.data.filter(function(m) { return m.status === 'active'; }).length : 0;
 
         // Total de órdenes
-        const totalOrders = ordersRes.data?.length || 0;
+        const totalOrders = ordersRes.data ? ordersRes.data.length : 0;
 
         // Productos con stock bajo
-        const lowStock = productsRes.data?.filter((p) => p.stock <= 5 && p.status === 'active') || [];
+        const lowStock = productsRes.data ? productsRes.data.filter(function(p) { return p.stock <= 5 && p.status === 'active'; }) : [];
 
         // Actualizar UI
-        document.getElementById('kpi-sales')!.textContent = `$${totalSales.toLocaleString('es-CL')}`;
-        document.getElementById('kpi-products-active')!.textContent = productsActive.toString();
-        document.getElementById('kpi-motos-active')!.textContent = motosActive.toString();
-        document.getElementById('kpi-orders')!.textContent = totalOrders.toString();
-        document.getElementById('kpi-low-stock')!.textContent = lowStock.length.toString();
+        const kpiSales = document.getElementById('kpi-sales');
+        const kpiProducts = document.getElementById('kpi-products-active');
+        const kpiMotos = document.getElementById('kpi-motos-active');
+        const kpiOrders = document.getElementById('kpi-orders');
+        const kpiLowStock = document.getElementById('kpi-low-stock');
+        
+        if (kpiSales) kpiSales.textContent = '$' + totalSales.toLocaleString('es-CL');
+        if (kpiProducts) kpiProducts.textContent = productsActive.toString();
+        if (kpiMotos) kpiMotos.textContent = motosActive.toString();
+        if (kpiOrders) kpiOrders.textContent = totalOrders.toString();
+        if (kpiLowStock) kpiLowStock.textContent = lowStock.length.toString();
 
-        const lowStockEl = document.getElementById('low-stock-products')!;
-        if (lowStock.length === 0) {
-          lowStockEl.innerHTML = '<p class="text-gray-600 dark:text-ktm-text/70">No hay productos con stock bajo</p>';
-        } else {
-          lowStockEl.innerHTML = lowStock
-            .map((p) => `<div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-primary/30 last:border-0">
-              <span class="text-gray-900 dark:text-ktm-text font-medium">${p.name || 'Sin nombre'}</span>
-              <span class="text-red-500 dark:text-red-400 font-bold">Stock: ${p.stock}</span>
-            </div>`)
-            .join('');
+        const lowStockEl = document.getElementById('low-stock-products');
+        if (lowStockEl) {
+          if (lowStock.length === 0) {
+            lowStockEl.innerHTML = '<p class="text-gray-600 dark:text-ktm-text/70">No hay productos con stock bajo</p>';
+          } else {
+            lowStockEl.innerHTML = lowStock
+              .map(function(p) {
+                return '<div class="flex justify-between items-center py-2 border-b border-gray-200 dark:border-primary/30 last:border-0">' +
+                  '<span class="text-gray-900 dark:text-ktm-text font-medium">' + (p.name || 'Sin nombre') + '</span>' +
+                  '<span class="text-red-500 dark:text-red-400 font-bold">Stock: ' + p.stock + '</span>' +
+                  '</div>';
+              })
+              .join('');
+          }
         }
+        
+        console.log('✅ Admin: Datos del dashboard cargados');
       } catch (err) {
-        console.error('Error cargando dashboard:', err);
+        console.error('❌ Admin: Error cargando dashboard:', err);
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadDashboardData);
+    // Inicializar cuando Supabase esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initAdmin, 100);
+      });
+    } else {
+      setTimeout(initAdmin, 100);
+    }
   </script>
 </BaseLayout>
 

@@ -17,49 +17,122 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   <script>
     // Crear cliente de Supabase directamente
     import { createClient } from '@supabase/supabase-js';
-    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
-    const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    
+    // Obtener variables con múltiples fallbacks
+    const supabaseUrl = 
+      import.meta.env.PUBLIC_SUPABASE_URL || 
+      (typeof window !== 'undefined' ? (window as any).PUBLIC_SUPABASE_URL : '') ||
+      'https://prizpqahcluomioxnmex.supabase.co';
+    
+    const supabaseAnonKey = 
+      import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 
+      (typeof window !== 'undefined' ? (window as any).PUBLIC_SUPABASE_ANON_KEY : '') ||
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+    
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined
+      }
+    });
 
     async function handleAuthCallback() {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const error = hashParams.get('error');
+      console.log('🔄 Procesando callback de autenticación...');
+      console.log('📍 URL actual:', window.location.href);
+      console.log('📍 Hash:', window.location.hash);
+      console.log('📍 Search:', window.location.search);
 
-      if (error) {
-        window.location.href = `/login?error=${encodeURIComponent(error)}`;
-        return;
-      }
+      try {
+        // Primero, intentar intercambiar el código por la sesión si viene en el hash
+        if (window.location.hash) {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          const accessToken = hashParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token');
+          
+          if (accessToken && refreshToken) {
+            console.log('🔑 Tokens encontrados en hash, estableciendo sesión...');
+            const { data, error: setSessionError } = await supabaseClient.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            });
+            
+            if (setSessionError) {
+              console.error('❌ Error estableciendo sesión:', setSessionError);
+              window.location.href = `/login?error=${encodeURIComponent(setSessionError.message)}`;
+              return;
+            }
+            
+            if (data.session) {
+              console.log('✅ Sesión establecida desde hash');
+            }
+          }
+        }
 
-      if (accessToken) {
-        const { data, error: sessionError } = await supabaseClient.auth.getSession();
+        // Obtener la sesión actual
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
 
         if (sessionError) {
+          console.error('❌ Error obteniendo sesión:', sessionError);
           window.location.href = `/login?error=${encodeURIComponent(sessionError.message)}`;
           return;
         }
 
-        if (data.session?.user) {
-          const { data: existingUser } = await supabaseClient
-            .from('users')
-            .select('id')
-            .eq('id', data.session.user.id)
-            .single();
+        if (session?.user) {
+          console.log('✅ Sesión obtenida:', session.user.email);
+          
+          // Crear o actualizar perfil de usuario
+          try {
+            const { data: existingUser } = await supabaseClient
+              .from('users')
+              .select('id')
+              .eq('id', session.user.id)
+              .single();
 
-          if (!existingUser) {
-            await supabaseClient.from('users').insert({
-              id: data.session.user.id,
-              email: data.session.user.email,
-              full_name: data.session.user.user_metadata?.full_name || data.session.user.user_metadata?.name || '',
-              role: 'buyer',
-            });
+            if (!existingUser) {
+              console.log('📝 Creando perfil de usuario...');
+              const { error: insertError } = await supabaseClient.from('users').insert({
+                id: session.user.id,
+                email: session.user.email,
+                full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || '',
+                role: 'buyer',
+              });
+
+              if (insertError && !insertError.message.includes('duplicate')) {
+                console.error('⚠️ Error creando perfil:', insertError);
+              }
+            }
+          } catch (profileError) {
+            console.error('⚠️ Error con perfil de usuario:', profileError);
+            // Continuar aunque falle el perfil
           }
-        }
 
-        const returnUrl = new URLSearchParams(window.location.search).get('return') || '/';
-        window.location.href = returnUrl;
-      } else {
-        window.location.href = '/login';
+          // Esperar un momento para asegurar que la sesión se guarde
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          const returnUrl = new URLSearchParams(window.location.search).get('return') || '/';
+          console.log('🔄 Redirigiendo a:', returnUrl);
+          window.location.href = returnUrl;
+        } else {
+          console.error('❌ No hay sesión después del callback');
+          window.location.href = '/login?error=No se pudo obtener la sesión';
+        }
+      } catch (error: any) {
+        console.error('❌ Error en callback:', error);
+        window.location.href = `/login?error=${encodeURIComponent(error.message || 'Error en autenticación')}`;
+      }
+    }
+
+    // También verificar el hash de la URL para OAuth
+    if (window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const error = hashParams.get('error');
+      
+      if (error) {
+        console.error('❌ Error en hash:', error);
+        window.location.href = `/login?error=${encodeURIComponent(error)}`;
+        return;
       }
     }
 

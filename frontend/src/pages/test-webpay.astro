@@ -97,6 +97,36 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           <li>Usa las tarjetas de prueba mostradas arriba cuando llegues a Webpay</li>
         </ol>
       </div>
+
+      <!-- Cómo Generar Transacción Rechazada -->
+      <div class="bg-red-500/10 border-l-4 border-red-500 p-4 rounded">
+        <h2 class="text-lg font-bold text-white mb-3">❌ ¿Cómo Generar una Transacción Rechazada?</h2>
+        <div class="text-sm text-white/90 space-y-3">
+          <p class="font-semibold text-red-400">⚠️ Importante:</p>
+          <p>La página de prueba solo genera el <strong>token inicial</strong>. Para obtener el token de una transacción <strong>rechazada completa</strong>, necesitas hacer el flujo completo:</p>
+          
+          <div class="bg-gray-900/50 p-3 rounded mt-3">
+            <p class="font-semibold mb-2">📋 Pasos para Transacción Rechazada:</p>
+            <ol class="list-decimal list-inside space-y-1 ml-2">
+              <li>Agrega productos al carrito desde <a href="/tienda" class="text-blue-400 hover:underline">/tienda</a></li>
+              <li>Ve a <a href="/checkout" class="text-blue-400 hover:underline">/checkout</a> y confirma el pedido</li>
+              <li>Serás redirigido a <code class="bg-gray-800 px-1 rounded">/pago?orderId=XXX</code></li>
+              <li>Haz clic en "Pagar ahora"</li>
+              <li>Serás redirigido a Webpay</li>
+              <li><strong>Usa la tarjeta MASTERCARD que rechaza:</strong> <code class="bg-gray-800 px-1 rounded">5186 0595 5959 0568</code> (CVV: 123)</li>
+              <li>Completa el pago en Webpay</li>
+              <li>Webpay rechazará la transacción automáticamente</li>
+              <li>Serás redirigido a <code class="bg-gray-800 px-1 rounded">/pago/confirmar?token_ws=TOKEN</code></li>
+              <li><strong>El token estará en la URL</strong> y también se mostrará en la página</li>
+            </ol>
+          </div>
+
+          <div class="bg-yellow-500/10 border border-yellow-500/30 p-3 rounded mt-3">
+            <p class="font-semibold text-yellow-400 mb-1">💡 Nota:</p>
+            <p class="text-xs">El token de esta página de prueba es solo para verificar la conexión. Transbank necesita el token de una <strong>transacción completada</strong> (aunque sea rechazada), no solo el token inicial.</p>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 

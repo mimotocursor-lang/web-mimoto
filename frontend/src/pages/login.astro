@@ -76,54 +76,248 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </div>
   </section>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // Crear cliente de Supabase directamente en el script del cliente
-    import { createClient } from '@supabase/supabase-js';
+    // Valores hardcodeados como fallback
+    const SUPABASE_URL = 'https://prizpqahcluomioxnmex.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
     
-    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
-    const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    let supabaseClient = null;
+    let supabaseUrl = SUPABASE_URL;
+    let supabaseAnonKey = SUPABASE_KEY;
+    let supabaseLoadAttempts = 0;
+    const MAX_ATTEMPTS = 50; // 5 segundos máximo
     
-    console.log('✅ Cliente de Supabase inicializado:', supabaseUrl ? 'Sí' : 'No');
-
-    document.getElementById('login-form')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target as HTMLFormElement;
-      const email = (form.querySelector('#email') as HTMLInputElement).value;
-      const password = (form.querySelector('#password') as HTMLInputElement).value;
-      const errorEl = document.getElementById('login-error') as HTMLElement;
-
-      errorEl.textContent = '';
-
-      try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-        if (error) throw error;
-
-        const returnUrl = new URLSearchParams(window.location.search).get('return') || '/';
-        window.location.href = returnUrl;
-      } catch (err: any) {
-        errorEl.textContent = err.message || 'Error al iniciar sesión';
+    // Esperar a que Supabase se cargue desde el CDN
+    function initLogin() {
+      // Verificar que Supabase esté disponible
+      if (typeof supabase === 'undefined') {
+        supabaseLoadAttempts++;
+        if (supabaseLoadAttempts > MAX_ATTEMPTS) {
+          console.error('❌ Timeout: Supabase no se cargó después de', MAX_ATTEMPTS * 100, 'ms');
+          console.error('❌ Intentando cargar Supabase manualmente...');
+          // Intentar cargar el script manualmente
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+          script.onload = function() {
+            console.log('✅ Supabase cargado manualmente');
+            initLogin();
+          };
+          script.onerror = function() {
+            console.error('❌ Error cargando Supabase desde CDN');
+            alert('Error: No se pudo cargar Supabase. Por favor, recarga la página.');
+          };
+          document.head.appendChild(script);
+          return;
+        }
+        if (supabaseLoadAttempts % 10 === 0) {
+          console.log('⏳ Esperando a que Supabase se cargue... (intento', supabaseLoadAttempts, '/', MAX_ATTEMPTS, ')');
+        }
+        setTimeout(initLogin, 100);
+        return;
       }
-    });
-
-    document.getElementById('google-login')?.addEventListener('click', async () => {
-      try {
-        const { error } = await supabaseClient.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/auth/callback`,
-          },
-        });
-
-        if (error) throw error;
-      } catch (err: any) {
-        const errorEl = document.getElementById('login-error') as HTMLElement;
-        errorEl.textContent = err.message || 'Error al iniciar sesión con Google';
+      
+      console.log('✅ Supabase cargado correctamente');
+      
+      // Intentar obtener de window primero, luego usar fallback
+      if (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_URL) {
+        supabaseUrl = window.PUBLIC_SUPABASE_URL;
       }
-    });
+      if (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_ANON_KEY) {
+        supabaseAnonKey = window.PUBLIC_SUPABASE_ANON_KEY;
+      }
+      
+      console.log('🔧 Inicializando login...');
+      
+      supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          detectSessionInUrl: true
+        }
+      });
+      
+      console.log('✅ Cliente de Supabase inicializado');
+
+      function setupLogin() {
+        const loginForm = document.getElementById('login-form');
+        const googleBtn = document.getElementById('google-login');
+        const errorEl = document.getElementById('login-error');
+        
+        if (!loginForm) {
+          console.error('❌ Formulario no encontrado');
+          return;
+        }
+        
+        console.log('✅ Configurando login...');
+        
+        loginForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('📝 Formulario enviado');
+          
+          const emailInput = document.getElementById('email');
+          const passwordInput = document.getElementById('password');
+          const submitBtn = loginForm.querySelector('button[type="submit"]');
+          
+          if (!emailInput || !passwordInput) {
+            console.error('❌ Campos no encontrados');
+            if (errorEl) errorEl.textContent = 'Error: Campos no encontrados';
+            return;
+          }
+          
+          const email = emailInput.value ? String(emailInput.value).trim() : '';
+          const password = passwordInput.value ? String(passwordInput.value) : '';
+          
+          if (!email || !password) {
+            if (errorEl) errorEl.textContent = 'Por favor, completa todos los campos';
+            return;
+          }
+          
+          if (errorEl) errorEl.textContent = '';
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Iniciando sesión...';
+          }
+          
+          try {
+            console.log('🔐 Iniciando sesión con:', email);
+            console.log('🔧 Cliente Supabase:', supabaseClient ? 'Disponible' : 'No disponible');
+            
+            const result = await supabaseClient.auth.signInWithPassword({ 
+              email: email, 
+              password: password 
+            });
+            
+            const data = result.data;
+            const error = result.error;
+            
+            console.log('📋 Respuesta de signInWithPassword:', {
+              hasData: !!data,
+              hasUser: !!(data && data.user),
+              hasError: !!error,
+              errorMessage: error ? error.message : null
+            });
+            
+            if (error) {
+              console.error('❌ Error de Supabase:', error);
+              throw error;
+            }
+            
+            if (!data || !data.user) {
+              console.error('❌ No se recibió información del usuario');
+              throw new Error('No se recibió información del usuario');
+            }
+            
+            console.log('✅ Login exitoso:', data.user.email);
+            
+            // Esperar un momento antes de verificar la sesión
+            await new Promise(function(resolve) { setTimeout(resolve, 300); });
+            
+            const sessionResult = await supabaseClient.auth.getSession();
+            const sessionData = sessionResult.data;
+            const sessionError = sessionResult.error;
+            
+            if (sessionError) {
+              console.error('❌ Error obteniendo sesión:', sessionError);
+              throw new Error('Error al obtener la sesión: ' + sessionError.message);
+            }
+            
+            if (!sessionData || !sessionData.session) {
+              console.error('❌ La sesión no se guardó');
+              throw new Error('La sesión no se guardó correctamente. Por favor, intenta nuevamente.');
+            }
+            
+            console.log('📋 Sesión guardada correctamente');
+            
+            // Verificar la sesión una vez más antes de redirigir
+            const finalSessionCheck = await supabaseClient.auth.getSession();
+            if (finalSessionCheck.data && finalSessionCheck.data.session) {
+              console.log('✅ Sesión confirmada antes de redirigir');
+              console.log('✅ User ID:', finalSessionCheck.data.session.user.id);
+              console.log('✅ User Email:', finalSessionCheck.data.session.user.email);
+            } else {
+              console.error('❌ Sesión no encontrada en verificación final');
+              throw new Error('La sesión no se guardó correctamente');
+            }
+            
+            // Esperar un poco más antes de redirigir
+            await new Promise(function(resolve) { setTimeout(resolve, 1000); });
+            
+            const returnUrl = new URLSearchParams(window.location.search).get('return') || '/';
+            console.log('🔄 Redirigiendo a:', returnUrl);
+            
+            // Forzar recarga completa con replace para evitar volver atrás
+            window.location.replace(returnUrl);
+          } catch (err) {
+            console.error('❌ Error completo en login:', err);
+            
+            let errorMessage = 'Error al iniciar sesión';
+            if (err && typeof err === 'object' && err.message) {
+              errorMessage = err.message;
+            } else if (typeof err === 'string') {
+              errorMessage = err;
+            }
+            
+            if (errorEl) errorEl.textContent = errorMessage;
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.textContent = 'Iniciar sesión';
+            }
+          }
+        });
+        
+        if (googleBtn) {
+          googleBtn.addEventListener('click', async function() {
+            if (errorEl) errorEl.textContent = '';
+            try {
+              const result = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.origin + '/auth/callback' }
+              });
+              if (result.error) throw result.error;
+            } catch (err) {
+              console.error('❌ Error Google:', err);
+              if (errorEl) {
+                const errorMsg = err && typeof err === 'object' && err.message ? err.message : 'Error con Google';
+                errorEl.textContent = errorMsg;
+              }
+            }
+          });
+        }
+      }
+      
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupLogin);
+      } else {
+        setupLogin();
+      }
+    }
+    
+    // Inicializar cuando Supabase esté listo
+    // Verificar si el script del CDN ya se cargó
+    function checkSupabaseAndInit() {
+      if (typeof supabase !== 'undefined') {
+        console.log('✅ Supabase ya está disponible');
+        initLogin();
+      } else {
+        // Esperar un poco más y verificar
+        setTimeout(function() {
+          if (typeof supabase !== 'undefined') {
+            console.log('✅ Supabase cargado después de esperar');
+            initLogin();
+          } else {
+            console.log('⏳ Iniciando espera de Supabase...');
+            initLogin();
+          }
+        }, 200);
+      }
+    }
+    
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', checkSupabaseAndInit);
+    } else {
+      checkSupabaseAndInit();
+    }
   </script>
 </BaseLayout>

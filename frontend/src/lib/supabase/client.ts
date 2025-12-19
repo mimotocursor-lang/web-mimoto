@@ -42,7 +42,14 @@ let supabaseClientInstance: SupabaseClient | null = null;
 
 function getSupabaseClient(): SupabaseClient {
   if (!supabaseClientInstance) {
-    supabaseClientInstance = createClient(supabaseUrl, supabaseAnonKey);
+    supabaseClientInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+      },
+    });
   }
   return supabaseClientInstance;
 }

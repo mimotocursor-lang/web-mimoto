@@ -68,14 +68,20 @@ if (orderId) {
         
         <button
           id="pay-button"
+          type="button"
           class="w-full inline-flex items-center justify-center px-8 py-4 rounded-lg bg-primary text-white font-bold hover:bg-primary-600 transition-colors shadow-md text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={!orderId || !orderTotal}
+          disabled={!orderId}
         >
           <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
           <span id="pay-button-text">Pagar ahora</span>
         </button>
+        {!orderTotal && orderId && (
+          <p class="text-xs text-yellow-400 text-center mt-2">
+            ⚠️ Cargando información del pedido...
+          </p>
+        )}
       </div>
 
       <div class="bg-primary/10 border-l-4 border-primary p-4 rounded">
@@ -95,49 +101,134 @@ if (orderId) {
     </div>
   </section>
 
-  <script>
+  <script define:vars={{ orderTotal: orderTotal, orderId: orderId }}>
     document.addEventListener('DOMContentLoaded', async () => {
-      const payButton = document.getElementById('pay-button');
-      const payButtonText = document.getElementById('pay-button-text');
+      const payButton = document.getElementById('pay-button') as HTMLButtonElement;
+      const payButtonText = document.getElementById('pay-button-text') as HTMLElement;
       const urlParams = new URLSearchParams(window.location.search);
-      const orderId = urlParams.get('orderId');
+      const orderIdFromUrl = urlParams.get('orderId') || orderId;
 
-      if (!payButton || !orderId) return;
+      console.log('🔍 Estado inicial:', {
+        payButton: !!payButton,
+        orderId: orderIdFromUrl,
+        orderTotal: orderTotal,
+        buttonDisabled: payButton?.disabled
+      });
+
+      if (!payButton) {
+        console.error('❌ Botón de pago no encontrado');
+        return;
+      }
+
+      if (!orderIdFromUrl || orderIdFromUrl === 'null' || orderIdFromUrl === 'undefined') {
+        console.error('❌ No hay orderId válido en la URL:', orderIdFromUrl);
+        payButton.disabled = true;
+        payButtonText.textContent = 'Error: No hay pedido asociado';
+        
+        // Mostrar mensaje de error visible
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'bg-red-500/10 border-l-4 border-red-500 p-4 rounded mt-4';
+        errorMsg.innerHTML = `
+          <p class="text-sm text-red-200">
+            <strong>Error:</strong> No se encontró un pedido válido. Por favor, vuelve al checkout e intenta nuevamente.
+          </p>
+          <a href="/checkout" class="inline-block mt-2 px-4 py-2 bg-primary text-white rounded hover:bg-primary-600 transition-colors text-sm">
+            Volver al Checkout
+          </a>
+        `;
+        payButton.parentElement?.appendChild(errorMsg);
+        return;
+      }
+
+      // Si no hay orderTotal, intentar obtenerlo del servidor
+      let finalOrderTotal = orderTotal;
+      if (!finalOrderTotal) {
+        console.log('⚠️ No hay orderTotal, intentando obtener del servidor...');
+        try {
+          // Crear cliente de Supabase en el cliente
+          const { createClient } = await import('@supabase/supabase-js');
+          const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || (window as any).PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
+          const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || (window as any).PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+          const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+
+          const { data: order, error } = await supabaseClient
+            .from('orders')
+            .select('total_amount')
+            .eq('id', orderIdFromUrl)
+            .single();
+
+          if (error) {
+            console.error('❌ Error obteniendo pedido:', error);
+            payButton.disabled = true;
+            payButtonText.textContent = 'Error: Pedido no encontrado';
+            return;
+          }
+
+          if (order && order.total_amount) {
+            console.log('✅ Pedido obtenido, total:', order.total_amount);
+            finalOrderTotal = Number(order.total_amount);
+            // Habilitar el botón si encontramos el total
+            payButton.disabled = false;
+          } else {
+            console.error('❌ Pedido sin total_amount');
+            payButton.disabled = true;
+            payButtonText.textContent = 'Error: No se pudo obtener el monto';
+            return;
+          }
+        } catch (err) {
+          console.error('❌ Error:', err);
+          payButton.disabled = true;
+          payButtonText.textContent = 'Error al cargar pedido';
+          return;
+        }
+      } else {
+        // Si hay orderTotal, habilitar el botón
+        payButton.disabled = false;
+        console.log('✅ Botón habilitado, orderTotal:', finalOrderTotal);
+      }
 
       payButton.addEventListener('click', async () => {
+        console.log('🖱️ Click en botón de pago');
         payButton.disabled = true;
         payButtonText.textContent = 'Iniciando pago...';
 
         try {
           // Obtener URL de retorno
-          const returnUrl = `${window.location.origin}/pago/confirmar?orderId=${orderId}`;
+          const returnUrl = `${window.location.origin}/pago/confirmar?orderId=${orderIdFromUrl}`;
+          console.log('🔄 URL de retorno:', returnUrl);
 
           // Iniciar transacción de Webpay
+          console.log('📡 Llamando a /api/webpay/init...');
           const response = await fetch('/api/webpay/init', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-              orderId,
+              orderId: orderIdFromUrl,
               returnUrl
             }),
           });
 
+          console.log('📥 Respuesta recibida, status:', response.status);
           const result = await response.json();
+          console.log('📋 Resultado:', result);
 
           if (result.success && result.url) {
+            console.log('✅ Redirigiendo a Webpay:', result.url);
             // Redirigir a Webpay
             window.location.href = result.url;
           } else {
+            console.error('❌ Error en respuesta:', result);
             throw new Error(result.error || 'Error al iniciar el pago');
           }
-        } catch (error) {
-          console.error('Error iniciando pago:', error);
+        } catch (error: any) {
+          console.error('❌ Error completo iniciando pago:', error);
           payButton.disabled = false;
           payButtonText.textContent = 'Pagar ahora';
           
-          alert('Error al iniciar el pago. Por favor, intenta nuevamente o contacta con soporte.');
+          const errorMessage = error.message || 'Error al iniciar el pago. Por favor, intenta nuevamente o contacta con soporte.';
+          alert(errorMessage);
         }
       });
     });
