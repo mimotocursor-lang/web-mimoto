@@ -274,13 +274,13 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       document.getElementById('modal-title')!.textContent = isEdit ? 'Editar Banner' : 'Nuevo Banner';
-      editingBannerId = null;
-      selectedImageFile = null;
-      (document.getElementById('banner-form') as HTMLFormElement).reset();
-      document.getElementById('banner-image-preview')!.classList.add('hidden');
       
-      // Establecer el tipo de banner según la pestaña activa
+      // Solo resetear si NO es edición
       if (!isEdit) {
+        editingBannerId = null;
+        selectedImageFile = null;
+        (document.getElementById('banner-form') as HTMLFormElement).reset();
+        document.getElementById('banner-image-preview')!.classList.add('hidden');
         (document.getElementById('banner-type') as HTMLSelectElement).value = currentBannerType;
       }
     }
@@ -293,15 +293,21 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
 
     function editBanner(id: number, banner: any) {
+      console.log('Editando banner:', id, banner);
       editingBannerId = id;
       selectedImageFile = null;
+      
+      // Limpiar el input de archivo
+      (document.getElementById('banner-image-file') as HTMLInputElement).value = '';
+      
+      // Llenar el formulario con los datos del banner
       (document.getElementById('banner-id') as HTMLInputElement).value = id.toString();
       (document.getElementById('banner-title') as HTMLInputElement).value = banner.title || '';
       (document.getElementById('banner-subtitle') as HTMLInputElement).value = banner.subtitle || '';
-      (document.getElementById('banner-image-url') as HTMLInputElement).value = banner.image_url;
+      (document.getElementById('banner-image-url') as HTMLInputElement).value = banner.image_url || '';
       (document.getElementById('banner-link-url') as HTMLInputElement).value = banner.link_url || '';
       (document.getElementById('banner-type') as HTMLSelectElement).value = banner.banner_type || 'hero';
-      (document.getElementById('banner-position') as HTMLInputElement).value = banner.position || 0;
+      (document.getElementById('banner-position') as HTMLInputElement).value = (banner.position ?? 0).toString();
       (document.getElementById('banner-active') as HTMLSelectElement).value = banner.active ? 'true' : 'false';
       
       // Mostrar preview de imagen existente
@@ -314,7 +320,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
         document.getElementById('banner-image-preview')!.classList.add('hidden');
       }
       
-      openModal(true);
+      // Abrir modal en modo edición (sin resetear editingBannerId)
+      const modal = document.getElementById('banner-modal')!;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.getElementById('modal-title')!.textContent = 'Editar Banner';
     }
 
     async function deleteBanner(id: number) {

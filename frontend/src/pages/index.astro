@@ -5,26 +5,42 @@ import { supabaseClient } from '../../lib/supabase/client';
 // Cargar banners activos del hero desde Supabase
 let banners: any[] = [];
 try {
+  // Cargar todos los banners hero activos, ordenados por posición
   const { data: bannersData, error: bannersError } = await supabaseClient
     .from('banners')
     .select('*')
     .eq('active', true)
     .eq('banner_type', 'hero')
     .order('position', { ascending: true })
-    .limit(3);
+    .limit(10);
   
   if (bannersError) {
-    const { data: allBanners } = await supabaseClient
+    console.error('Error cargando banners hero:', bannersError);
+    // Si falla, intentar cargar todos los banners activos sin filtrar por tipo
+    const { data: allBanners, error: allBannersError } = await supabaseClient
       .from('banners')
       .select('*')
       .eq('active', true)
       .order('position', { ascending: true })
-      .limit(3);
-    banners = allBanners || [];
+      .limit(10);
+    
+    if (allBannersError) {
+      console.error('Error cargando todos los banners:', allBannersError);
+      banners = [];
+    } else {
+      // Filtrar solo los de tipo hero
+      banners = (allBanners || []).filter((b: any) => b.banner_type === 'hero');
+    }
   } else {
     banners = bannersData || [];
   }
+  
+  // Limitar a 3 banners para el slider (los primeros 3 por posición)
+  if (banners.length > 3) {
+    banners = banners.slice(0, 3);
+  }
 } catch (err) {
+  console.error('Error en carga de banners:', err);
   banners = [];
 }
 
