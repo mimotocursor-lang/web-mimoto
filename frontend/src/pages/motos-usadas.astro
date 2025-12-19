@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { supabaseClient } from '../../lib/supabase/client';
-import { getWhatsAppUrl } from '../../lib/whatsapp';
+import { supabaseClient } from '../lib/supabase/client';
+import { getWhatsAppUrl } from '../lib/whatsapp';
 
 // Cargar motos usadas activas
 const { data: motos = [], error } = await supabaseClient

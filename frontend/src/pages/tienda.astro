@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { supabaseClient } from '../../lib/supabase/client';
-import { getWhatsAppUrl } from '../../lib/whatsapp';
+import { supabaseClient } from '../lib/supabase/client';
+import { getWhatsAppUrl } from '../lib/whatsapp';
 import { 
   getAvailableCategories, 
   filterByCategory, 
@@ -876,7 +876,7 @@ try {
         const hasImage = imageUrl && imageUrl.trim() !== '';
         const price = Number(p.price) || 0;
         const stock = Number(p.stock) || 0;
-        const whatsappUrl = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+        const whatsappUrl = WHATSAPP_REPUESTOS_URL;
 
         const article = document.createElement('article');
         article.className = 'bg-ktm-light-surface dark:bg-ktm-surface border-2 border-ktm-light-border dark:border-ktm-border flex flex-col gap-3 hover:border-ktm-accent transition-all group';
