@@ -58,3 +58,5 @@ public/
 3. Verifica que las rutas de las imágenes sean correctas (sin espacios, caracteres especiales, etc.)
 4. Asegúrate de que las imágenes existan en `frontend/public/`
 
+
+

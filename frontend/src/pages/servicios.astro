@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { supabaseClient } from '../../lib/supabase/client';
+import { getWhatsAppUrl } from '../../lib/whatsapp';
 
-const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+const WHATSAPP_SERVICIOS_URL = getWhatsAppUrl('servicios');
 
 // Servicios con storytelling completo
 const servicios = [
@@ -215,7 +216,7 @@ const serviciosConProductos = await Promise.all(
           </p>
           <div class="flex flex-wrap gap-4 justify-center">
             <a
-              href={PUBLIC_WHATSAPP_URL}
+              href={WHATSAPP_SERVICIOS_URL}
               class="inline-flex items-center gap-3 px-10 py-5 bg-ktm-accent text-black dark:text-white font-bold text-lg hover:bg-ktm-accent-600 transition-all uppercase tracking-wider shadow-lg"
             >
               Agendar Servicio
@@ -416,7 +417,7 @@ const serviciosConProductos = await Promise.all(
             </p>
             <div class="flex flex-wrap justify-center gap-4">
               <a
-                href={PUBLIC_WHATSAPP_URL}
+                href={WHATSAPP_SERVICIOS_URL}
                 class="inline-flex items-center gap-3 px-8 py-4 bg-ktm-accent text-ktm-light-text dark:text-ktm-text font-bold hover:bg-ktm-accent-600 transition-all uppercase tracking-wider"
               >
                 Agendar por WhatsApp

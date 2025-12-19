@@ -133,3 +133,5 @@ El callback ya está configurado en el código:
 - [Documentación de Supabase Auth](https://supabase.com/docs/guides/auth)
 - [Documentación de Google OAuth](https://developers.google.com/identity/protocols/oauth2)
 
+
+

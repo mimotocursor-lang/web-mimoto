@@ -46,3 +46,5 @@ Para que el favicon se vea **más nítido y claro**, el archivo debe ser de **al
 
 El navegador siempre mostrará el favicon en su tamaño estándar (16x16 o 32x32), pero con un archivo de alta resolución se verá mucho más nítido.
 
+
+

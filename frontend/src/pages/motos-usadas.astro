@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { supabaseClient } from '../../lib/supabase/client';
+import { getWhatsAppUrl } from '../../lib/whatsapp';
 
 // Cargar motos usadas activas
 const { data: motos = [], error } = await supabaseClient
@@ -10,7 +11,7 @@ const { data: motos = [], error } = await supabaseClient
   .order('featured', { ascending: false })
   .order('created_at', { ascending: false });
 
-const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+const WHATSAPP_MOTOS_URL = getWhatsAppUrl('motos');
 ---
 
 <BaseLayout title="Motos Usadas - Mimoto" description="Motos usadas seleccionadas y revisadas. Todas las unidades pasan por nuestro taller antes de ser publicadas.">
@@ -198,7 +199,7 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
       </p>
       <div class="flex flex-wrap justify-center gap-4">
         <a
-          href={PUBLIC_WHATSAPP_URL}
+          href={WHATSAPP_MOTOS_URL}
           class="inline-flex items-center gap-3 px-10 py-5 bg-ktm-accent text-ktm-light-text dark:text-ktm-text font-bold text-lg hover:bg-ktm-accent-600 transition-all uppercase tracking-wider"
         >
           Contactar por WhatsApp

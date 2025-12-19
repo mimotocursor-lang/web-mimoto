@@ -53,3 +53,4 @@ Ahora puedes usar el panel de admin (`/admin/productos`) para:
 - Los productos destacados deben tener imágenes reales (no placeholders) para aparecer correctamente
 - Puedes tener hasta 12 productos destacados visibles en el index (se muestran los más recientes primero)
 
+

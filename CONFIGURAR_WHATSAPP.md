@@ -113,3 +113,5 @@ Y en Vercel, la variable de entorno sería:
 
 ¡Listo! Todos los botones de WhatsApp redirigirán a este número.
 
+
+

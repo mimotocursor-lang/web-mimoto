@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import WhatsAppModal from '../components/WhatsAppModal.astro';
 
 const { title = 'Mimoto', description = '' } = Astro.props;
 ---
@@ -1058,5 +1059,8 @@ const { title = 'Mimoto', description = '' } = Astro.props;
         updateAuthStatus();
       });
     </script>
+    
+    <!-- Modal de WhatsApp (disponible globalmente) -->
+    <WhatsAppModal defaultArea={null} />
   </body>
 </html>

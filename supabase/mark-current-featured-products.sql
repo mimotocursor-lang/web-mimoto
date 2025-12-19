@@ -43,3 +43,4 @@ FROM products
 WHERE featured = true
 ORDER BY created_at DESC;
 
+

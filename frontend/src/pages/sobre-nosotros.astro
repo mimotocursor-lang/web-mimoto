@@ -1,21 +1,19 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-
-const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
 ---
 
 <BaseLayout title="Sobre Nosotros - Mimoto" description="Conoce nuestra historia, valores y compromiso con el servicio técnico especializado para motos.">
   <!-- Hero Slider -->
   <section class="relative w-full min-h-[85vh] overflow-hidden">
-    <div class="relative w-full h-full sobre-nosotros-hero-slider">
+    <div class="relative w-full min-h-[85vh] sobre-nosotros-hero-slider">
       <!-- Banner 1: Sobre Nosotros -->
-      <div class="absolute inset-0 sobre-nosotros-hero-slide active" style="z-index: 1;">
-        <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('/local-entrada_upscayl_4x.jpg');"></div>
-        <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/80 via-ktm-bg/70 to-ktm-bg/90"></div>
-        <div class="relative z-10 h-full flex items-center justify-center pt-32 md:pt-40">
+      <div class="absolute inset-0 sobre-nosotros-hero-slide active" style="z-index: 2; opacity: 1;">
+        <div class="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat" style="background-image: url('/local-entrada_upscayl_4x.jpg'); min-height: 85vh;"></div>
+        <div class="absolute inset-0 w-full h-full bg-gradient-to-b from-ktm-bg/60 via-ktm-bg/50 to-ktm-bg/70" style="min-height: 85vh;"></div>
+        <div class="relative z-10 w-full h-full min-h-[85vh] flex items-center justify-center pt-32 md:pt-40">
           <div class="max-w-7xl mx-auto px-4 md:px-8 w-full text-center">
             <div class="max-w-4xl mx-auto">
-              <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-6 text-white leading-tight tracking-tight drop-shadow-lg">
+              <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-6 text-white leading-tight tracking-tight drop-shadow-2xl" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8);">
                 Sobre Nosotros
               </h1>
               <p 
@@ -48,16 +46,19 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
       </div>
       
       <!-- Banner 2: Más que un taller -->
-      <div class="absolute inset-0 sobre-nosotros-hero-slide" style="z-index: 0;">
-        <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('/banner-visitanuestrotaller.jpg');"></div>
-        <div class="absolute inset-0 bg-gradient-to-b from-ktm-bg/80 via-ktm-bg/70 to-ktm-bg/90"></div>
-        <div class="relative z-10 h-full flex items-center justify-center pt-32 md:pt-40">
+      <div class="absolute inset-0 sobre-nosotros-hero-slide" style="z-index: 1; opacity: 0;">
+        <div class="absolute inset-0 w-full h-full bg-cover bg-center bg-no-repeat" style="background-image: url('/banner-visitanuestrotaller.jpg'); min-height: 85vh;"></div>
+        <div class="absolute inset-0 w-full h-full bg-gradient-to-b from-ktm-bg/60 via-ktm-bg/50 to-ktm-bg/70" style="min-height: 85vh;"></div>
+        <div class="relative z-10 w-full h-full min-h-[85vh] flex items-center justify-center pt-32 md:pt-40">
           <div class="max-w-7xl mx-auto px-4 md:px-8 w-full text-center">
             <div class="max-w-4xl mx-auto">
-              <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-6 text-white leading-tight tracking-tight drop-shadow-lg">
-                Mas que un taller, somos apasionados por las motos y estamos comprometidos con hacer que cada reparacion cada mantencion cada ajuste sea nuestro mejor esfuerzo.
+              <h1 class="text-5xl md:text-7xl lg:text-8xl font-black mb-6 text-white leading-tight tracking-tight drop-shadow-2xl" style="text-shadow: 2px 2px 8px rgba(0,0,0,0.8);">
+                Sobre Nosotros
               </h1>
-              <h3 class="text-xl md:text-2xl lg:text-3xl text-white/95 mb-8 font-light leading-relaxed drop-shadow-md">
+              <p class="text-xl md:text-2xl lg:text-3xl text-white/95 mb-8 font-light leading-relaxed drop-shadow-md text-center">
+                Mas que un taller, somos apasionados por las motos y estamos comprometidos con hacer que cada reparacion cada mantencion cada ajuste sea nuestro mejor esfuerzo.
+              </p>
+              <h3 class="text-lg md:text-xl lg:text-2xl text-white/90 mb-8 font-light leading-relaxed drop-shadow-md text-center">
                 porque entendemos que tu moto no es solo un vehiculo: es tu libertad, tu sentir, tu pasion... En MiMoto la cuidamos como si fuera nuestra moto.
               </h3>
             </div>
@@ -337,12 +338,13 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
         Ven a visitarnos, conoce nuestro taller, o simplemente escríbenos. Estamos aquí para ayudarte.
       </p>
       <div class="flex flex-wrap justify-center gap-4">
-        <a
-          href={PUBLIC_WHATSAPP_URL}
+        <button
+          type="button"
+          onclick="if (window.openWhatsAppModal) window.openWhatsAppModal();"
           class="inline-flex items-center gap-3 px-10 py-5 bg-ktm-accent text-ktm-light-text dark:text-ktm-text font-bold text-lg hover:bg-ktm-accent-600 transition-all uppercase tracking-wider"
         >
           Contactar por WhatsApp
-        </a>
+        </button>
         <a
           href="/servicios"
           class="inline-flex items-center gap-3 px-10 py-5 border border-ktm-accent/50 rounded-xl text-ktm-accent font-bold text-lg hover:bg-ktm-accent hover:text-ktm-light-text dark:text-ktm-text transition-all uppercase tracking-wider"
@@ -365,14 +367,15 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
       
       function showSlide(index: number) {
         slides.forEach((slide, i) => {
+          const slideElement = slide as HTMLElement;
           if (i === index) {
             slide.classList.add('active');
-            (slide as HTMLElement).style.opacity = '1';
-            (slide as HTMLElement).style.zIndex = '1';
+            slideElement.style.opacity = '1';
+            slideElement.style.zIndex = '2';
           } else {
             slide.classList.remove('active');
-            (slide as HTMLElement).style.opacity = '0';
-            (slide as HTMLElement).style.zIndex = '0';
+            slideElement.style.opacity = '0';
+            slideElement.style.zIndex = '1';
           }
         });
         
@@ -386,6 +389,9 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
           }
         });
       }
+      
+      // Inicializar el primer slide
+      showSlide(0);
       
       // Cambiar banner cada 5 segundos
       setInterval(() => {
@@ -404,13 +410,40 @@ const PUBLIC_WHATSAPP_URL = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
   </script>
   
   <style>
-    .sobre-nosotros-hero-slide {
-      opacity: 0;
-      transition: opacity 1s ease-in-out;
+    .sobre-nosotros-hero-slider {
+      min-height: 85vh;
+      position: relative;
+      width: 100%;
     }
     
-    .sobre-nosotros-hero-slide.active {
-      opacity: 1;
+    .sobre-nosotros-hero-slide {
+      transition: opacity 1s ease-in-out;
+      min-height: 85vh;
+      width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    
+    .sobre-nosotros-hero-slide > div:first-child {
+      min-height: 85vh;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+    
+    .sobre-nosotros-hero-slide > div:nth-child(2) {
+      min-height: 85vh;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
   </style>
 </BaseLayout>

@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { supabaseClient } from '../../lib/supabase/client';
+import { getWhatsAppUrl } from '../../lib/whatsapp';
 import { 
   getAvailableCategories, 
   filterByCategory, 
@@ -15,6 +16,8 @@ import {
   CATEGORIES,
   type ProductCategory 
 } from '../utils/categorizeProducts';
+
+const WHATSAPP_REPUESTOS_URL = getWhatsAppUrl('repuestos');
 
 // Cargar productos activos separados por categoría
 const { data: accesorios = [], error: accesoriosError } = await supabaseClient
@@ -803,7 +806,7 @@ try {
           const hasImage = imageUrl && imageUrl.trim() !== '';
           const price = Number(p.price) || 0;
           const stock = Number(p.stock) || 0;
-          const whatsappUrl = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+          const whatsappUrl = WHATSAPP_REPUESTOS_URL;
 
           const article = document.createElement('article');
           article.className = 'bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-xl flex flex-col gap-3 hover:shadow-xl transition-all group';
@@ -1797,7 +1800,7 @@ try {
           const hasImage = imageUrl && imageUrl.trim() !== '';
           const price = Number(p.price) || 0;
           const stock = Number(p.stock) || 0;
-          const whatsappUrl = import.meta.env.PUBLIC_WHATSAPP_URL || '#';
+          const whatsappUrl = WHATSAPP_REPUESTOS_URL;
 
           const article = document.createElement('article');
           article.className = 'bg-ktm-light-surface/80 dark:bg-ktm-surface/80 backdrop-blur-sm rounded-xl flex flex-col gap-3 hover:shadow-xl transition-all group';
