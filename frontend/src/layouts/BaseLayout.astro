@@ -137,7 +137,8 @@ const { title = 'Mimoto', description = '' } = Astro.props;
           <div class="flex items-center gap-2">
             <img id="main-logo" src="/logo.png" alt="Mimoto" class="object-contain object-left drop-shadow-2xl filter brightness-110 transition-opacity duration-300" />
               <div class="flex items-center gap-2 border-l border-ktm-light-border/30 dark:border-ktm-border/30 pl-3 ml-3">
-                <img src="/KTM-logo.png" alt="KTM" class="h-10 md:h-14 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity drop-shadow-md" />
+                <img src="/KTM-logo.png" alt="KTM" class="h-10 md:h-14 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity drop-shadow-md dark:hidden" />
+                <img src="/ktm-logo-light.png" alt="KTM" class="h-10 md:h-14 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity drop-shadow-md hidden dark:block" />
                 <div class="flex flex-col items-start leading-tight">
                   <span class="text-[7px] md:text-[9px] font-black uppercase tracking-[0.15em] text-ktm-accent dark:text-white dark:text-opacity-90 whitespace-nowrap" style="font-family: 'Arial Black', 'Helvetica Neue', 'Arial', sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
                     servicio tecnico
@@ -276,7 +277,8 @@ const { title = 'Mimoto', description = '' } = Astro.props;
                 class="w-32 md:w-40 h-auto"
               />
               <div class="flex items-center gap-2 border-l border-ktm-light-border/30 dark:border-ktm-border/30 pl-3 ml-3">
-                <img src="/KTM-logo.png" alt="KTM" class="h-10 md:h-14 w-auto object-contain opacity-90 drop-shadow-md" />
+                <img src="/KTM-logo.png" alt="KTM" class="h-10 md:h-14 w-auto object-contain opacity-90 drop-shadow-md dark:hidden" />
+                <img src="/ktm-logo-light.png" alt="KTM" class="h-10 md:h-14 w-auto object-contain opacity-90 drop-shadow-md hidden dark:block" />
                 <div class="flex flex-col items-start leading-tight">
                   <span class="text-[7px] md:text-[9px] font-black uppercase tracking-[0.15em] text-ktm-accent dark:text-white dark:text-opacity-90 whitespace-nowrap" style="font-family: 'Arial Black', 'Helvetica Neue', 'Arial', sans-serif; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
                     servicio tecnico
