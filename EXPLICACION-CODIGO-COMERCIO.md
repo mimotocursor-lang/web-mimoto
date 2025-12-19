@@ -15,6 +15,7 @@
 
 ## 📋 Cómo Saber Qué Código Usar
 
+### Si estás en INTEGRACIÓN (Pruebas):
 
 1. **Opción 1: Usar el código público de prueba**
    ```env
