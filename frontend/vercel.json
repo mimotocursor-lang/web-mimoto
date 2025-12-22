@@ -3,6 +3,14 @@
   "outputDirectory": "dist",
   "devCommand": "npm run dev",
   "installCommand": "npm install",
-  "framework": "astro"
+  "framework": "astro",
+  "functions": {
+    "**": {
+      "runtime": "nodejs20.x"
+    },
+    ".vercel/output/functions/**": {
+      "runtime": "nodejs20.x"
+    }
+  }
 }
 
