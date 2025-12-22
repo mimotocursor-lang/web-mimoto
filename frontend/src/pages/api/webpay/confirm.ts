@@ -3,31 +3,33 @@ import pkg from 'transbank-sdk';
 const { WebpayPlus, Options, Environment } = pkg;
 import { createClient } from '@supabase/supabase-js';
 
-export const POST: APIRoute = async ({ request }) => {
-  try {
-    // Transbank puede enviar datos como form-urlencoded o JSON
-    // Intentar obtener datos del body
-    let body: any = {};
-    const contentType = request.headers.get('content-type') || '';
-    
-    if (contentType.includes('application/x-www-form-urlencoded')) {
-      // Parsear form-urlencoded
-      const formData = await request.formData();
-      body = {
-        token_ws: formData.get('token_ws')?.toString() || null,
-        TBK_TOKEN: formData.get('TBK_TOKEN')?.toString() || null,
-        TBK_ID_SESION: formData.get('TBK_ID_SESION')?.toString() || null,
-        TBK_ORDEN_COMPRA: formData.get('TBK_ORDEN_COMPRA')?.toString() || null,
-      };
-    } else {
-      // Intentar como JSON
+// Función auxiliar para parsear el body según el content-type
+async function parseBody(request: Request): Promise<any> {
+  const contentType = request.headers.get('content-type') || '';
+  
+  if (contentType.includes('application/x-www-form-urlencoded')) {
+    // Parsear form-urlencoded (Transbank envía así)
+    const formData = await request.formData();
+    return {
+      token_ws: formData.get('token_ws')?.toString() || null,
+      TBK_TOKEN: formData.get('TBK_TOKEN')?.toString() || null,
+      TBK_ID_SESION: formData.get('TBK_ID_SESION')?.toString() || null,
+      TBK_ORDEN_COMPRA: formData.get('TBK_ORDEN_COMPRA')?.toString() || null,
+    };
+  } else if (contentType.includes('application/json')) {
+    // Parsear JSON
+    return await request.json();
+  } else {
+    // Intentar parsear como texto y luego como form data
+    const text = await request.text();
+    if (text) {
       try {
-        body = await request.json();
+        // Intentar como JSON primero
+        return JSON.parse(text);
       } catch (e) {
-        // Si falla, intentar parsear como texto y luego como form data
-        const text = await request.text();
+        // Si no es JSON, intentar como form-urlencoded
         const params = new URLSearchParams(text);
-        body = {
+        return {
           token_ws: params.get('token_ws') || null,
           TBK_TOKEN: params.get('TBK_TOKEN') || null,
           TBK_ID_SESION: params.get('TBK_ID_SESION') || null,
@@ -35,6 +37,66 @@ export const POST: APIRoute = async ({ request }) => {
         };
       }
     }
+  }
+  return {};
+}
+
+export const GET: APIRoute = async ({ url }) => {
+  // Soporte GET solo para debug (Transbank normalmente usa POST)
+  const token_ws = url.searchParams.get('token_ws');
+  const TBK_TOKEN = url.searchParams.get('TBK_TOKEN');
+  const TBK_ID_SESION = url.searchParams.get('TBK_ID_SESION');
+  const TBK_ORDEN_COMPRA = url.searchParams.get('TBK_ORDEN_COMPRA');
+
+  // CASO 1: Pago cancelado por el usuario (TBK_TOKEN presente)
+  if (TBK_TOKEN) {
+    console.log('🚫 Pago cancelado por el usuario (GET)');
+    console.log('📋 Parámetros de cancelación:', {
+      TBK_TOKEN,
+      TBK_ID_SESION,
+      TBK_ORDEN_COMPRA
+    });
+
+    return new Response(
+      JSON.stringify({
+        success: false,
+        cancelled: true,
+        message: 'Pago cancelado por el usuario',
+        TBK_TOKEN,
+        TBK_ID_SESION,
+        TBK_ORDEN_COMPRA
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // CASO 2: Pago normal (token_ws presente) - redirigir a POST
+  if (!token_ws) {
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'token_ws o TBK_TOKEN es requerido',
+        note: 'Este endpoint soporta GET solo para debug. Transbank usa POST.'
+      }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Para GET con token_ws, devolver mensaje informativo
+  return new Response(
+    JSON.stringify({ 
+      success: false, 
+      error: 'Este endpoint requiere POST. Use POST con token_ws en el body.',
+      received_token: token_ws
+    }),
+    { status: 405, headers: { 'Content-Type': 'application/json' } }
+  );
+};
+
+export const POST: APIRoute = async ({ request }) => {
+  try {
+    // Transbank puede enviar datos como form-urlencoded o JSON
+    const body = await parseBody(request);
 
     const { token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = body;
 
