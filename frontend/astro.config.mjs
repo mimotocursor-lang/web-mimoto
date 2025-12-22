@@ -8,7 +8,8 @@ export default defineConfig({
   output: 'server', // Cambiado de 'static' a 'server' para que las rutas API funcionen
   adapter: vercel({
     functionPerRoute: false,
-    // El runtime se especifica en vercel.json
+    // Nota: El runtime se especifica en package.json engines
+    // Vercel debería detectar automáticamente Node.js 20 desde engines
   }), // Adaptador de Vercel para serverless functions
   integrations: [tailwind()],
   server: {
