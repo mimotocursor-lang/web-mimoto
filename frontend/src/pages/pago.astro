@@ -249,16 +249,44 @@ if (orderId) {
           });
 
           console.log('📥 Respuesta recibida, status:', response.status);
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ Error HTTP:', response.status, errorText);
+            throw new Error(`Error ${response.status}: ${errorText}`);
+          }
+          
           const result = await response.json();
-          console.log('📋 Resultado:', result);
+          console.log('📋 Resultado completo:', result);
 
-          if (result.success && result.url) {
-            console.log('✅ Redirigiendo a Webpay:', result.url);
-            // Redirigir a Webpay
-            window.location.href = result.url;
+          if (result.success && result.url && result.token) {
+            console.log('✅ Redirigiendo a Webpay');
+            console.log('🔗 URL:', result.url);
+            console.log('🔑 Token:', result.token);
+            
+            // Webpay requiere enviar el token por POST, no por GET
+            // Crear un formulario oculto y enviarlo automáticamente
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = result.url;
+            form.style.display = 'none';
+            
+            // Agregar el token como campo oculto
+            const tokenInput = document.createElement('input');
+            tokenInput.type = 'hidden';
+            tokenInput.name = 'token_ws';
+            tokenInput.value = result.token;
+            form.appendChild(tokenInput);
+            
+            // Agregar el formulario al body y enviarlo
+            document.body.appendChild(form);
+            console.log('📤 Enviando formulario POST a Webpay...');
+            form.submit();
           } else {
             console.error('❌ Error en respuesta:', result);
-            throw new Error(result.error || 'Error al iniciar el pago');
+            console.error('❌ URL presente:', !!result.url);
+            console.error('❌ Token presente:', !!result.token);
+            throw new Error(result.error || 'Error al iniciar el pago: respuesta inválida');
           }
         } catch (error) {
           console.error('❌ Error completo iniciando pago:', error);
