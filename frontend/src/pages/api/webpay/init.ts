@@ -64,13 +64,29 @@ export const POST: APIRoute = async ({ request }) => {
     const options = new Options(commerceCode, apiKey, environment);
     const webpayPlus = new WebpayPlus.Transaction(options);
 
-    // Calcular monto en centavos (Webpay espera el monto en centavos)
-    const amount = Math.round(Number(order.total_amount) * 100);
+    // Calcular monto para Webpay
+    // IMPORTANTE: El SDK de Transbank espera el monto en pesos chilenos, NO en centavos
+    // El SDK internamente lo convierte a centavos si es necesario
+    const totalAmount = Number(order.total_amount);
+    console.log('💰 Monto original (pesos):', totalAmount);
+    
+    // El SDK de Transbank Node.js espera el monto en pesos, no en centavos
+    // Verificar documentación: https://github.com/TransbankDevelopers/transbank-sdk-nodejs
+    const amount = Math.round(totalAmount);
+    console.log('💰 Monto para Webpay (pesos):', amount);
+    
     const buyOrder = `ORD-${order.id}-${Date.now()}`;
     const sessionId = order.user_id ? `SESSION-${order.user_id}-${Date.now()}` : `SESSION-GUEST-${order.id}-${Date.now()}`;
 
     // URL de retorno (donde Webpay redirigirá después del pago)
     const finalReturnUrl = returnUrl || `${import.meta.env.PUBLIC_SITE_URL || 'http://localhost:4321'}/pago/confirmar?orderId=${orderId}`;
+
+    console.log('📋 Datos de transacción:', {
+      buyOrder,
+      sessionId,
+      amount,
+      returnUrl: finalReturnUrl
+    });
 
     // Crear la transacción
     const createResponse = await webpayPlus.create(
