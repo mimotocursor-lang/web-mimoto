@@ -83,3 +83,4 @@ Si falla localmente, verás el error completo.
 - `optimizeDeps.exclude` evita problemas con dependencias SSR
 - El adaptador de Vercel ya está configurado correctamente
 
+

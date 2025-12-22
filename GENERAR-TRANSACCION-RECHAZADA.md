@@ -129,3 +129,4 @@ Transacción de prueba rechazada:
 
 Ambos tokens se obtienen de la misma manera, solo cambia la tarjeta.
 
+

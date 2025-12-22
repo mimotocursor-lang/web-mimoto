@@ -6,7 +6,9 @@ import path from 'node:path';
 export default defineConfig({
   srcDir: './src',
   output: 'server', // Cambiado de 'static' a 'server' para que las rutas API funcionen
-  adapter: vercel(), // Adaptador de Vercel para serverless functions
+  adapter: vercel({
+    functionPerRoute: false,
+  }), // Adaptador de Vercel para serverless functions
   integrations: [tailwind()],
   server: {
     port: 4321,

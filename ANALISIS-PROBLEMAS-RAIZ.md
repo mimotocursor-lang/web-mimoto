@@ -159,3 +159,4 @@ Después de estos cambios:
 - ✅ Sesiones persisten entre recargas
 - ✅ Rutas API funcionan en producción
 
+

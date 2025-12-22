@@ -20,19 +20,48 @@ import {
 const WHATSAPP_REPUESTOS_URL = getWhatsAppUrl('repuestos');
 
 // Cargar productos activos separados por categoría
-const { data: accesorios = [], error: accesoriosError } = await supabaseClient
-  .from('products')
-  .select('*')
-  .eq('status', 'active')
-  .eq('is_accessory', true)
-  .order('created_at', { ascending: false });
+let accesorios: any[] = [];
+let repuestos: any[] = [];
+let accesoriosError: any = null;
+let repuestosError: any = null;
 
-const { data: repuestos = [], error: repuestosError } = await supabaseClient
-  .from('products')
-  .select('*')
-  .eq('status', 'active')
-  .eq('is_spare_part', true)
-  .order('created_at', { ascending: false });
+try {
+  const accesoriosResult = await supabaseClient
+    .from('products')
+    .select('*')
+    .eq('status', 'active')
+    .eq('is_accessory', true)
+    .order('created_at', { ascending: false });
+  
+  accesorios = accesoriosResult.data || [];
+  accesoriosError = accesoriosResult.error;
+  
+  if (accesoriosError) {
+    console.error('Error cargando accesorios:', accesoriosError);
+  }
+} catch (err) {
+  console.error('Error inesperado cargando accesorios:', err);
+  accesoriosError = err;
+}
+
+try {
+  const repuestosResult = await supabaseClient
+    .from('products')
+    .select('*')
+    .eq('status', 'active')
+    .eq('is_spare_part', true)
+    .order('created_at', { ascending: false });
+  
+  repuestos = repuestosResult.data || [];
+  repuestosError = repuestosResult.error;
+  
+  if (repuestosError) {
+    console.error('Error cargando repuestos:', repuestosError);
+  }
+} catch (err) {
+  console.error('Error inesperado cargando repuestos:', err);
+  repuestosError = err;
+}
 
 
 // Cargar banners de sección
@@ -213,7 +242,13 @@ try {
 
       <!-- Grid de Accesorios -->
       <div id="accesorios-container">
-        {accesorios.length === 0 ? (
+        {accesoriosError ? (
+          <div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-6 text-center">
+            <p class="text-red-800 dark:text-red-300 font-bold mb-2">⚠️ Error al cargar accesorios</p>
+            <p class="text-red-600 dark:text-red-400 text-sm">{accesoriosError.message || 'No se pudo conectar a la base de datos'}</p>
+            <p class="text-red-500 dark:text-red-500 text-xs mt-2">Verifica que las variables de entorno PUBLIC_SUPABASE_URL y PUBLIC_SUPABASE_ANON_KEY estén configuradas correctamente.</p>
+          </div>
+        ) : accesorios.length === 0 ? (
           <p class="text-ktm-light-text dark:text-ktm-text/70 text-center py-12">No hay accesorios disponibles en este momento.</p>
         ) : (
           <div id="accesorios-initial-view" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -365,7 +400,13 @@ try {
 
       <!-- Grid de Repuestos -->
       <div id="repuestos-container">
-        {repuestos.length === 0 ? (
+        {repuestosError ? (
+          <div class="bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg p-6 text-center">
+            <p class="text-red-800 dark:text-red-300 font-bold mb-2">⚠️ Error al cargar repuestos</p>
+            <p class="text-red-600 dark:text-red-400 text-sm">{repuestosError.message || 'No se pudo conectar a la base de datos'}</p>
+            <p class="text-red-500 dark:text-red-500 text-xs mt-2">Verifica que las variables de entorno PUBLIC_SUPABASE_URL y PUBLIC_SUPABASE_ANON_KEY estén configuradas correctamente.</p>
+          </div>
+        ) : repuestos.length === 0 ? (
           <p class="text-gray-600 text-center py-12">No hay repuestos disponibles en este momento.</p>
         ) : (
           <div id="repuestos-initial-view" class="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

@@ -76,7 +76,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     </div>
   </section>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase ya se carga en BaseLayout, pero lo cargamos aquí también por si acaso -->
+  <script>
+    // Verificar si Supabase ya está cargado desde BaseLayout
+    if (typeof supabase === 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+      script.onload = function() {
+        window.supabaseLoaded = true;
+        console.log('✅ Supabase cargado en login.astro');
+      };
+      script.onerror = function() {
+        console.error('❌ Error cargando Supabase desde CDN');
+      };
+      document.head.appendChild(script);
+    } else {
+      console.log('✅ Supabase ya está disponible desde BaseLayout');
+    }
+  </script>
   <script>
     // Valores hardcodeados como fallback
     const SUPABASE_URL = 'https://prizpqahcluomioxnmex.supabase.co';
@@ -86,7 +103,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     let supabaseUrl = SUPABASE_URL;
     let supabaseAnonKey = SUPABASE_KEY;
     let supabaseLoadAttempts = 0;
-    const MAX_ATTEMPTS = 50; // 5 segundos máximo
+    const MAX_ATTEMPTS = 100; // 10 segundos máximo
     
     // Esperar a que Supabase se cargue desde el CDN
     function initLogin() {
@@ -101,6 +118,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
           script.onload = function() {
             console.log('✅ Supabase cargado manualmente');
+            window.supabaseLoaded = true;
             initLogin();
           };
           script.onerror = function() {
@@ -241,14 +259,23 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               throw new Error('La sesión no se guardó correctamente');
             }
             
-            // Esperar un poco más antes de redirigir
-            await new Promise(function(resolve) { setTimeout(resolve, 1000); });
+            // Esperar un poco más antes de redirigir para asegurar que la sesión se guarde
+            await new Promise(function(resolve) { setTimeout(resolve, 500); });
+            
+            // Verificar una vez más que la sesión esté guardada
+            const finalCheck = await supabaseClient.auth.getSession();
+            if (!finalCheck.data?.session) {
+              console.error('❌ La sesión no se guardó correctamente');
+              throw new Error('La sesión no se guardó correctamente. Por favor, intenta nuevamente.');
+            }
+            
+            console.log('✅ Sesión confirmada antes de redirigir');
             
             const returnUrl = new URLSearchParams(window.location.search).get('return') || '/';
             console.log('🔄 Redirigiendo a:', returnUrl);
             
-            // Forzar recarga completa con replace para evitar volver atrás
-            window.location.replace(returnUrl);
+            // Usar href en lugar de replace para permitir que el navegador maneje la navegación correctamente
+            window.location.href = returnUrl;
           } catch (err) {
             console.error('❌ Error completo en login:', err);
             
@@ -270,12 +297,34 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         if (googleBtn) {
           googleBtn.addEventListener('click', async function() {
             if (errorEl) errorEl.textContent = '';
+            
+            // Verificar que el cliente esté disponible
+            if (!supabaseClient) {
+              console.error('❌ Cliente de Supabase no disponible para Google login');
+              if (errorEl) errorEl.textContent = 'Error: Supabase no está disponible. Por favor, recarga la página.';
+              return;
+            }
+            
             try {
+              console.log('🔐 Iniciando sesión con Google...');
               const result = await supabaseClient.auth.signInWithOAuth({
                 provider: 'google',
-                options: { redirectTo: window.location.origin + '/auth/callback' }
+                options: { 
+                  redirectTo: window.location.origin + '/auth/callback',
+                  queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                  }
+                }
               });
-              if (result.error) throw result.error;
+              
+              if (result.error) {
+                console.error('❌ Error en signInWithOAuth:', result.error);
+                throw result.error;
+              }
+              
+              console.log('✅ Redirigiendo a Google...', result);
+              // La redirección se hace automáticamente
             } catch (err) {
               console.error('❌ Error Google:', err);
               if (errorEl) {

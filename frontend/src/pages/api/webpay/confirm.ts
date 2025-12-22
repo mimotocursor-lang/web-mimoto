@@ -67,14 +67,34 @@ export const POST: APIRoute = async ({ request }) => {
     const isApproved = commitResponse.responseCode === 0;
 
     // Actualizar el estado del pedido
-    await supabase
+    // Actualizar estado del pedido con fallback si el enum no acepta 'pending_payment'
+    const newStatus = isApproved ? 'paid' : 'pending_payment';
+    let updateResult = await supabase
       .from('orders')
       .update({
-        status: isApproved ? 'paid' : 'pending_payment',
+        status: newStatus,
         payment_reference: `${token_ws}-${commitResponse.responseCode}`,
         updated_at: new Date().toISOString()
       })
       .eq('id', order.id);
+    
+    // Si falla con 'pending_payment', intentar con 'pending'
+    if (updateResult.error && updateResult.error.message?.includes('invalid input value for enum') && !isApproved) {
+      console.log('⚠️ pending_payment no es válido, intentando con pending...');
+      updateResult = await supabase
+        .from('orders')
+        .update({
+          status: 'pending',
+          payment_reference: `${token_ws}-${commitResponse.responseCode}`,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', order.id);
+    }
+    
+    if (updateResult.error) {
+      console.error('Error actualizando estado del pedido:', updateResult.error);
+      // Continuar aunque falle la actualización del status
+    }
 
     return new Response(
       JSON.stringify({

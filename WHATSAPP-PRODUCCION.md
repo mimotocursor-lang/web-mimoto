@@ -93,3 +93,4 @@ console.log(window.location.href);
 
 **Conclusión:** Los números funcionan en producción **con o sin** variables de entorno configuradas, porque están hardcodeados como fallback.
 
+

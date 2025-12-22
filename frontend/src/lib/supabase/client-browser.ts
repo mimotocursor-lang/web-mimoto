@@ -18,3 +18,4 @@ export function createSupabaseClient(): SupabaseClient {
   return createClient(supabaseUrl, supabaseAnonKey);
 }
 
+

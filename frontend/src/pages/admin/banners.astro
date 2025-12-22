@@ -171,14 +171,43 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
   </section>
 
   <script>
-    // Crear cliente de Supabase directamente
-    import { createClient } from '@supabase/supabase-js';
-    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
-    const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    // Usar Supabase desde el CDN (ya cargado en BaseLayout)
+    let supabaseClient = null;
     
-    // Importar funciones de storage
-    import { uploadImage, deleteImage } from '../../lib/supabase/storage.ts';
+    function initSupabase() {
+      if (typeof supabase === 'undefined') {
+        setTimeout(initSupabase, 100);
+        return;
+      }
+      
+      const supabaseUrl = window.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
+      const supabaseAnonKey = window.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+      supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+      
+      // Inicializar funciones que dependen de supabaseClient
+      loadBanners(currentBannerType);
+    }
+    
+    // Funciones de storage inline
+    async function uploadImage(file: File, folder: string = 'banners'): Promise<string> {
+      if (!supabaseClient) throw new Error('Supabase client no disponible');
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `${folder}/${fileName}`;
+      const { error: uploadError } = await supabaseClient.storage.from('product-images').upload(filePath, file);
+      if (uploadError) throw uploadError;
+      const { data } = supabaseClient.storage.from('product-images').getPublicUrl(filePath);
+      return data.publicUrl;
+    }
+    
+    async function deleteImage(imageUrl: string, folder: string = 'banners'): Promise<void> {
+      if (!supabaseClient) throw new Error('Supabase client no disponible');
+      const urlParts = imageUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const filePath = `${folder}/${fileName}`;
+      const { error } = await supabaseClient.storage.from('product-images').remove([filePath]);
+      if (error) throw error;
+    }
 
     let editingBannerId: number | null = null;
     let selectedImageFile: File | null = null;
@@ -207,6 +236,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
 
     async function loadBanners(type: string = 'hero') {
+      if (!supabaseClient) {
+        console.error('❌ Cliente de Supabase no disponible');
+        return;
+      }
+      
       const hasAccess = await checkAdminAccess();
       if (!hasAccess) return;
 
@@ -485,9 +519,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
-      loadBanners('hero');
-    });
+    // Inicializar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initSupabase);
+    } else {
+      initSupabase();
+    }
   </script>
 </BaseLayout>
 

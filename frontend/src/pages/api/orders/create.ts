@@ -105,9 +105,31 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
     const supabaseServiceKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
     
-    if (!supabaseUrl || !supabaseServiceKey) {
+    console.log('🔧 Variables de entorno:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseServiceKey,
+      supabaseUrlLength: supabaseUrl ? supabaseUrl.length : 0,
+      serviceKeyLength: supabaseServiceKey ? supabaseServiceKey.length : 0
+    });
+    
+    if (!supabaseUrl) {
+      console.error('❌ PUBLIC_SUPABASE_URL no está configurada');
       return new Response(
-        JSON.stringify({ success: false, error: 'Variables de entorno de Supabase no configuradas' }),
+        JSON.stringify({ 
+          success: false, 
+          error: 'PUBLIC_SUPABASE_URL no está configurada. Por favor, configura esta variable de entorno en Vercel.' 
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    if (!supabaseServiceKey) {
+      console.error('❌ SUPABASE_SERVICE_ROLE_KEY no está configurada');
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'SUPABASE_SERVICE_ROLE_KEY no está configurada. Por favor, configura esta variable de entorno en Vercel (Settings → Environment Variables). Esta es una variable privada que solo está disponible en el servidor.' 
+        }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
@@ -134,15 +156,48 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       );
 
       // Crear pedido temporal (sin usuario) - user_id puede ser NULL según el schema
-      const { data: order, error: orderError } = await supabase
+      // Intentar con 'pending_payment' primero, si falla usar 'pending' o dejar que use el default
+      let orderData: any = {
+        user_id: null, // Permitir NULL para usuarios no autenticados
+        total_amount: totalAmount,
+      };
+      
+      // Intentar insertar con status, si falla intentar sin status (usar default)
+      let { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
-          user_id: null, // Permitir NULL para usuarios no autenticados
-          total_amount: totalAmount,
+          ...orderData,
           status: 'pending_payment',
         })
         .select('id, total_amount, status')
         .single();
+      
+      // Si falla con 'pending_payment', intentar con 'pending'
+      if (orderError && orderError.message?.includes('invalid input value for enum')) {
+        console.log('⚠️ pending_payment no es válido, intentando con pending...');
+        const result = await supabase
+          .from('orders')
+          .insert({
+            ...orderData,
+            status: 'pending',
+          })
+          .select('id, total_amount, status')
+          .single();
+        order = result.data;
+        orderError = result.error;
+      }
+      
+      // Si aún falla, intentar sin especificar status (usar default de la BD)
+      if (orderError && orderError.message?.includes('invalid input value for enum')) {
+        console.log('⚠️ pending tampoco es válido, usando default de la BD...');
+        const result = await supabase
+          .from('orders')
+          .insert(orderData)
+          .select('id, total_amount, status')
+          .single();
+        order = result.data;
+        orderError = result.error;
+      }
 
       if (orderError) {
         console.error('Error creando pedido:', orderError);
@@ -188,15 +243,47 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       sum + (item.priceSnapshot || item.price || 0) * (item.quantity || 1), 0
     );
 
-    const { data: order, error: orderError } = await supabase
+    // Intentar insertar con status, si falla intentar sin status (usar default)
+    let orderData: any = {
+      user_id: userId,
+      total_amount: totalAmount,
+    };
+    
+    let { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
-        user_id: userId,
-        total_amount: totalAmount,
+        ...orderData,
         status: 'pending_payment',
       })
       .select('id, total_amount, status')
       .single();
+    
+    // Si falla con 'pending_payment', intentar con 'pending'
+    if (orderError && orderError.message?.includes('invalid input value for enum')) {
+      console.log('⚠️ pending_payment no es válido, intentando con pending...');
+      const result = await supabase
+        .from('orders')
+        .insert({
+          ...orderData,
+          status: 'pending',
+        })
+        .select('id, total_amount, status')
+        .single();
+      order = result.data;
+      orderError = result.error;
+    }
+    
+    // Si aún falla, intentar sin especificar status (usar default de la BD)
+    if (orderError && orderError.message?.includes('invalid input value for enum')) {
+      console.log('⚠️ pending tampoco es válido, usando default de la BD...');
+      const result = await supabase
+        .from('orders')
+        .insert(orderData)
+        .select('id, total_amount, status')
+        .single();
+      order = result.data;
+      orderError = result.error;
+    }
 
     if (orderError) {
       console.error('Error creando pedido:', orderError);

@@ -91,11 +91,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   </section>
 
   <script>
-    // Crear cliente de Supabase directamente
-    import { createClient } from '@supabase/supabase-js';
-    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
-    const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    // Usar Supabase desde el CDN (ya cargado en BaseLayout)
+    let supabaseClient = null;
+    
+    function initSupabase() {
+      if (typeof supabase === 'undefined') {
+        setTimeout(initSupabase, 100);
+        return;
+      }
+      
+      const supabaseUrl = window.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
+      const supabaseAnonKey = window.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+      supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+      
+      // Configurar event listeners después de inicializar
+      setupFormListeners();
+    }
+    
+    function setupFormListeners() {
+      if (!supabaseClient) return;
 
     document.getElementById('register-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -140,20 +154,28 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }
     });
 
-    document.getElementById('google-register')?.addEventListener('click', async () => {
-      try {
-        const { error } = await supabaseClient.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: `${window.location.origin}/auth/callback`,
-          },
-        });
+      document.getElementById('google-register')?.addEventListener('click', async () => {
+        try {
+          const { error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: `${window.location.origin}/auth/callback`,
+            },
+          });
 
-        if (error) throw error;
-      } catch (err: any) {
-        const errorEl = document.getElementById('register-error') as HTMLElement;
-        errorEl.textContent = err.message || 'Error al registrarse con Google';
-      }
-    });
+          if (error) throw error;
+        } catch (err: any) {
+          const errorEl = document.getElementById('register-error') as HTMLElement;
+          errorEl.textContent = err.message || 'Error al registrarse con Google';
+        }
+      });
+    }
+    
+    // Inicializar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initSupabase);
+    } else {
+      initSupabase();
+    }
   </script>
 </BaseLayout>

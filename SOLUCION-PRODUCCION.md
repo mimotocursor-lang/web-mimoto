@@ -76,3 +76,4 @@ console.log('Cliente:', supabaseClient);
 - El fallback a `window.PUBLIC_*` asegura que funcione incluso si `import.meta.env` falla
 - Los valores por defecto en el código son solo para desarrollo, no deben usarse en producción
 
+

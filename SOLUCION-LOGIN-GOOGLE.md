@@ -157,3 +157,4 @@ Después de cambiar las URLs en Supabase:
 
 El problema de `localhost:3000` **NO está en el código**, está en la **configuración de Supabase**. El código usa `window.location.origin` que es correcto, pero Supabase usa la configuración del dashboard para validar las URLs de redirección.
 
+

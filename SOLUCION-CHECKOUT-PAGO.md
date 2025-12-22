@@ -105,3 +105,4 @@ El endpoint `/api/orders/create` requiere `SUPABASE_SERVICE_ROLE_KEY` para funci
 
 Si el problema persiste, comparte los mensajes de la consola del navegador para poder diagnosticar mejor.
 
+

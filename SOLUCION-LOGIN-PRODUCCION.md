@@ -117,3 +117,4 @@ Algunos navegadores o configuraciones pueden bloquear localStorage. Verifica:
 
 El código ahora tiene mejor manejo de errores y logging. Si el problema persiste después de verificar las variables de entorno, los logs en la consola te dirán exactamente qué está fallando.
 
+

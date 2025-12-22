@@ -145,11 +145,17 @@ if (orderId) {
       if (!finalOrderTotal) {
         console.log('⚠️ No hay orderTotal, intentando obtener del servidor...');
         try {
-          // Crear cliente de Supabase en el cliente
-          const { createClient } = await import('@supabase/supabase-js');
-          const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || (window as any).PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
-          const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || (window as any).PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
-          const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+          // Usar Supabase desde el CDN (ya cargado en BaseLayout)
+          if (typeof supabase === 'undefined') {
+            console.error('❌ Supabase no está disponible. Asegúrate de que el CDN se haya cargado.');
+            payButton.disabled = true;
+            payButtonText.textContent = 'Error: Supabase no disponible';
+            return;
+          }
+          
+          const supabaseUrl = (window as any).PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
+          const supabaseAnonKey = (window as any).PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+          const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
           const { data: order, error } = await supabaseClient
             .from('orders')

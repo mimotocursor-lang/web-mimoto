@@ -54,3 +54,4 @@ export default defineConfig({
 - Compatible con Astro 4.x
 - Las rutas API ahora funcionarán correctamente en producción
 
+

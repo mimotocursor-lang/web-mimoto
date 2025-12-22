@@ -129,3 +129,4 @@ Luego revisa los logs del servidor cuando hagas una transacción.
 
 Si Transbank te pidió el token para algo específico, dímelo y te ayudo a encontrarlo o usarlo correctamente.
 
+

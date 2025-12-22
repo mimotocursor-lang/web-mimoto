@@ -30,6 +30,8 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
     <link rel="apple-touch-icon" sizes="57x57" href="/icono-pestana.png" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
+    <!-- Cargar Supabase desde el CDN en el head para que esté disponible temprano -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.supabaseLoaded = true; console.log('✅ Supabase CDN cargado en head')" onerror="console.error('❌ Error cargando Supabase desde CDN')"></script>
     <script is:inline define:vars={{ supabaseUrl, supabaseAnonKey }}>
       // Inyectar variables de Supabase en window para que estén disponibles globalmente
       if (typeof window !== 'undefined') {
@@ -932,7 +934,7 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
     </script>
 
     <!-- Script ligero para manejar el carrito -->
-    <script type="module">
+    <script>
       const STORAGE_KEY = 'mimoto_cart_v1';
 
       function loadCart() {
@@ -1143,79 +1145,163 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
     </script>
 
     <!-- Script para manejar autenticación en navbar -->
-    <script type="module">
-      // Crear cliente de Supabase directamente
-      import { createClient } from '@supabase/supabase-js';
+    <script>
+      // Esperar a que Supabase se cargue desde el CDN
+      let supabaseClient = null;
+      let supabaseLoadAttempts = 0;
+      const MAX_ATTEMPTS = 100; // Aumentado a 10 segundos
       
-      // Obtener variables con múltiples fallbacks
-      const supabaseUrl = 
-        import.meta.env.PUBLIC_SUPABASE_URL || 
-        (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_URL ? window.PUBLIC_SUPABASE_URL : '') ||
-        'https://prizpqahcluomioxnmex.supabase.co';
-      
-      const supabaseAnonKey = 
-        import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 
-        (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_ANON_KEY ? window.PUBLIC_SUPABASE_ANON_KEY : '') ||
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
-      
-      const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true,
-          storage: typeof window !== 'undefined' ? window.localStorage : undefined
+      function initAuth() {
+        // Verificar que Supabase esté disponible
+        if (typeof supabase === 'undefined') {
+          supabaseLoadAttempts++;
+          if (supabaseLoadAttempts > MAX_ATTEMPTS) {
+            console.error('❌ Timeout: Supabase no se cargó para autenticación después de', MAX_ATTEMPTS * 100, 'ms');
+            console.error('❌ Intentando cargar Supabase manualmente...');
+            // Intentar cargar el script manualmente como fallback
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+            script.onload = function() {
+              console.log('✅ Supabase cargado manualmente');
+              initAuth();
+            };
+            script.onerror = function() {
+              console.error('❌ Error cargando Supabase manualmente');
+            };
+            document.head.appendChild(script);
+            return;
+          }
+          if (supabaseLoadAttempts % 10 === 0) {
+            console.log('⏳ Esperando a que Supabase se cargue... (intento', supabaseLoadAttempts, '/', MAX_ATTEMPTS, ')');
+          }
+          setTimeout(initAuth, 100);
+          return;
         }
-      });
-
-      async function updateAuthStatus() {
-        const authStatusEl = document.getElementById('auth-status');
-        const authStatusMobileEl = document.getElementById('auth-status-mobile');
         
-        const { data: { session } } = await supabaseClient.auth.getSession();
+        console.log('✅ Supabase cargado correctamente para autenticación');
+        
+        // Obtener variables con múltiples fallbacks
+        const supabaseUrl = 
+          (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_URL) ||
+          'https://prizpqahcluomioxnmex.supabase.co';
+        
+        const supabaseAnonKey = 
+          (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_ANON_KEY) ||
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+        
+        supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey, {
+          auth: {
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: true,
+            storage: typeof window !== 'undefined' ? window.localStorage : undefined
+          }
+        });
 
-        if (session?.user) {
-          const { data: profile } = await supabaseClient
-            .from('users')
-            .select('full_name, role')
-            .eq('id', session.user.id)
-            .single();
-
-          const userName = profile?.full_name || session.user.email?.split('@')[0] || 'Usuario';
-          const isAdmin = profile?.role === 'admin';
-
-          const authHTML = `
-            <div class="flex items-center gap-2">
-              <span class="text-ktm-light-textSecondary dark:text-ktm-textSecondary">${userName}</span>
-              ${isAdmin ? '<a href="/admin" class="text-ktm-accent hover:text-ktm-accentSoft font-bold">Admin</a>' : ''}
-              <button id="logout-btn" class="text-ktm-light-textMuted dark:text-ktm-textMuted hover:text-ktm-accent transition-colors">Salir</button>
-            </div>
-          `;
+        async function updateAuthStatus() {
+          const authStatusEl = document.getElementById('auth-status');
+          const authStatusMobileEl = document.getElementById('auth-status-mobile');
           
-          if (authStatusEl) authStatusEl.innerHTML = authHTML;
-          if (authStatusMobileEl) authStatusMobileEl.innerHTML = authHTML;
-
-          document.getElementById('logout-btn')?.addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-            window.location.href = '/';
-          });
-        } else {
-          const guestHTML = `<a href="/login" id="auth-link" class="nav-link text-ktm-light-text/70 dark:text-white/80 hover:text-ktm-accent transition-colors">Iniciar sesión</a>`;
-          if (authStatusEl) authStatusEl.innerHTML = guestHTML;
-          if (authStatusMobileEl) authStatusMobileEl.innerHTML = guestHTML;
+          if (!supabaseClient) {
+            console.error('❌ Cliente de Supabase no disponible');
+            return;
+          }
           
-          // Re-evaluar el color del navbar después de actualizar auth
-          setTimeout(() => {
-            if (typeof checkNavbarColor === 'function') {
-              checkNavbarColor();
+          try {
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            
+            if (error) {
+              console.error('❌ Error obteniendo sesión:', error);
+              return;
             }
-          }, 100);
-        }
-      }
 
-      updateAuthStatus();
-      supabaseClient.auth.onAuthStateChange(() => {
+            if (session?.user) {
+              // Intentar obtener perfil del usuario
+              let userName = session.user.email?.split('@')[0] || 'Usuario';
+              let isAdmin = false;
+              
+              try {
+                const { data: profile } = await supabaseClient
+                  .from('users')
+                  .select('full_name, role')
+                  .eq('id', session.user.id)
+                  .single();
+                
+                if (profile) {
+                  userName = profile.full_name || userName;
+                  isAdmin = profile.role === 'admin';
+                }
+              } catch (profileError) {
+                // Si la tabla users no existe o hay error, usar datos básicos
+                console.log('ℹ️ No se pudo obtener perfil, usando datos básicos');
+              }
+
+              const authHTML = `
+                <div class="flex items-center gap-2">
+                  <span class="text-ktm-light-textSecondary dark:text-ktm-textSecondary">${userName}</span>
+                  ${isAdmin ? '<a href="/admin" class="text-ktm-accent hover:text-ktm-accentSoft font-bold">Admin</a>' : ''}
+                  <button id="logout-btn" class="text-ktm-light-textMuted dark:text-ktm-textMuted hover:text-ktm-accent transition-colors">Salir</button>
+                </div>
+              `;
+              
+              if (authStatusEl) authStatusEl.innerHTML = authHTML;
+              if (authStatusMobileEl) authStatusMobileEl.innerHTML = authHTML;
+
+              // Agregar listener de logout (remover listeners anteriores para evitar duplicados)
+              const logoutBtn = document.getElementById('logout-btn');
+              if (logoutBtn) {
+                logoutBtn.replaceWith(logoutBtn.cloneNode(true)); // Clonar para remover listeners
+                document.getElementById('logout-btn')?.addEventListener('click', async () => {
+                  await supabaseClient.auth.signOut();
+                  window.location.href = '/';
+                });
+              }
+            } else {
+              const guestHTML = `<a href="/login" id="auth-link" class="nav-link text-ktm-light-text/70 dark:text-white/80 hover:text-ktm-accent transition-colors">Iniciar sesión</a>`;
+              if (authStatusEl) authStatusEl.innerHTML = guestHTML;
+              if (authStatusMobileEl) authStatusMobileEl.innerHTML = guestHTML;
+              
+              // Re-evaluar el color del navbar después de actualizar auth
+              setTimeout(() => {
+                if (typeof checkNavbarColor === 'function') {
+                  checkNavbarColor();
+                }
+              }, 100);
+            }
+          } catch (err) {
+            console.error('❌ Error en updateAuthStatus:', err);
+          }
+        }
+
+        // Actualizar estado inicial
         updateAuthStatus();
-      });
+        
+        // Escuchar cambios de autenticación
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+          console.log('🔄 Cambio de estado de autenticación:', event);
+          updateAuthStatus();
+        });
+        
+        // Hacer updateAuthStatus accesible globalmente para verificación adicional
+        window.updateAuthStatus = updateAuthStatus;
+      }
+      
+      // Inicializar cuando el DOM esté listo
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAuth);
+      } else {
+        // Si el DOM ya está listo, esperar un poco para que Supabase se cargue
+        setTimeout(initAuth, 100);
+      }
+      
+      // También verificar después de un tiempo adicional para asegurar que la sesión se haya guardado
+      // Esto es útil después de redirecciones desde login
+      setTimeout(() => {
+        if (supabaseClient && typeof updateAuthStatus === 'function') {
+          console.log('🔄 Verificación adicional de estado de autenticación...');
+          updateAuthStatus();
+        }
+      }, 1000);
     </script>
     
     <!-- Modal de WhatsApp (disponible globalmente) -->

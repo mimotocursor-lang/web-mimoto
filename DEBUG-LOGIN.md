@@ -157,3 +157,4 @@ console.log('Password input:', document.getElementById('password') ? 'Encontrado
 
 Todos deberían mostrar valores válidos.
 
+
