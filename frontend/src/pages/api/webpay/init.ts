@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Si no hay user_id, es un pedido de usuario no autenticado
     let userEmail = 'cliente@mimoto.cl';
     if (order.user_id) {
-      const { data: user, error: userError } = await supabase.auth.admin.getUserById(order.user_id);
+    const { data: user, error: userError } = await supabase.auth.admin.getUserById(order.user_id);
       if (!userError && user) {
         userEmail = user.email || userEmail;
       }
