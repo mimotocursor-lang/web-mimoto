@@ -29,18 +29,48 @@ export const POST: APIRoute = async ({ request }) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Buscar el pedido por el token
-    const { data: order, error: orderError } = await supabase
+    // Primero intentar buscar por payment_reference que contiene el token exacto
+    let { data: order, error: orderError } = await supabase
       .from('orders')
       .select('id, total_amount, status, payment_reference')
       .eq('payment_reference', token_ws)
       .single();
 
+    // Si no se encuentra, intentar buscar por payment_reference que empiece con el token
+    // (porque puede haber sido actualizado con el responseCode)
     if (orderError || !order) {
+      console.log('⚠️ No se encontró pedido con payment_reference exacto, buscando por token...');
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('id, total_amount, status, payment_reference')
+        .like('payment_reference', `${token_ws}%`)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      
+      if (orders && orders.length > 0) {
+        order = orders[0];
+        orderError = null;
+        console.log('✅ Pedido encontrado por token parcial:', order.id);
+      }
+    }
+
+    if (orderError || !order) {
+      console.error('❌ Error buscando pedido:', orderError);
       return new Response(
-        JSON.stringify({ success: false, error: 'Pedido no encontrado' }),
+        JSON.stringify({ 
+          success: false, 
+          error: 'Pedido no encontrado',
+          details: 'No se encontró un pedido asociado a este token. Puede que el token ya haya sido procesado o sea inválido.'
+        }),
         { status: 404, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('📋 Pedido encontrado:', {
+      id: order.id,
+      status: order.status,
+      payment_reference: order.payment_reference
+    });
 
     // Configurar Webpay Plus
     const environment = import.meta.env.PUBLIC_WEBPAY_ENVIRONMENT === 'production' 
@@ -53,18 +83,52 @@ export const POST: APIRoute = async ({ request }) => {
     const options = new Options(commerceCode, apiKey, environment);
     const webpayPlus = new WebpayPlus.Transaction(options);
 
-    // Confirmar la transacción
+    // Verificar si el pedido ya fue procesado
+    if (order.status === 'paid') {
+      console.log('⚠️ Este pedido ya fue marcado como pagado anteriormente');
+      console.log('⚠️ payment_reference actual:', order.payment_reference);
+      // Si el payment_reference ya contiene el responseCode, significa que ya fue confirmado
+      if (order.payment_reference && order.payment_reference.includes('-') && order.payment_reference !== token_ws) {
+        console.log('⚠️ Esta transacción ya fue confirmada anteriormente');
+        // Devolver el estado actual sin volver a confirmar
+        return new Response(
+          JSON.stringify({
+            success: true,
+            responseCode: 0,
+            responseMessage: 'Transacción ya confirmada anteriormente',
+            buyOrder: order.payment_reference.split('-')[0] || 'N/A',
+            amount: order.total_amount,
+            authorizationCode: 'YA_CONFIRMADO',
+            orderId: order.id,
+            alreadyConfirmed: true
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // Confirmar la transacción con Webpay
+    console.log('🔄 Confirmando transacción con Webpay, token:', token_ws);
     const commitResponse = await webpayPlus.commit(token_ws);
 
     if (!commitResponse) {
+      console.error('❌ Webpay no devolvió respuesta');
       return new Response(
-        JSON.stringify({ success: false, error: 'Error al confirmar la transacción' }),
+        JSON.stringify({ success: false, error: 'Error al confirmar la transacción con Webpay' }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log('📥 Respuesta de Webpay:', {
+      responseCode: commitResponse.responseCode,
+      responseMessage: commitResponse.responseMessage,
+      amount: commitResponse.amount,
+      authorizationCode: commitResponse.authorizationCode
+    });
+
     // Verificar el estado de la transacción
     const isApproved = commitResponse.responseCode === 0;
+    console.log('✅ Transacción aprobada:', isApproved);
 
     // Actualizar el estado del pedido
     // Actualizar estado del pedido con fallback si el enum no acepta 'pending_payment'

@@ -52,6 +52,10 @@ const { orderId, token_ws } = Astro.url.searchParams;
       }
 
       try {
+        console.log('🔄 Iniciando confirmación de pago...');
+        console.log('🔑 Token:', tokenWs);
+        console.log('📋 OrderId:', orderId);
+        
         // Confirmar la transacción
         const response = await fetch('/api/webpay/confirm', {
           method: 'POST',
@@ -61,9 +65,40 @@ const { orderId, token_ws } = Astro.url.searchParams;
           body: JSON.stringify({ token_ws: tokenWs }),
         });
 
+        console.log('📥 Respuesta HTTP:', response.status, response.statusText);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('❌ Error HTTP:', errorText);
+          throw new Error(`Error ${response.status}: ${errorText}`);
+        }
+
         const result = await response.json();
+        console.log('📋 Resultado de confirmación:', result);
 
         if (result.success) {
+          // Verificar si ya fue confirmado anteriormente
+          if (result.alreadyConfirmed) {
+            statusEl.innerHTML = `
+            <div class="text-center">
+              <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-500/10 mb-4">
+                <svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <h2 class="text-2xl font-bold text-white mb-2">Pago Ya Confirmado</h2>
+              <p class="text-white/90 mb-4">Esta transacción ya fue procesada y confirmada anteriormente.</p>
+              <div class="flex gap-4 justify-center">
+                <a href="/pedido/${result.orderId || orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
+                  Ver mi pedido
+                </a>
+                <a href="/" class="inline-block px-6 py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors">
+                  Volver al inicio
+                </a>
+              </div>
+            </div>
+          `;
+          } else {
           // Pago exitoso
           statusEl.innerHTML = `
             <div class="text-center">
@@ -81,7 +116,7 @@ const { orderId, token_ws } = Astro.url.searchParams;
                 </div>
                 <div class="flex justify-between">
                   <span class="text-white/90">Monto pagado:</span>
-                  <span class="font-bold text-primary">$${(result.amount / 100).toLocaleString('es-CL')}</span>
+                  <span class="font-bold text-primary">$${result.amount ? (typeof result.amount === 'number' ? (result.amount >= 1000 ? (result.amount / 100).toLocaleString('es-CL') : result.amount.toLocaleString('es-CL')) : result.amount) : 'N/A'}</span>
                 </div>
                 <div class="flex justify-between">
                   <span class="text-white/90">Token:</span>
@@ -98,8 +133,16 @@ const { orderId, token_ws } = Astro.url.searchParams;
               </div>
             </div>
           `;
+          }
         } else {
           // Pago rechazado - Mostrar token destacado
+          console.log('❌ Pago rechazado, detalles:', {
+            responseCode: result.responseCode,
+            responseMessage: result.responseMessage,
+            orderId: result.orderId,
+            amount: result.amount
+          });
+          
           statusEl.innerHTML = `
             <div class="text-center">
               <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/10 mb-4">
@@ -109,7 +152,8 @@ const { orderId, token_ws } = Astro.url.searchParams;
               </div>
               <h2 class="text-2xl font-bold text-white mb-2">Pago Rechazado</h2>
               <p class="text-white/90 mb-2">${result.responseMessage || 'Tu pago no pudo ser procesado.'}</p>
-              <p class="text-white/70 text-sm mb-4">Código de respuesta: ${result.responseCode || 'N/A'}</p>
+              <p class="text-white/70 text-sm mb-2">Código de respuesta: ${result.responseCode || 'N/A'}</p>
+              ${result.orderId ? `<p class="text-white/70 text-sm mb-4">ID del pedido: ${result.orderId}</p>` : ''}
               
               <!-- Token destacado para transacciones rechazadas -->
               <div class="bg-red-500/10 border-2 border-red-500/50 rounded-lg p-4 mb-4">
