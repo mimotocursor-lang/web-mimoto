@@ -59,12 +59,12 @@ if (orderId) {
           <span class="font-bold text-primary text-xl">#{orderId || '—'}</span>
         </div>
         
-        {orderTotal && (
-          <div class="flex justify-between items-center border-t border-primary/30 pt-4">
-            <span class="text-white/90 font-semibold">Monto a pagar:</span>
-            <span class="font-bold text-primary text-xl">${orderTotal.toLocaleString('es-CL')}</span>
-          </div>
-        )}
+        <div class="flex justify-between items-center border-t border-primary/30 pt-4">
+          <span class="text-white/90 font-semibold">Monto a pagar:</span>
+          <span class="font-bold text-primary text-xl" data-order-total>
+            {orderTotal ? `$${orderTotal.toLocaleString('es-CL')}` : orderId ? 'Cargando...' : '—'}
+          </span>
+        </div>
         
         <button
           id="pay-button"
@@ -103,8 +103,8 @@ if (orderId) {
 
   <script define:vars={{ orderTotal: orderTotal, orderId: orderId }}>
     document.addEventListener('DOMContentLoaded', async () => {
-      const payButton = document.getElementById('pay-button') as HTMLButtonElement;
-      const payButtonText = document.getElementById('pay-button-text') as HTMLElement;
+      const payButton = document.getElementById('pay-button');
+      const payButtonText = document.getElementById('pay-button-text');
       const urlParams = new URLSearchParams(window.location.search);
       const orderIdFromUrl = urlParams.get('orderId') || orderId;
 
@@ -153,8 +153,8 @@ if (orderId) {
             return;
           }
           
-          const supabaseUrl = (window as any).PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
-          const supabaseAnonKey = (window as any).PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+          const supabaseUrl = window.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
+          const supabaseAnonKey = window.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
           const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
           const { data: order, error } = await supabaseClient
@@ -175,6 +175,18 @@ if (orderId) {
             finalOrderTotal = Number(order.total_amount);
             // Habilitar el botón si encontramos el total
             payButton.disabled = false;
+            
+            // Actualizar el monto en la UI
+            const amountEl = document.querySelector('[data-order-total]');
+            if (amountEl) {
+              amountEl.textContent = '$' + finalOrderTotal.toLocaleString('es-CL');
+            }
+            
+            // Ocultar mensaje de carga
+            const loadingMsg = document.querySelector('.text-yellow-400');
+            if (loadingMsg) {
+              loadingMsg.style.display = 'none';
+            }
           } else {
             console.error('❌ Pedido sin total_amount');
             payButton.disabled = true;
@@ -191,12 +203,26 @@ if (orderId) {
         // Si hay orderTotal, habilitar el botón
         payButton.disabled = false;
         console.log('✅ Botón habilitado, orderTotal:', finalOrderTotal);
+        
+        // Actualizar el monto en la UI si no se mostró antes
+        const amountEl = document.querySelector('[data-order-total]');
+        if (amountEl && finalOrderTotal) {
+          amountEl.textContent = '$' + finalOrderTotal.toLocaleString('es-CL');
+        }
       }
 
       // Asegurar que el botón esté habilitado si tenemos orderTotal y orderId
-      if (finalOrderTotal && orderIdFromUrl && payButton.disabled) {
-        console.log('🔧 Habilitando botón manualmente...');
-        payButton.disabled = false;
+      if (finalOrderTotal && orderIdFromUrl) {
+        if (payButton.disabled) {
+          console.log('🔧 Habilitando botón manualmente...');
+          payButton.disabled = false;
+        }
+        
+        // Actualizar el monto en la UI
+        const amountEl = document.querySelector('[data-order-total]');
+        if (amountEl) {
+          amountEl.textContent = '$' + finalOrderTotal.toLocaleString('es-CL');
+        }
       }
 
       payButton.addEventListener('click', async () => {
@@ -234,12 +260,12 @@ if (orderId) {
             console.error('❌ Error en respuesta:', result);
             throw new Error(result.error || 'Error al iniciar el pago');
           }
-        } catch (error: any) {
+        } catch (error) {
           console.error('❌ Error completo iniciando pago:', error);
           payButton.disabled = false;
           payButtonText.textContent = 'Pagar ahora';
           
-          const errorMessage = error.message || 'Error al iniciar el pago. Por favor, intenta nuevamente o contacta con soporte.';
+          const errorMessage = (error && error.message) ? error.message : 'Error al iniciar el pago. Por favor, intenta nuevamente o contacta con soporte.';
           alert(errorMessage);
         }
       });
