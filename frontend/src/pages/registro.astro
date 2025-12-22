@@ -154,21 +154,21 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       }
     });
 
-      document.getElementById('google-register')?.addEventListener('click', async () => {
-        try {
-          const { error } = await supabaseClient.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo: `${window.location.origin}/auth/callback`,
-            },
-          });
+    document.getElementById('google-register')?.addEventListener('click', async () => {
+      try {
+        const { error } = await supabaseClient.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
 
-          if (error) throw error;
-        } catch (err: any) {
-          const errorEl = document.getElementById('register-error') as HTMLElement;
-          errorEl.textContent = err.message || 'Error al registrarse con Google';
-        }
-      });
+        if (error) throw error;
+      } catch (err: any) {
+        const errorEl = document.getElementById('register-error') as HTMLElement;
+        errorEl.textContent = err.message || 'Error al registrarse con Google';
+      }
+    });
     }
     
     // Inicializar cuando el DOM esté listo

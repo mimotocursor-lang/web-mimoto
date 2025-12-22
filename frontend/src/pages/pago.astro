@@ -193,6 +193,12 @@ if (orderId) {
         console.log('✅ Botón habilitado, orderTotal:', finalOrderTotal);
       }
 
+      // Asegurar que el botón esté habilitado si tenemos orderTotal y orderId
+      if (finalOrderTotal && orderIdFromUrl && payButton.disabled) {
+        console.log('🔧 Habilitando botón manualmente...');
+        payButton.disabled = false;
+      }
+
       payButton.addEventListener('click', async () => {
         console.log('🖱️ Click en botón de pago');
         payButton.disabled = true;

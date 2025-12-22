@@ -42,14 +42,14 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    // Obtener datos del usuario
-    const { data: user, error: userError } = await supabase.auth.admin.getUserById(order.user_id);
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Usuario no encontrado' }),
-        { status: 404, headers: { 'Content-Type': 'application/json' } }
-      );
+    // Obtener datos del usuario (solo si hay user_id)
+    // Si no hay user_id, es un pedido de usuario no autenticado
+    let userEmail = 'cliente@mimoto.cl';
+    if (order.user_id) {
+      const { data: user, error: userError } = await supabase.auth.admin.getUserById(order.user_id);
+      if (!userError && user) {
+        userEmail = user.email || userEmail;
+      }
     }
 
     // Configurar Webpay Plus
@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Calcular monto en centavos (Webpay espera el monto en centavos)
     const amount = Math.round(Number(order.total_amount) * 100);
     const buyOrder = `ORD-${order.id}-${Date.now()}`;
-    const sessionId = `SESSION-${order.user_id}-${Date.now()}`;
+    const sessionId = order.user_id ? `SESSION-${order.user_id}-${Date.now()}` : `SESSION-GUEST-${order.id}-${Date.now()}`;
 
     // URL de retorno (donde Webpay redirigirá después del pago)
     const finalReturnUrl = returnUrl || `${import.meta.env.PUBLIC_SITE_URL || 'http://localhost:4321'}/pago/confirmar?orderId=${orderId}`;

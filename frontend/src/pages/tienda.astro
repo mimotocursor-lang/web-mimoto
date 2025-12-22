@@ -27,12 +27,12 @@ let repuestosError: any = null;
 
 try {
   const accesoriosResult = await supabaseClient
-    .from('products')
-    .select('*')
-    .eq('status', 'active')
-    .eq('is_accessory', true)
-    .order('created_at', { ascending: false });
-  
+  .from('products')
+  .select('*')
+  .eq('status', 'active')
+  .eq('is_accessory', true)
+  .order('created_at', { ascending: false });
+
   accesorios = accesoriosResult.data || [];
   accesoriosError = accesoriosResult.error;
   
@@ -46,11 +46,11 @@ try {
 
 try {
   const repuestosResult = await supabaseClient
-    .from('products')
-    .select('*')
-    .eq('status', 'active')
-    .eq('is_spare_part', true)
-    .order('created_at', { ascending: false });
+  .from('products')
+  .select('*')
+  .eq('status', 'active')
+  .eq('is_spare_part', true)
+  .order('created_at', { ascending: false });
   
   repuestos = repuestosResult.data || [];
   repuestosError = repuestosResult.error;
