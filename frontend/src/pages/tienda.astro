@@ -2321,26 +2321,9 @@ try {
       }, 3000);
     }
     
-    // Event listener para botones de agregar al carrito (delegación de eventos)
-    document.addEventListener('click', (e) => {
-      const target = e.target as HTMLElement;
-      const button = target.closest('[data-add-to-cart]') as HTMLElement;
-      
-      if (button && !button.disabled) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const productId = button.getAttribute('data-id');
-        const productName = button.getAttribute('data-name');
-        const productPrice = button.getAttribute('data-price');
-        
-        if (productId && productName && productPrice) {
-          addToCart(productId, productName, productPrice);
-        } else {
-          console.error('❌ Faltan datos del producto:', { productId, productName, productPrice });
-        }
-      }
-    });
+    // NOTA: El listener para agregar al carrito está en BaseLayout.astro
+    // No necesitamos duplicar el listener aquí para evitar agregar productos dos veces
+    // Si necesitas funcionalidad adicional, úsala en BaseLayout.astro
     
     // Actualizar contador al cargar la página
     document.addEventListener('DOMContentLoaded', () => {

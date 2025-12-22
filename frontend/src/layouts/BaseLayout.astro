@@ -1114,12 +1114,21 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
           renderCart(cart);
         });
 
+        // Prevenir múltiples ejecuciones del mismo click
+        let isAddingToCart = false;
+        
         document.body.addEventListener('click', (event) => {
           const target = event.target;
           if (!(target instanceof HTMLElement)) return;
 
           const btn = target.closest('[data-add-to-cart]');
-          if (!btn) return;
+          if (!btn || btn.hasAttribute('data-processing')) return;
+
+          // Prevenir múltiples clicks rápidos
+          if (isAddingToCart) {
+            console.log('⏳ Ya se está agregando un producto, espera...');
+            return;
+          }
 
           const id = btn.getAttribute('data-id');
           const name = btn.getAttribute('data-name');
@@ -1127,19 +1136,38 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
           const price = priceAttr ? Number(priceAttr) : 0;
 
           if (!id || !name || !price) {
+            console.warn('⚠️ Faltan datos del producto:', { id, name, price });
             return;
           }
 
-          let cart = loadCart();
-          const existing = cart.find((item) => item.id === id);
-          if (existing) {
-            existing.quantity += 1;
-          } else {
-            cart.push({ id, name, price, quantity: 1 });
+          // Marcar como procesando
+          isAddingToCart = true;
+          btn.setAttribute('data-processing', 'true');
+          
+          try {
+            let cart = loadCart();
+            const existing = cart.find((item) => item.id === id);
+            
+            if (existing) {
+              existing.quantity += 1;
+              console.log('✅ Cantidad incrementada para:', name, 'Nueva cantidad:', existing.quantity);
+            } else {
+              cart.push({ id, name, price, quantity: 1 });
+              console.log('✅ Producto agregado al carrito:', name);
+            }
+            
+            saveCart(cart);
+            renderCart(cart);
+            openCart();
+          } catch (error) {
+            console.error('❌ Error agregando al carrito:', error);
+          } finally {
+            // Permitir nuevos clicks después de un breve delay
+            setTimeout(() => {
+              isAddingToCart = false;
+              btn.removeAttribute('data-processing');
+            }, 300);
           }
-          saveCart(cart);
-          renderCart(cart);
-          openCart();
         });
       });
     </script>
