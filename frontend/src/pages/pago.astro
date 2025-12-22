@@ -59,12 +59,12 @@ if (orderId) {
           <span class="font-bold text-primary text-xl">#{orderId || '—'}</span>
         </div>
         
-        <div class="flex justify-between items-center border-t border-primary/30 pt-4">
-          <span class="text-white/90 font-semibold">Monto a pagar:</span>
+          <div class="flex justify-between items-center border-t border-primary/30 pt-4">
+            <span class="text-white/90 font-semibold">Monto a pagar:</span>
           <span class="font-bold text-primary text-xl" data-order-total>
             {orderTotal ? `$${orderTotal.toLocaleString('es-CL')}` : orderId ? 'Cargando...' : '—'}
           </span>
-        </div>
+          </div>
         
         <button
           id="pay-button"

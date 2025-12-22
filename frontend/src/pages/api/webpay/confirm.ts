@@ -5,12 +5,70 @@ import { createClient } from '@supabase/supabase-js';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
-    const body = await request.json();
-    const { token_ws } = body;
+    // Transbank puede enviar datos como form-urlencoded o JSON
+    // Intentar obtener datos del body
+    let body: any = {};
+    const contentType = request.headers.get('content-type') || '';
+    
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      // Parsear form-urlencoded
+      const formData = await request.formData();
+      body = {
+        token_ws: formData.get('token_ws')?.toString() || null,
+        TBK_TOKEN: formData.get('TBK_TOKEN')?.toString() || null,
+        TBK_ID_SESION: formData.get('TBK_ID_SESION')?.toString() || null,
+        TBK_ORDEN_COMPRA: formData.get('TBK_ORDEN_COMPRA')?.toString() || null,
+      };
+    } else {
+      // Intentar como JSON
+      try {
+        body = await request.json();
+      } catch (e) {
+        // Si falla, intentar parsear como texto y luego como form data
+        const text = await request.text();
+        const params = new URLSearchParams(text);
+        body = {
+          token_ws: params.get('token_ws') || null,
+          TBK_TOKEN: params.get('TBK_TOKEN') || null,
+          TBK_ID_SESION: params.get('TBK_ID_SESION') || null,
+          TBK_ORDEN_COMPRA: params.get('TBK_ORDEN_COMPRA') || null,
+        };
+      }
+    }
 
+    const { token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = body;
+
+    // CASO 1: Pago cancelado por el usuario (TBK_TOKEN presente)
+    if (TBK_TOKEN) {
+      console.log('🚫 Pago cancelado por el usuario');
+      console.log('📋 Parámetros de cancelación:', {
+        TBK_TOKEN,
+        TBK_ID_SESION,
+        TBK_ORDEN_COMPRA
+      });
+
+      // NO hacer commit, NO confirmar compra, solo registrar y devolver respuesta
+      return new Response(
+        JSON.stringify({
+          success: false,
+          cancelled: true,
+          message: 'Pago cancelado por el usuario',
+          TBK_TOKEN,
+          TBK_ID_SESION,
+          TBK_ORDEN_COMPRA
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // CASO 2: Pago normal (token_ws presente)
     if (!token_ws) {
       return new Response(
-        JSON.stringify({ success: false, error: 'token_ws es requerido' }),
+        JSON.stringify({ 
+          success: false, 
+          error: 'token_ws o TBK_TOKEN es requerido',
+          received: { token_ws: !!token_ws, TBK_TOKEN: !!TBK_TOKEN }
+        }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
