@@ -334,7 +334,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           hasPaymentReference: hasPaymentReference,
           paymentReference: order.payment_reference,
           paymentDetailsResponseCode: paymentDetails?.responseCode,
-          shouldBePaid: paymentDetails?.responseCode === 0 && order.status === 'pending_payment'
+          paymentDetailsAuthorizationCode: paymentDetails?.authorizationCode,
+          paymentDetailsFull: paymentDetails,
+          shouldBePaid: paymentDetails?.responseCode === 0 && order.status === 'pending_payment',
+          shouldShowButton: order.status === 'pending_payment' && (hasPaymentReference || !!paymentDetails?.authorizationCode || paymentDetails?.responseCode === 0)
         });
 
         const formatDate = (dateString) => {
@@ -472,11 +475,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             ` : ''}
 
             <!-- Detectar si el pago fue exitoso pero el estado no se actualizó -->
-            ${paymentDetails && paymentDetails.responseCode === 0 && order.status !== 'paid' && order.status !== 'order_received' && order.status !== 'order_confirmed' && order.status !== 'order_delivered' ? `
+            ${paymentDetails && (paymentDetails.responseCode === 0 || paymentDetails.responseCode === '0' || paymentDetails.authorizationCode) && order.status !== 'paid' && order.status !== 'order_received' && order.status !== 'order_confirmed' && order.status !== 'order_delivered' ? `
             <div class="bg-yellow-500/10 border-2 border-yellow-500 rounded-lg p-4 mb-4">
               <h3 class="font-bold text-lg mb-2 text-yellow-800 dark:text-yellow-400">⚠️ Pago Exitoso Detectado</h3>
               <p class="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
-                El pago fue exitoso (código de autorización: ${paymentDetails.authorizationCode || 'N/A'}), 
+                El pago fue exitoso (código de autorización: ${paymentDetails.authorizationCode || 'N/A'}, 
+                responseCode: ${paymentDetails.responseCode !== undefined ? paymentDetails.responseCode : 'N/A'}), 
                 pero el estado del pedido no se actualizó correctamente.
               </p>
               <button onclick="updateOrderStatus(${order.id}, 'paid')" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors font-semibold">
@@ -489,7 +493,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <div class="bg-primary/10 rounded-lg p-4 border-2 border-primary/30">
               <h3 class="font-bold text-lg mb-4 text-gray-900 dark:text-ktm-text">Cambiar Estado del Pedido</h3>
               <div class="flex flex-wrap gap-3">
-                ${order.status === 'pending_payment' && paymentDetails && paymentDetails.responseCode === 0 ? `
+                ${order.status === 'pending_payment' && paymentDetails && (paymentDetails.responseCode === 0 || paymentDetails.responseCode === '0' || paymentDetails.authorizationCode) ? `
                   <button onclick="updateOrderStatus(${order.id}, 'paid')" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
                     ✅ Marcar como Pagado (Pago detectado)
                   </button>
@@ -528,15 +532,36 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
 
       try {
+        console.log('🔄 Iniciando actualización de estado:', {
+          orderId: orderId,
+          newStatus: newStatus
+        });
+
         // Obtener token de sesión
-        const { data: { session } } = await supabaseClient.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+        
+        if (sessionError) {
+          console.error('❌ Error obteniendo sesión:', sessionError);
+          throw new Error('No se pudo obtener la sesión. Por favor, inicia sesión nuevamente.');
+        }
+
         const headers = {
           'Content-Type': 'application/json',
         };
 
         if (session?.access_token) {
           headers['Authorization'] = `Bearer ${session.access_token}`;
+          console.log('✅ Token de autenticación obtenido');
+        } else {
+          console.warn('⚠️ No hay token de autenticación disponible');
         }
+
+        console.log('📤 Enviando request:', {
+          url: '/api/orders/update-status',
+          method: 'POST',
+          body: { orderId, status: newStatus },
+          hasAuth: !!headers['Authorization']
+        });
 
         const response = await fetch('/api/orders/update-status', {
           method: 'POST',
@@ -547,19 +572,32 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           }),
         });
 
+        console.log('📥 Respuesta recibida:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok
+        });
+
         const result = await response.json();
+        console.log('📋 Resultado completo:', result);
 
         if (!response.ok) {
-          throw new Error(result.error || 'Error al actualizar el estado');
+          console.error('❌ Error en la respuesta:', result);
+          throw new Error(result.error || result.message || 'Error al actualizar el estado');
         }
 
+        console.log('✅ Estado actualizado exitosamente');
         alert('✅ Estado actualizado exitosamente. El cliente recibirá una notificación.');
         
         // Cerrar modal y recargar órdenes
-        document.getElementById('order-modal').classList.add('hidden');
+        const modal = document.getElementById('order-modal');
+        if (modal) {
+          modal.classList.add('hidden');
+        }
         loadOrders();
       } catch (error) {
-        console.error('Error actualizando estado:', error);
+        console.error('❌ Error actualizando estado:', error);
+        console.error('❌ Stack trace:', error.stack);
         alert('❌ Error al actualizar el estado: ' + error.message);
       }
     }

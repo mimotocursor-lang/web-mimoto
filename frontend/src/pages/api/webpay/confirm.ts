@@ -338,8 +338,29 @@ export const POST: APIRoute = async ({ request }) => {
         message: updateResult.error.message,
         code: updateResult.error.code,
         details: updateResult.error.details,
-        hint: updateResult.error.hint
+        hint: updateResult.error.hint,
+        fullError: JSON.stringify(updateResult.error, null, 2)
       });
+      
+      // Si el error es por enum inválido, intentar con 'paid' directamente
+      if (updateResult.error.message?.includes('invalid input value for enum')) {
+        console.log('⚠️ Intentando actualizar con estado "paid" directamente...');
+        const retryResult = await supabase
+          .from('orders')
+          .update({
+            status: 'paid',
+            payment_reference: `${token_ws}-${commitResponse.responseCode || 'approved'}`,
+            payment_details: paymentDetails,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', order.id);
+        
+        if (retryResult.error) {
+          console.error('❌ Error en segundo intento:', retryResult.error);
+        } else {
+          console.log('✅ Estado actualizado en segundo intento');
+        }
+      }
       // Continuar aunque falle la actualización del status
     } else {
       console.log('✅ Estado del pedido actualizado exitosamente:', {
@@ -358,8 +379,25 @@ export const POST: APIRoute = async ({ request }) => {
       console.log('🔍 Verificación post-actualización:', {
         orderId: verifyOrder?.id,
         status: verifyOrder?.status,
-        hasPaymentDetails: !!verifyOrder?.payment_details
+        hasPaymentDetails: !!verifyOrder?.payment_details,
+        expectedStatus: newStatus,
+        statusMatches: verifyOrder?.status === newStatus
       });
+      
+      // Si el estado no coincide, intentar corregirlo
+      if (verifyOrder && verifyOrder.status !== newStatus && isApproved) {
+        console.log('⚠️ El estado no coincide, intentando corregir...');
+        const fixResult = await supabase
+          .from('orders')
+          .update({ status: 'paid' })
+          .eq('id', order.id);
+        
+        if (fixResult.error) {
+          console.error('❌ Error corrigiendo estado:', fixResult.error);
+        } else {
+          console.log('✅ Estado corregido a "paid"');
+        }
+      }
     }
 
     // Obtener información adicional del pedido para mostrar en el comprobante

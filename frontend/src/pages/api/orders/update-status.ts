@@ -94,6 +94,12 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Actualizar el estado
+    console.log('🔄 Intentando actualizar orden:', {
+      orderId: orderId,
+      currentStatus: order.status,
+      newStatus: status
+    });
+
     const { data: updatedOrder, error: updateError } = await supabase
       .from('orders')
       .update({
@@ -105,12 +111,44 @@ export const POST: APIRoute = async ({ request }) => {
       .single();
 
     if (updateError) {
-      console.error('Error actualizando orden:', updateError);
+      console.error('❌ Error actualizando orden:', updateError);
+      console.error('❌ Detalles del error:', {
+        message: updateError.message,
+        code: updateError.code,
+        details: updateError.details,
+        hint: updateError.hint,
+        fullError: JSON.stringify(updateError, null, 2)
+      });
+      
+      // Si el error es por enum inválido, proporcionar más información
+      if (updateError.message?.includes('invalid input value for enum')) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `El estado "${status}" no es válido en la base de datos. Error: ${updateError.message}`,
+            details: updateError.details,
+            hint: updateError.hint
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
-        JSON.stringify({ success: false, error: 'Error al actualizar el estado de la orden' }),
+        JSON.stringify({ 
+          success: false, 
+          error: `Error al actualizar el estado de la orden: ${updateError.message}`,
+          details: updateError.details
+        }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('✅ Orden actualizada exitosamente:', {
+      orderId: orderId,
+      oldStatus: order.status,
+      newStatus: status,
+      updatedOrderStatus: updatedOrder?.status
+    });
 
     console.log('✅ Orden actualizada:', {
       orderId: orderId,
