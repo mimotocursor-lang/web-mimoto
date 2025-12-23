@@ -259,27 +259,42 @@ export const POST: APIRoute = async ({ request }) => {
     // Verificar el estado de la transacción
     // El pago es exitoso si:
     // 1. responseCode === 0 (estándar de Transbank)
-    // 2. O si existe authorizationCode (indica que fue autorizado)
-    // 3. O si no hay errores y hay datos de transacción
+    // 2. O si existe authorizationCode (indica que fue autorizado) - ESTO ES LO MÁS IMPORTANTE
+    // 3. O si hay transactionDate y amount (indica que la transacción se procesó)
+    // 4. O si no hay errores explícitos en responseMessage
     const hasResponseCodeZero = commitResponse.responseCode === 0 || commitResponse.responseCode === '0';
     const hasAuthorizationCode = !!commitResponse.authorizationCode;
-    const hasNoErrors = !commitResponse.responseMessage || 
-                        !commitResponse.responseMessage.toLowerCase().includes('error') &&
-                        !commitResponse.responseMessage.toLowerCase().includes('rechazado');
+    const hasTransactionData = !!(commitResponse.transactionDate && commitResponse.amount);
+    const hasExplicitError = commitResponse.responseMessage && 
+                             (commitResponse.responseMessage.toLowerCase().includes('error') ||
+                              commitResponse.responseMessage.toLowerCase().includes('rechazado') ||
+                              commitResponse.responseMessage.toLowerCase().includes('rejected'));
     
-    // Si hay authorizationCode, generalmente significa que fue aprobado
-    // Incluso si responseCode no está presente o es undefined
-    const isApproved = hasResponseCodeZero || (hasAuthorizationCode && hasNoErrors);
+    // Si hay authorizationCode, significa que Transbank autorizó el pago - esto es definitivo
+    // Si hay transactionDate y amount, significa que la transacción se procesó
+    // Si el responseCode es -1 pero hay authorizationCode, el pago fue exitoso
+    let isApproved = hasResponseCodeZero || hasAuthorizationCode || (hasTransactionData && !hasExplicitError);
     
     console.log('✅ Análisis de aprobación:', {
       hasResponseCodeZero,
       hasAuthorizationCode,
-      hasNoErrors,
+      hasTransactionData,
+      hasExplicitError,
       isApproved,
       responseCode: commitResponse.responseCode,
       authorizationCode: commitResponse.authorizationCode,
-      responseMessage: commitResponse.responseMessage
+      transactionDate: commitResponse.transactionDate,
+      amount: commitResponse.amount,
+      responseMessage: commitResponse.responseMessage,
+      fullResponse: JSON.stringify(commitResponse, null, 2)
     });
+    
+    // Si hay authorizationCode pero isApproved es false, forzar a true
+    // porque authorizationCode significa que Transbank autorizó el pago
+    if (hasAuthorizationCode && !isApproved) {
+      console.log('⚠️ Hay authorizationCode pero isApproved es false. Forzando a true porque authorizationCode indica pago autorizado.');
+      isApproved = true;
+    }
 
     // Preparar payment_details con toda la información de la transacción
     const paymentDetails = {

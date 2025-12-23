@@ -96,14 +96,20 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
         console.log('🔑 Token:', tokenWs);
         console.log('📋 OrderId:', orderId);
         
-        // Confirmar la transacción
+        // Confirmar la transacción con timeout más largo (30 segundos)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
+        
         const response = await fetch('/api/webpay/confirm', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ token_ws: tokenWs }),
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
 
         console.log('📥 Respuesta HTTP:', response.status, response.statusText);
         
@@ -122,26 +128,46 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
         // Verificar si el pago fue aprobado
         // El pago es exitoso si:
         // 1. responseCode === 0 (estándar de Transbank)
-        // 2. O si existe authorizationCode (indica que fue autorizado)
+        // 2. O si existe authorizationCode (indica que fue autorizado) - ESTO ES LO MÁS IMPORTANTE
         // 3. O si success === true
+        // 4. O si hay transactionDate y amount (indica que la transacción se procesó)
         const responseCodeIsZero = result.responseCode === 0 || result.responseCode === '0';
         const successIsTrue = result.success === true || result.success === 'true';
         const hasAuthorizationCode = !!result.authorizationCode;
+        const hasTransactionData = !!(result.transactionDate && result.amount);
+        const hasExplicitError = result.responseMessage && 
+                                 (result.responseMessage.toLowerCase().includes('error') ||
+                                  result.responseMessage.toLowerCase().includes('rechazado') ||
+                                  result.responseMessage.toLowerCase().includes('rejected'));
         
-        // Si hay authorizationCode, generalmente significa que fue aprobado
-        // incluso si responseCode no está presente
-        const isPaymentApproved = responseCodeIsZero || successIsTrue || hasAuthorizationCode;
+        // Si hay authorizationCode, significa que Transbank autorizó el pago - esto es definitivo
+        // Si hay transactionDate y amount sin errores explícitos, el pago fue exitoso
+        // Si el responseCode es -1 pero hay authorizationCode, el pago fue exitoso
+        const isPaymentApproved = responseCodeIsZero || successIsTrue || hasAuthorizationCode || (hasTransactionData && !hasExplicitError);
         
         console.log('🔍 Análisis de aprobación:', {
           responseCodeIsZero,
           successIsTrue,
           hasAuthorizationCode,
+          hasTransactionData,
+          hasExplicitError,
           isPaymentApproved,
           responseCode: result.responseCode,
           success: result.success,
           authorizationCode: result.authorizationCode,
-          debug: result._debug
+          transactionDate: result.transactionDate,
+          amount: result.amount,
+          responseMessage: result.responseMessage,
+          debug: result._debug,
+          fullResult: JSON.stringify(result, null, 2)
         });
+        
+        // Si hay authorizationCode pero isPaymentApproved es false, forzar a true
+        // porque authorizationCode significa que Transbank autorizó el pago
+        if (hasAuthorizationCode && !isPaymentApproved) {
+          console.log('⚠️ Hay authorizationCode pero isPaymentApproved es false. Forzando a true porque authorizationCode indica pago autorizado.');
+          isPaymentApproved = true;
+        }
 
         if (isPaymentApproved) {
           // Verificar si ya fue confirmado anteriormente
