@@ -61,16 +61,33 @@ export const POST: APIRoute = async ({ request }) => {
     const commerceCode = import.meta.env.PUBLIC_WEBPAY_COMMERCE_CODE || '597055555532';
     const apiKey = import.meta.env.PUBLIC_WEBPAY_API_KEY || '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C';
 
-    console.log('🔧 Configuración de Webpay:', {
-      PUBLIC_WEBPAY_ENVIRONMENT: webpayEnvironment || 'no configurado (usando integración)',
-      resolvedEnvironment: environment === Environment.Production ? 'Production' : 'Integration',
+    // Log detallado para debugging
+    const envStatus = {
+      PUBLIC_WEBPAY_ENVIRONMENT: webpayEnvironment || '❌ NO CONFIGURADO (usando integración)',
+      resolvedEnvironment: environment === Environment.Production ? '✅ Production' : '⚠️ Integration',
       isProduction: environment === Environment.Production,
-      commerceCode: commerceCode ? `${commerceCode.substring(0, 6)}...` : 'no configurado',
-      apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'no configurado',
       webpayHost: environment === Environment.Production 
         ? 'https://webpay3g.transbank.cl' 
-        : 'https://webpay3gint.transbank.cl'
-    });
+        : 'https://webpay3gint.transbank.cl',
+      commerceCode: commerceCode ? `${commerceCode.substring(0, 6)}...` : '❌ NO CONFIGURADO',
+      apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : '❌ NO CONFIGURADO'
+    };
+
+    console.log('🔧 ===== CONFIGURACIÓN DE WEBPAY =====');
+    console.log('🔧 PUBLIC_WEBPAY_ENVIRONMENT:', envStatus.PUBLIC_WEBPAY_ENVIRONMENT);
+    console.log('🔧 Ambiente resuelto:', envStatus.resolvedEnvironment);
+    console.log('🔧 Es producción?', envStatus.isProduction);
+    console.log('🔧 Host de Webpay:', envStatus.webpayHost);
+    console.log('🔧 Commerce Code:', envStatus.commerceCode);
+    console.log('🔧 API Key:', envStatus.apiKey);
+    console.log('🔧 ====================================');
+
+    // Advertencia si no está en producción pero debería estarlo
+    if (environment !== Environment.Production && webpayEnvironment !== 'production') {
+      console.warn('⚠️ ADVERTENCIA: PUBLIC_WEBPAY_ENVIRONMENT no está configurado como "production"');
+      console.warn('⚠️ Se está usando el ambiente de INTEGRACIÓN');
+      console.warn('⚠️ Para usar producción, configura PUBLIC_WEBPAY_ENVIRONMENT=production en Vercel');
+    }
 
     const options = new Options(commerceCode, apiKey, environment);
     const webpayPlus = new WebpayPlus.Transaction(options);
@@ -100,19 +117,64 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     // Crear la transacción
-    const createResponse = await webpayPlus.create(
-      buyOrder,
-      sessionId,
-      amount,
-      finalReturnUrl
-    );
+    console.log('🔄 Creando transacción en Webpay...');
+    let createResponse;
+    try {
+      createResponse = await webpayPlus.create(
+        buyOrder,
+        sessionId,
+        amount,
+        finalReturnUrl
+      );
+    } catch (webpayError: any) {
+      console.error('❌ Error al crear transacción en Webpay:', webpayError);
+      console.error('❌ Detalles del error:', {
+        message: webpayError.message,
+        status: webpayError.response?.status,
+        statusText: webpayError.response?.statusText,
+        data: webpayError.response?.data,
+        code: webpayError.code
+      });
 
-    if (!createResponse || !createResponse.token || !createResponse.url) {
+      // Manejar error 401 específicamente
+      if (webpayError.response?.status === 401 || webpayError.message?.includes('401') || webpayError.message?.includes('Not Authorized')) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Error de autenticación con Webpay (401). Verifica que las credenciales de producción estén correctamente configuradas en Vercel.',
+            details: {
+              environment: envStatus.resolvedEnvironment,
+              commerceCode: envStatus.commerceCode,
+              apiKeyConfigured: !!apiKey,
+              suggestion: 'Verifica que PUBLIC_WEBPAY_COMMERCE_CODE y PUBLIC_WEBPAY_API_KEY tengan los valores correctos de producción'
+            }
+          }),
+          { status: 401, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ success: false, error: 'Error al crear la transacción en Webpay' }),
+        JSON.stringify({ 
+          success: false, 
+          error: `Error al crear la transacción en Webpay: ${webpayError.message || 'Error desconocido'}`,
+          details: webpayError.response?.data || webpayError.message
+        }),
         { status: 500, headers: { 'Content-Type': 'application/json' } }
       );
     }
+
+    if (!createResponse || !createResponse.token || !createResponse.url) {
+      console.error('❌ Respuesta de Webpay inválida:', createResponse);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Error al crear la transacción en Webpay: respuesta inválida' }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('✅ Transacción creada exitosamente:', {
+      token: createResponse.token?.substring(0, 20) + '...',
+      url: createResponse.url
+    });
 
     // Guardar el token de la transacción en el pedido
     await supabase

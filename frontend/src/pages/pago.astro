@@ -92,7 +92,7 @@ if (orderId) {
       <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-6 space-y-4">
         <div class="flex justify-between items-center">
           <span class="text-white/90 font-semibold">Pedido asociado:</span>
-          <span class="font-bold text-primary text-xl">#{orderId || '—'}</span>
+          <span class="font-bold text-primary text-xl" id="order-id-display">#{orderId || '—'}</span>
         </div>
         
           <div class="flex justify-between items-center border-t border-primary/30 pt-4">
@@ -147,9 +147,17 @@ if (orderId) {
       console.log('🔍 Estado inicial:', {
         payButton: !!payButton,
         orderId: orderIdFromUrl,
+        orderIdFromServer: orderId,
         orderTotal: orderTotal,
-        buttonDisabled: payButton?.disabled
+        buttonDisabled: payButton?.disabled,
+        urlParams: window.location.search
       });
+
+      // Actualizar el display del orderId si está disponible
+      const orderIdDisplay = document.getElementById('order-id-display');
+      if (orderIdDisplay && orderIdFromUrl) {
+        orderIdDisplay.textContent = `#${orderIdFromUrl}`;
+      }
 
       if (!payButton) {
         console.error('❌ Botón de pago no encontrado');
@@ -328,7 +336,26 @@ if (orderId) {
           if (!response.ok) {
             const errorText = await response.text();
             console.error('❌ Error HTTP:', response.status, errorText);
-            throw new Error(`Error ${response.status}: ${errorText}`);
+            
+            let errorMessage = `Error ${response.status}`;
+            let errorDetails = null;
+            
+            try {
+              const errorJson = JSON.parse(errorText);
+              errorMessage = errorJson.error || errorMessage;
+              errorDetails = errorJson.details || null;
+            } catch (e) {
+              errorMessage = errorText || errorMessage;
+            }
+
+            // Mensaje más específico para error 401
+            if (response.status === 401) {
+              errorMessage = 'Error de autenticación con Webpay. Las credenciales de producción pueden estar incorrectas. Por favor, contacta con soporte.';
+            }
+
+            const error = new Error(errorMessage);
+            (error as any).details = errorDetails;
+            throw error;
           }
           
           const result = await response.json();
@@ -363,13 +390,38 @@ if (orderId) {
             console.error('❌ Token presente:', !!result.token);
             throw new Error(result.error || 'Error al iniciar el pago: respuesta inválida');
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('❌ Error completo iniciando pago:', error);
           payButton.disabled = false;
           payButtonText.textContent = 'Pagar ahora';
           
-          const errorMessage = (error && error.message) ? error.message : 'Error al iniciar el pago. Por favor, intenta nuevamente o contacta con soporte.';
-          alert(errorMessage);
+          let errorMessage = (error && error.message) ? error.message : 'Error al iniciar el pago. Por favor, intenta nuevamente o contacta con soporte.';
+          
+          // Mostrar error en la UI en lugar de solo alert
+          const errorContainer = document.createElement('div');
+          errorContainer.className = 'bg-red-500/10 border-l-4 border-red-500 p-4 rounded mt-4';
+          errorContainer.innerHTML = `
+            <p class="text-sm text-red-200 mb-2">
+              <strong>Error al iniciar el pago:</strong> ${errorMessage}
+            </p>
+            ${error.details ? `<p class="text-xs text-red-300 mb-2">${JSON.stringify(error.details)}</p>` : ''}
+            <p class="text-xs text-red-300">
+              Si el problema persiste, por favor contacta con soporte e incluye el número de pedido: #${orderIdFromUrl}
+            </p>
+          `;
+          
+          // Insertar el error antes del botón
+          const buttonContainer = payButton.parentElement;
+          if (buttonContainer) {
+            // Remover errores previos
+            const prevError = buttonContainer.querySelector('.bg-red-500\\/10');
+            if (prevError) prevError.remove();
+            
+            buttonContainer.insertBefore(errorContainer, payButton);
+          } else {
+            // Fallback a alert si no se puede insertar en la UI
+            alert(errorMessage);
+          }
         }
       });
     });
