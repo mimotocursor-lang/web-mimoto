@@ -28,10 +28,16 @@ El sistema soporta dos servicios de email:
 
 1. Ve a **Domains** en el dashboard
 2. Agrega tu dominio (ej: `mimoto.cl`)
-3. Configura los registros DNS que Resend te proporciona
+3. Configura los registros DNS que Resend te proporciona en tu proveedor de dominio (NIC, Cloudflare, etc.)
 4. Espera a que se verifique (puede tomar hasta 24 horas)
 
-**Nota:** Si no configuras un dominio, puedes usar el dominio de prueba de Resend, pero los emails pueden ir a spam.
+**⚠️ IMPORTANTE:** 
+- **NO necesitas crear una cuenta de correo real** como `noreply@mimoto.cl`
+- Solo necesitas verificar el dominio en Resend agregando los registros DNS
+- Una vez verificado, puedes usar **cualquier dirección** con tu dominio: `noreply@mimoto.cl`, `ventas@mimoto.cl`, `info@mimoto.cl`, etc.
+- Resend envía los emails por ti, no necesitas tener una bandeja de correo real
+
+**Nota:** Si no configuras un dominio, puedes usar el dominio de prueba de Resend (`onboarding@resend.dev`), pero los emails pueden ir a spam.
 
 ### Paso 4: Configurar variables de entorno
 

@@ -5,7 +5,7 @@ export const GET: APIRoute = async ({ url }) => {
   
   try {
     const resendApiKey = import.meta.env.RESEND_API_KEY;
-    const fromEmail = import.meta.env.FROM_EMAIL || 'onboarding@resend.dev';
+    const fromEmail = import.meta.env.FROM_EMAIL || 'noreply@mimoto.cl';
     const fromName = import.meta.env.FROM_NAME || 'MIMOTO';
 
     if (!resendApiKey) {

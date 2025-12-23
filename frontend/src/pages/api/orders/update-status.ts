@@ -260,186 +260,69 @@ async function sendNotifications(
   // Enviar email (si está configurado)
   if (email) {
     try {
-      const emailService = import.meta.env.EMAIL_SERVICE || 'resend'; // resend, sendgrid, smtp
-      const resendApiKey = import.meta.env.RESEND_API_KEY;
-      const sendgridApiKey = import.meta.env.SENDGRID_API_KEY;
-      const fromEmail = import.meta.env.FROM_EMAIL || 'noreply@mimoto.cl';
-      const fromName = import.meta.env.FROM_NAME || 'MIMOTO';
-
       console.log('📧 Intentando enviar email:', {
-        to: email,
-        service: emailService,
-        hasResendKey: !!resendApiKey,
-        hasSendgridKey: !!sendgridApiKey
+        to: email
       });
 
-      // Generar HTML del email
-      const emailHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #ff6600; color: white; padding: 20px; text-align: center; }
-            .content { background: #f9f9f9; padding: 30px; }
-            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
-            .button { display: inline-block; background: #ff6600; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>${notification.title}</h1>
-            </div>
-            <div class="content">
-              <p>Hola${name ? ' ' + name.split(' ')[0] : ''},</p>
-              <p>${notification.message}</p>
-              <p><strong>Número de pedido:</strong> #${orderId}</p>
-              <p><strong>Monto:</strong> $${Number(amount).toLocaleString('es-CL')}</p>
-              <p>Gracias por tu compra.</p>
-              <p>Saludos,<br>El equipo de MIMOTO</p>
-            </div>
-            <div class="footer">
-              <p>Este es un email automático, por favor no responder.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-
-      // Intentar enviar con Resend
-      if (emailService === 'resend' && resendApiKey) {
-        const resendUrl = 'https://api.resend.com/emails';
-        const emailPayload = {
-          from: `${fromName} <${fromEmail}>`,
-          to: [email],
-          subject: `${notification.title} - Pedido #${orderId}`,
-          html: emailHtml,
-        };
-
-        console.log('📤 Enviando email con Resend:', {
-          url: resendUrl,
-          from: emailPayload.from,
-          to: emailPayload.to,
-          subject: emailPayload.subject,
-          hasHtml: !!emailPayload.html,
-          htmlLength: emailPayload.html.length
-        });
-
-        let response;
-        let responseText;
+      // Obtener items del pedido para el email
+      let orderItems = [];
+      try {
+        const { data: items } = await supabase
+          .from('order_items')
+          .select(`
+            quantity,
+            unit_price,
+            products:product_id(name)
+          `)
+          .eq('order_id', orderId);
         
-        try {
-          console.log('📤 Haciendo fetch a Resend...');
-          response = await fetch(resendUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${resendApiKey}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(emailPayload),
-          });
-          
-          console.log('📥 Fetch completado, status:', response.status);
-          responseText = await response.text();
-          console.log('📥 Response text obtenido, length:', responseText.length);
-        } catch (fetchError: any) {
-          console.error('❌ Error en el fetch a Resend:', {
-            message: fetchError.message,
-            name: fetchError.name,
-            stack: fetchError.stack,
-            cause: fetchError.cause
-          });
-          throw fetchError;
+        if (items) {
+          orderItems = items.map(item => ({
+            name: item.products?.name || 'Producto',
+            quantity: item.quantity,
+            price: item.unit_price
+          }));
         }
-        
-        console.log('📥 Respuesta de Resend:', {
-          status: response.status,
-          statusText: response.statusText,
-          ok: response.ok,
-          headers: Object.fromEntries(response.headers.entries()),
-          body: responseText,
-          bodyLength: responseText.length
-        });
-        
-        // Log completo de la respuesta para debugging
-        console.log('📥 Respuesta completa de Resend (raw):', responseText);
-        console.log('📥 Respuesta completa de Resend (JSON parseado):', JSON.parse(responseText || '{}'));
+      } catch (e) {
+        console.log('⚠️ No se pudo obtener items del pedido para el email:', e);
+      }
 
-        if (response.ok) {
-          try {
-            const result = JSON.parse(responseText);
-            console.log('✅ Email enviado exitosamente con Resend:', {
-              id: result.id,
-              from: result.from,
-              to: result.to,
-              created_at: result.created_at
-            });
-          } catch (e) {
-            console.log('✅ Email enviado exitosamente con Resend (respuesta no JSON):', responseText);
-          }
-        } else {
-          try {
-            const error = JSON.parse(responseText);
-            console.error('❌ Error enviando email con Resend:', {
-              status: response.status,
-              error: error,
-              message: error.message,
-              name: error.name
-            });
-            throw new Error(`Resend error (${response.status}): ${JSON.stringify(error)}`);
-          } catch (e) {
-            console.error('❌ Error enviando email con Resend (respuesta no JSON):', {
-              status: response.status,
-              response: responseText
-            });
-            throw new Error(`Resend error (${response.status}): ${responseText}`);
-          }
-        }
-      }
-      // Intentar enviar con SendGrid
-      else if (emailService === 'sendgrid' && sendgridApiKey) {
-        const sendgridUrl = 'https://api.sendgrid.com/v3/mail/send';
-        const response = await fetch(sendgridUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${sendgridApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            personalizations: [{
-              to: [{ email: email }],
-            }],
-            from: { email: fromEmail, name: fromName },
-            subject: `${notification.title} - Pedido #${orderId}`,
-            content: [{
-              type: 'text/html',
-              value: emailHtml,
-            }],
-          }),
-        });
+      // Importar función de envío de email
+      const { sendEmail, generateEmailHTML } = await import('../../../lib/email/send-email');
+      
+      // Generar HTML del email con logo y diseño mejorado
+      const emailHtml = generateEmailHTML({
+        title: notification.title,
+        message: `Hola${name ? ' ' + name.split(' ')[0] : ''},<br><br>${notification.message}`,
+        orderId: orderId,
+        amount: amount,
+        items: orderItems,
+        logoUrl: 'https://mimoto.cl/logo.jpg'
+      });
 
-        if (response.ok) {
-          console.log('✅ Email enviado exitosamente con SendGrid');
-        } else {
-          const error = await response.text();
-          console.error('❌ Error enviando email con SendGrid:', error);
-          throw new Error(`SendGrid error: ${error}`);
-        }
-      }
-      // Si no hay servicio configurado, solo loguear
-      else {
-        console.log('⚠️ Servicio de email no configurado. Email que se enviaría:', {
-          to: email,
-          subject: `${notification.title} - Pedido #${orderId}`,
-          body: notification.message
+      // Usar la función compartida de envío de email
+      const emailResult = await sendEmail({
+        to: email,
+        subject: `${notification.title} - Pedido #${orderId}`,
+        html: emailHtml
+      });
+
+      if (emailResult.success) {
+        console.log('✅ Email enviado exitosamente:', {
+          resendId: emailResult.resendId,
+          to: email
         });
-        console.log('💡 Para habilitar emails, configura RESEND_API_KEY o SENDGRID_API_KEY en las variables de entorno');
+      } else {
+        console.error('❌ Error enviando email:', emailResult.error);
+        // No lanzar error para que no bloquee la actualización del estado
       }
-    } catch (error) {
-      console.error('❌ Error enviando email:', error);
+    } catch (error: any) {
+      console.error('❌ Error enviando email:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error))
+      });
       // No lanzar el error para que no bloquee la actualización del estado
     }
   }

@@ -439,6 +439,61 @@ export const POST: APIRoute = async ({ request }) => {
       console.log('⚠️ No se pudo obtener items del pedido:', e);
     }
 
+    // Enviar email de confirmación de pago exitoso
+    if (isApproved) {
+      try {
+        // Obtener email del cliente (de la orden o del usuario)
+        let customerEmail = order.email || null;
+        let customerName = null;
+
+        if (!customerEmail && order.user_id) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('email, full_name')
+            .eq('id', order.user_id)
+            .single();
+          
+          if (userData) {
+            customerEmail = userData.email || customerEmail;
+            customerName = userData.full_name;
+          }
+        }
+
+        if (customerEmail) {
+          console.log('📧 Enviando email de confirmación de pago a:', customerEmail);
+          
+          // Importar función de envío de email
+          const { sendEmail, generateEmailHTML } = await import('../../../lib/email/send-email');
+          
+          const emailHtml = generateEmailHTML({
+            title: '✅ Pago Confirmado',
+            message: `Tu pago ha sido confirmado exitosamente. Tu pedido #${order.id} está siendo procesado.`,
+            orderId: order.id,
+            amount: Number(order.total_amount),
+            items: orderItems,
+            logoUrl: 'https://mimoto.cl/logo.jpg'
+          });
+
+          const emailResult = await sendEmail({
+            to: customerEmail,
+            subject: `Pago Confirmado - Pedido #${order.id}`,
+            html: emailHtml
+          });
+
+          if (emailResult.success) {
+            console.log('✅ Email de confirmación de pago enviado exitosamente');
+          } else {
+            console.error('❌ Error enviando email de confirmación de pago:', emailResult.error);
+          }
+        } else {
+          console.log('⚠️ No hay email del cliente para enviar confirmación de pago');
+        }
+      } catch (emailError: any) {
+        console.error('❌ Error enviando email de confirmación de pago:', emailError);
+        // No bloquear la respuesta si falla el email
+      }
+    }
+
     // Preparar respuesta con todos los campos disponibles
     const responseData = {
         success: isApproved,
