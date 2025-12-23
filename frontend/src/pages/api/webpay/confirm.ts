@@ -528,16 +528,30 @@ export const POST: APIRoute = async ({ request }) => {
             logoUrl: 'https://mimoto.cl/logo.jpg'
           });
 
+          console.log('📧 Preparando envío de email de confirmación de pago...');
+          console.log('📧 Email HTML generado, longitud:', emailHtml.length);
+          console.log('📧 Destinatario:', customerEmail);
+          console.log('📧 Asunto: Pago Confirmado - Pedido #' + order.id);
+          
           const emailResult = await sendEmail({
             to: customerEmail,
             subject: `Pago Confirmado - Pedido #${order.id}`,
             html: emailHtml
           });
 
+          console.log('📧 Resultado del envío de email de confirmación:', {
+            success: emailResult.success,
+            resendId: emailResult.resendId || 'N/A',
+            error: emailResult.error || 'N/A',
+            to: customerEmail
+          });
+
           if (emailResult.success) {
             console.log('✅ Email de confirmación de pago enviado exitosamente');
+            console.log('✅ Puedes verificar el email en: https://resend.com/emails');
           } else {
             console.error('❌ Error enviando email de confirmación de pago:', emailResult.error);
+            console.error('❌ Revisa las variables de entorno: RESEND_API_KEY, FROM_EMAIL, FROM_NAME');
           }
         } else {
           console.log('⚠️ No hay email del cliente para enviar confirmación de pago');

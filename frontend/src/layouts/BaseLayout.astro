@@ -266,6 +266,9 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
           <a href="/tienda" class="block text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors font-semibold">Accesorios y Repuestos</a>
           <a href="/motos-usadas" class="block text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors font-semibold">Motos usadas</a>
           <a href="/sobre-nosotros" class="block text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors font-semibold">Sobre Nosotros</a>
+          <div id="mobile-menu-auth-links" class="hidden">
+            <a href="/mis-pedidos" class="block text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors font-semibold">📦 Mis Pedidos</a>
+          </div>
           <div class="pt-3 border-t border-ktm-light-border/20 dark:border-ktm-border/20 flex items-center justify-between">
             <div id="auth-status-mobile">
               <a href="/login" class="block text-ktm-light-text/70 dark:text-white/80 hover:text-ktm-accent transition-colors">Iniciar sesión</a>
@@ -1284,21 +1287,31 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
           const authHTML = `
             <div class="flex items-center gap-1.5 min-w-0">
               <span class="text-ktm-light-textSecondary dark:text-ktm-textSecondary whitespace-nowrap text-xs md:text-sm flex-shrink-0" title="${fullNameForTooltip}">${userName}</span>
+              <a href="/mis-pedidos" class="text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors whitespace-nowrap flex-shrink-0 text-xs md:text-sm font-semibold">Mis Pedidos</a>
               ${isAdmin ? '<a href="/admin" class="text-ktm-accent hover:text-ktm-accentSoft font-bold whitespace-nowrap flex-shrink-0 text-xs md:text-sm">Admin</a>' : ''}
               <button id="logout-btn" class="text-ktm-light-textMuted dark:text-ktm-textMuted hover:text-ktm-accent transition-colors whitespace-nowrap flex-shrink-0 text-xs md:text-sm">Salir</button>
             </div>
           `;
           
           const authHTMLMobile = `
-            <div class="flex items-center gap-1.5 min-w-0">
-              <span class="text-ktm-light-textSecondary dark:text-ktm-textSecondary whitespace-nowrap text-xs flex-shrink-0" title="${fullNameForTooltip}">${userName}</span>
-              ${isAdmin ? '<a href="/admin" class="text-ktm-accent hover:text-ktm-accentSoft font-bold whitespace-nowrap flex-shrink-0 text-xs">Admin</a>' : ''}
-              <button id="logout-btn-mobile" class="text-ktm-light-textMuted dark:text-ktm-textMuted hover:text-ktm-accent transition-colors whitespace-nowrap flex-shrink-0 text-xs">Salir</button>
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <span class="text-ktm-light-textSecondary dark:text-ktm-textSecondary whitespace-nowrap text-xs flex-shrink-0" title="${fullNameForTooltip}">${userName}</span>
+                ${isAdmin ? '<a href="/admin" class="text-ktm-accent hover:text-ktm-accentSoft font-bold whitespace-nowrap flex-shrink-0 text-xs">Admin</a>' : ''}
+                <button id="logout-btn-mobile" class="text-ktm-light-textMuted dark:text-ktm-textMuted hover:text-ktm-accent transition-colors whitespace-nowrap flex-shrink-0 text-xs">Salir</button>
+              </div>
+              <a href="/mis-pedidos" class="block text-ktm-light-text dark:text-white hover:text-ktm-accent transition-colors font-semibold text-xs">📦 Mis Pedidos</a>
             </div>
           `;
           
           if (authStatusEl) authStatusEl.innerHTML = authHTML;
           if (authStatusMobileEl) authStatusMobileEl.innerHTML = authHTMLMobile;
+          
+          // Mostrar enlace "Mis Pedidos" en el menú móvil
+          const mobileMenuAuthLinks = document.getElementById('mobile-menu-auth-links');
+          if (mobileMenuAuthLinks) {
+            mobileMenuAuthLinks.classList.remove('hidden');
+          }
 
               // Agregar listener de logout (remover listeners anteriores para evitar duplicados)
               const logoutBtn = document.getElementById('logout-btn');
@@ -1323,6 +1336,12 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
           const guestHTML = `<a href="/login" id="auth-link" class="nav-link text-ktm-light-text/70 dark:text-white/80 hover:text-ktm-accent transition-colors">Iniciar sesión</a>`;
           if (authStatusEl) authStatusEl.innerHTML = guestHTML;
           if (authStatusMobileEl) authStatusMobileEl.innerHTML = guestHTML;
+          
+          // Ocultar enlace "Mis Pedidos" en el menú móvil si no está autenticado
+          const mobileMenuAuthLinks = document.getElementById('mobile-menu-auth-links');
+          if (mobileMenuAuthLinks) {
+            mobileMenuAuthLinks.classList.add('hidden');
+          }
           
           // Re-evaluar el color del navbar después de actualizar auth
           setTimeout(() => {
