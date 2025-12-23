@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
+import { sendEmail, generateEmailHTML } from '../../../lib/email/send-email';
 
 export const POST: APIRoute = async ({ request, cookies }) => {
   try {
@@ -70,8 +71,15 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       
       items = body.items;
       orderEmail = body.email || null; // Email para notificaciones
+      const orderPhone = body.phone || null;
+      const orderRut = body.rut || null;
+      const addressStreet = body.address_street || null;
+      const addressNumber = body.address_number || null;
+      const addressApartment = body.address_apartment || null;
+      const addressCity = body.address_city || null;
       console.log('📥 Items extraídos:', items ? `Array con ${items.length} items` : 'NO HAY ITEMS');
       console.log('📥 Email extraído:', orderEmail || 'NO HAY EMAIL');
+      console.log('📥 Datos del cliente:', { phone: orderPhone, rut: orderRut, city: addressCity });
       
       if (!items) {
         console.error('❌ Body no tiene propiedad "items"');
@@ -164,6 +172,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         user_id: null, // Permitir NULL para usuarios no autenticados
         total_amount: totalAmount,
         email: orderEmail, // Email para notificaciones
+        phone: orderPhone,
+        rut: orderRut,
+        address_street: addressStreet,
+        address_number: addressNumber,
+        address_apartment: addressApartment,
+        address_city: addressCity,
       };
       
       // Intentar insertar con status, si falla intentar sin status (usar default)
@@ -229,6 +243,39 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         // No fallar, el pedido ya se creó
       }
 
+      // Enviar email de notificación al admin
+      try {
+        const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://mimoto.cl';
+        const adminEmail = 'mimoto2.0@gmail.com';
+        const orderLink = `${siteUrl}/admin/ordenes`;
+        
+      const emailHTML = generateEmailHTML({
+        title: 'Nuevo Pedido Recibido',
+        message: `Se ha recibido un nuevo pedido en tu tienda MIMOTO. Por favor, revisa los detalles y gestiona el pedido desde el panel de administración.`,
+        orderId: order.id,
+        amount: order.total_amount,
+        footerMessage: `Este es un email de notificación automático.`
+      });
+
+      // Reemplazar variables del template y el botón con link al pedido
+      let emailWithLink = emailHTML.replace(/\$\{siteUrl\}/g, siteUrl);
+      emailWithLink = emailWithLink.replace(
+        /<a href="[^"]*" class="button">Visitar nuestra tienda<\/a>/,
+        `<a href="${orderLink}" class="button" style="display: inline-block; background: #ff6600; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 20px; font-weight: bold;">Ver Pedido #${order.id} en el Panel</a>`
+      );
+
+        await sendEmail({
+          to: adminEmail,
+          subject: `Nuevo Pedido #${order.id} - MIMOTO`,
+          html: emailWithLink
+        });
+
+        console.log(`✅ Email de notificación enviado al admin para el pedido #${order.id}`);
+      } catch (emailError: any) {
+        console.error('⚠️ Error enviando email al admin:', emailError);
+        // No fallar la creación del pedido si el email falla
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -265,6 +312,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       user_id: userId,
       total_amount: totalAmount,
       email: finalEmail, // Email para notificaciones
+      phone: body.phone || null,
+      rut: body.rut || null,
+      address_street: body.address_street || null,
+      address_number: body.address_number || null,
+      address_apartment: body.address_apartment || null,
+      address_city: body.address_city || null,
     };
     
     let { data: order, error: orderError } = await supabase
@@ -327,6 +380,59 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     if (itemsError) {
       console.error('Error creando items del pedido:', itemsError);
       // No fallar, el pedido ya se creó
+    }
+
+    // Obtener items del pedido para el email
+    let orderItemsForEmail: Array<{ name: string; quantity: number; price: number }> = [];
+    try {
+      const { data: itemsData } = await supabase
+        .from('order_items')
+        .select('quantity, unit_price, products:product_id(name)')
+        .eq('order_id', order.id);
+      
+      if (itemsData) {
+        orderItemsForEmail = itemsData.map((item: any) => ({
+          name: item.products?.name || 'Producto',
+          quantity: item.quantity,
+          price: item.unit_price
+        }));
+      }
+    } catch (e) {
+      console.log('⚠️ No se pudieron obtener items para el email');
+    }
+
+    // Enviar email de notificación al admin
+    try {
+      const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://mimoto.cl';
+      const adminEmail = 'mimoto2.0@gmail.com';
+      const orderLink = `${siteUrl}/admin/ordenes`;
+      
+      const emailHTML = generateEmailHTML({
+        title: 'Nuevo Pedido Recibido',
+        message: `Se ha recibido un nuevo pedido en tu tienda MIMOTO. Por favor, revisa los detalles y gestiona el pedido desde el panel de administración.`,
+        orderId: order.id,
+        amount: order.total_amount,
+        items: orderItemsForEmail,
+        footerMessage: `Este es un email de notificación automático.`
+      });
+
+      // Reemplazar variables del template y el botón con link al pedido
+      let emailWithLink = emailHTML.replace(/\$\{siteUrl\}/g, siteUrl);
+      emailWithLink = emailWithLink.replace(
+        /<a href="[^"]*" class="button">Visitar nuestra tienda<\/a>/,
+        `<a href="${orderLink}" class="button" style="display: inline-block; background: #ff6600; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 20px; font-weight: bold;">Ver Pedido #${order.id} en el Panel</a>`
+      );
+
+      await sendEmail({
+        to: adminEmail,
+        subject: `🛒 Nuevo Pedido #${order.id} - $${Number(order.total_amount).toLocaleString('es-CL')} CLP`,
+        html: emailWithLink
+      });
+
+      console.log(`✅ Email de notificación enviado al admin (${adminEmail}) para el pedido #${order.id}`);
+    } catch (emailError: any) {
+      console.error('⚠️ Error enviando email al admin:', emailError);
+      // No fallar la creación del pedido si el email falla
     }
 
     return new Response(

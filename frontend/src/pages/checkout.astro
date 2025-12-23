@@ -131,21 +131,104 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               <p class="mb-2">⚠️ No estás autenticado</p>
               <p class="text-xs text-white/70 mb-3">Puedes continuar como invitado, pero te recomendamos <a href="/login" class="text-primary underline">iniciar sesión</a> para un mejor seguimiento de tu pedido.</p>
             </div>
-            <div class="border-t border-primary/30 pt-3">
-              <label for="checkout-email" class="block text-sm font-semibold text-white mb-2">
-                Email para notificaciones del pedido: <span class="text-red-400">*</span>
-              </label>
-              <input
-                type="email"
-                id="checkout-email"
-                value=""
-                placeholder="tu@email.com"
-                required
-                class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
-              />
-              <p class="text-xs text-white/60 mt-1">
-                Este email recibirá las notificaciones sobre el estado de tu pedido. Es obligatorio para continuar.
-              </p>
+            <div class="border-t border-primary/30 pt-4 space-y-4">
+              <div>
+                <label for="checkout-email" class="block text-sm font-semibold text-white mb-2">
+                  Email: <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="email"
+                  id="checkout-email"
+                  value=""
+                  placeholder="tu@email.com"
+                  required
+                  class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div>
+                <label for="checkout-phone" class="block text-sm font-semibold text-white mb-2">
+                  Número de contacto: <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="tel"
+                  id="checkout-phone"
+                  value=""
+                  placeholder="+56 9 1234 5678"
+                  required
+                  class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div>
+                <label for="checkout-rut" class="block text-sm font-semibold text-white mb-2">
+                  RUT: <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="checkout-rut"
+                  value=""
+                  placeholder="12.345.678-9"
+                  required
+                  class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div class="border-t border-primary/30 pt-4">
+                <h3 class="text-base font-semibold text-white mb-3">Dirección de entrega</h3>
+                <div class="space-y-4">
+                  <div>
+                    <label for="checkout-street" class="block text-sm font-semibold text-white mb-2">
+                      Calle o Avenida: <span class="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="checkout-street"
+                      value=""
+                      placeholder="Av. Principal"
+                      required
+                      class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label for="checkout-number" class="block text-sm font-semibold text-white mb-2">
+                        Número: <span class="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-number"
+                        value=""
+                        placeholder="123"
+                        required
+                        class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label for="checkout-apartment" class="block text-sm font-semibold text-white mb-2">
+                        Depto/Piso:
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-apartment"
+                        value=""
+                        placeholder="Depto 45, Piso 3"
+                        class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label for="checkout-city" class="block text-sm font-semibold text-white mb-2">
+                      Ciudad: <span class="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="checkout-city"
+                      value=""
+                      placeholder="Santiago"
+                      required
+                      class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         `;
@@ -179,28 +262,105 @@ import BaseLayout from '../layouts/BaseLayout.astro';
                 <span class="text-white/70">Nombre:</span>
                 <span class="font-semibold text-white">${userName}</span>
               </div>
-              ${user.phone ? `
-              <div class="flex justify-between">
-                <span class="text-white/70">Teléfono:</span>
-                <span class="font-semibold text-white">${user.phone}</span>
-              </div>
-              ` : ''}
             </div>
-            <div class="border-t border-primary/30 pt-3">
-              <label for="checkout-email" class="block text-sm font-semibold text-white mb-2">
-                Email para notificaciones del pedido:
-              </label>
-              <input
-                type="email"
-                id="checkout-email"
-                value="${userEmail}"
-                placeholder="tu@email.com"
-                required
-                class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
-              />
-              <p class="text-xs text-white/60 mt-1">
-                Este email recibirá las notificaciones sobre el estado de tu pedido. Puedes cambiarlo si lo deseas.
-              </p>
+            <div class="border-t border-primary/30 pt-4 space-y-4">
+              <div>
+                <label for="checkout-email" class="block text-sm font-semibold text-white mb-2">
+                  Email: <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="email"
+                  id="checkout-email"
+                  value="${userEmail}"
+                  placeholder="tu@email.com"
+                  required
+                  class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div>
+                <label for="checkout-phone" class="block text-sm font-semibold text-white mb-2">
+                  Número de contacto: <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="tel"
+                  id="checkout-phone"
+                  value="${user.phone || ''}"
+                  placeholder="+56 9 1234 5678"
+                  required
+                  class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div>
+                <label for="checkout-rut" class="block text-sm font-semibold text-white mb-2">
+                  RUT: <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="checkout-rut"
+                  value=""
+                  placeholder="12.345.678-9"
+                  required
+                  class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div class="border-t border-primary/30 pt-4">
+                <h3 class="text-base font-semibold text-white mb-3">Dirección de entrega</h3>
+                <div class="space-y-4">
+                  <div>
+                    <label for="checkout-street" class="block text-sm font-semibold text-white mb-2">
+                      Calle o Avenida: <span class="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="checkout-street"
+                      value=""
+                      placeholder="Av. Principal"
+                      required
+                      class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label for="checkout-number" class="block text-sm font-semibold text-white mb-2">
+                        Número: <span class="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-number"
+                        value=""
+                        placeholder="123"
+                        required
+                        class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label for="checkout-apartment" class="block text-sm font-semibold text-white mb-2">
+                        Depto/Piso:
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-apartment"
+                        value=""
+                        placeholder="Depto 45, Piso 3"
+                        class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label for="checkout-city" class="block text-sm font-semibold text-white mb-2">
+                      Ciudad: <span class="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="checkout-city"
+                      value=""
+                      placeholder="Santiago"
+                      required
+                      class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         `;
@@ -212,21 +372,104 @@ import BaseLayout from '../layouts/BaseLayout.astro';
               <p>⚠️ No se pudieron cargar los datos del usuario</p>
               <p class="text-xs text-white/70 mt-2">Puedes continuar como invitado.</p>
             </div>
-            <div class="border-t border-primary/30 pt-3">
-              <label for="checkout-email" class="block text-sm font-semibold text-white mb-2">
-                Email para notificaciones del pedido: <span class="text-red-400">*</span>
-              </label>
-              <input
-                type="email"
-                id="checkout-email"
-                value=""
-                placeholder="tu@email.com"
-                required
-                class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
-              />
-              <p class="text-xs text-white/60 mt-1">
-                Este email recibirá las notificaciones sobre el estado de tu pedido. Es obligatorio para continuar.
-              </p>
+            <div class="border-t border-primary/30 pt-4 space-y-4">
+              <div>
+                <label for="checkout-email" class="block text-sm font-semibold text-white mb-2">
+                  Email: <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="email"
+                  id="checkout-email"
+                  value=""
+                  placeholder="tu@email.com"
+                  required
+                  class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div>
+                <label for="checkout-phone" class="block text-sm font-semibold text-white mb-2">
+                  Número de contacto: <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="tel"
+                  id="checkout-phone"
+                  value=""
+                  placeholder="+56 9 1234 5678"
+                  required
+                  class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div>
+                <label for="checkout-rut" class="block text-sm font-semibold text-white mb-2">
+                  RUT: <span class="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="checkout-rut"
+                  value=""
+                  placeholder="12.345.678-9"
+                  required
+                  class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                />
+              </div>
+              <div class="border-t border-primary/30 pt-4">
+                <h3 class="text-base font-semibold text-white mb-3">Dirección de entrega</h3>
+                <div class="space-y-4">
+                  <div>
+                    <label for="checkout-street" class="block text-sm font-semibold text-white mb-2">
+                      Calle o Avenida: <span class="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="checkout-street"
+                      value=""
+                      placeholder="Av. Principal"
+                      required
+                      class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label for="checkout-number" class="block text-sm font-semibold text-white mb-2">
+                        Número: <span class="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-number"
+                        value=""
+                        placeholder="123"
+                        required
+                        class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label for="checkout-apartment" class="block text-sm font-semibold text-white mb-2">
+                        Depto/Piso:
+                      </label>
+                      <input
+                        type="text"
+                        id="checkout-apartment"
+                        value=""
+                        placeholder="Depto 45, Piso 3"
+                        class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label for="checkout-city" class="block text-sm font-semibold text-white mb-2">
+                      Ciudad: <span class="text-red-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="checkout-city"
+                      value=""
+                      placeholder="Santiago"
+                      required
+                      class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         `;
@@ -326,22 +569,54 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             }
           }
 
-          // Obtener email del campo de input
+          // Obtener todos los campos del formulario
           const emailInput = document.getElementById('checkout-email');
+          const phoneInput = document.getElementById('checkout-phone');
+          const rutInput = document.getElementById('checkout-rut');
+          const streetInput = document.getElementById('checkout-street');
+          const numberInput = document.getElementById('checkout-number');
+          const apartmentInput = document.getElementById('checkout-apartment');
+          const cityInput = document.getElementById('checkout-city');
+          
+          // Validar campos obligatorios
           let orderEmail = '';
+          let orderPhone = '';
+          let orderRut = '';
+          let orderStreet = '';
+          let orderNumber = '';
+          let orderCity = '';
+          let orderApartment = '';
           
           if (emailInput && emailInput.tagName === 'INPUT') {
             orderEmail = emailInput.value.trim();
           }
+          if (phoneInput && phoneInput.tagName === 'INPUT') {
+            orderPhone = phoneInput.value.trim();
+          }
+          if (rutInput && rutInput.tagName === 'INPUT') {
+            orderRut = rutInput.value.trim();
+          }
+          if (streetInput && streetInput.tagName === 'INPUT') {
+            orderStreet = streetInput.value.trim();
+          }
+          if (numberInput && numberInput.tagName === 'INPUT') {
+            orderNumber = numberInput.value.trim();
+          }
+          if (cityInput && cityInput.tagName === 'INPUT') {
+            orderCity = cityInput.value.trim();
+          }
+          if (apartmentInput && apartmentInput.tagName === 'INPUT') {
+            orderApartment = apartmentInput.value.trim();
+          }
           
+          // Validar campos obligatorios
           if (!orderEmail) {
-            if (errorEl) errorEl.textContent = 'Por favor, ingresa un email válido para recibir notificaciones del pedido.';
+            if (errorEl) errorEl.textContent = 'Por favor, ingresa un email válido.';
             confirmBtn.disabled = false;
             confirmBtn.textContent = 'Confirmar compra';
             return;
           }
           
-          // Validar formato de email básico
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
           if (!emailRegex.test(orderEmail)) {
             if (errorEl) errorEl.textContent = 'Por favor, ingresa un email válido.';
@@ -349,11 +624,52 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             confirmBtn.textContent = 'Confirmar compra';
             return;
           }
+          
+          if (!orderPhone) {
+            if (errorEl) errorEl.textContent = 'Por favor, ingresa un número de contacto.';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirmar compra';
+            return;
+          }
+          
+          if (!orderRut) {
+            if (errorEl) errorEl.textContent = 'Por favor, ingresa tu RUT.';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirmar compra';
+            return;
+          }
+          
+          if (!orderStreet) {
+            if (errorEl) errorEl.textContent = 'Por favor, ingresa la calle o avenida.';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirmar compra';
+            return;
+          }
+          
+          if (!orderNumber) {
+            if (errorEl) errorEl.textContent = 'Por favor, ingresa el número de domicilio.';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirmar compra';
+            return;
+          }
+          
+          if (!orderCity) {
+            if (errorEl) errorEl.textContent = 'Por favor, ingresa la ciudad.';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirmar compra';
+            return;
+          }
 
-          // Preparar el body
+          // Preparar el body con todos los datos
           const requestBody = { 
             items: items,
-            email: orderEmail
+            email: orderEmail,
+            phone: orderPhone,
+            rut: orderRut,
+            address_street: orderStreet,
+            address_number: orderNumber,
+            address_apartment: orderApartment || null,
+            address_city: orderCity
           };
           const bodyString = JSON.stringify(requestBody);
           

@@ -1,13 +1,28 @@
 -- Esquema principal para Supabase (PostgreSQL)
 
-CREATE TYPE public.user_role AS ENUM ('admin', 'buyer');
-CREATE TYPE public.product_status AS ENUM ('active', 'inactive');
-CREATE TYPE public.order_status AS ENUM (
-  'pending_payment',
-  'waiting_confirmation',
-  'paid',
-  'cancelled'
-);
+-- Crear tipos ENUM solo si no existen
+DO $$ BEGIN
+  CREATE TYPE public.user_role AS ENUM ('admin', 'buyer');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.product_status AS ENUM ('active', 'inactive');
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE public.order_status AS ENUM (
+    'pending_payment',
+    'waiting_confirmation',
+    'paid',
+    'cancelled'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN null;
+END $$;
 
 CREATE TABLE IF NOT EXISTS public.users (
   id UUID PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
@@ -77,6 +92,12 @@ CREATE TABLE IF NOT EXISTS public.orders (
   id BIGSERIAL PRIMARY KEY,
   user_id UUID REFERENCES public.users (id),
   email TEXT, -- Email del cliente para esta orden (puede ser diferente al email de la cuenta)
+  phone TEXT, -- Número de contacto del cliente
+  rut TEXT, -- RUT del cliente
+  address_street TEXT, -- Calle o avenida de la dirección
+  address_number TEXT, -- Número de domicilio
+  address_apartment TEXT, -- Departamento y piso (opcional)
+  address_city TEXT, -- Ciudad de la dirección
   total_amount NUMERIC(12, 2) NOT NULL,
   status public.order_status NOT NULL DEFAULT 'pending_payment',
   payment_reference TEXT,
