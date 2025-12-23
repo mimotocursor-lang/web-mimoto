@@ -4,13 +4,24 @@ import { supabaseClient } from '../lib/supabase/client';
 
 const { orderId } = Astro.url.searchParams;
 
+// Logging inicial para debugging
+console.log('🔍 Pago.astro - Iniciando:', {
+  orderId: orderId || 'NO HAY ORDERID',
+  orderIdType: typeof orderId,
+  url: Astro.url.href,
+  searchParams: Object.fromEntries(Astro.url.searchParams.entries())
+});
+
 // Obtener el monto del pedido desde la base de datos
 let orderTotal = null;
 let orderStatus = null;
 let userEmail = null;
+let orderFound = false;
 
 if (orderId) {
   try {
+    console.log('🔍 Intentando obtener pedido con orderId:', orderId);
+    
     // Intentar obtener el pedido con el ID como número (BIGSERIAL)
     const orderIdNum = Number(orderId);
     let order = null;
@@ -18,6 +29,7 @@ if (orderId) {
     
     // Intentar primero con el ID como número
     if (!isNaN(orderIdNum)) {
+      console.log('🔍 Buscando pedido como número:', orderIdNum);
       const result = await supabaseClient
         .from('orders')
         .select('id, total_amount, status, user_id, created_at')
@@ -25,10 +37,17 @@ if (orderId) {
         .single();
       order = result.data;
       error = result.error;
+      
+      console.log('🔍 Resultado búsqueda como número:', {
+        found: !!order,
+        error: error?.message || null,
+        data: order ? { id: order.id, total: order.total_amount } : null
+      });
     }
     
     // Si no se encuentra, intentar con el ID como string
     if (error || !order) {
+      console.log('🔍 Buscando pedido como string:', orderId);
       const result = await supabaseClient
         .from('orders')
         .select('id, total_amount, status, user_id, created_at')
@@ -36,13 +55,27 @@ if (orderId) {
         .single();
       order = result.data;
       error = result.error;
+      
+      console.log('🔍 Resultado búsqueda como string:', {
+        found: !!order,
+        error: error?.message || null,
+        data: order ? { id: order.id, total: order.total_amount } : null
+      });
     }
 
     if (!error && order) {
       orderTotal = Number(order.total_amount);
       orderStatus = order.status;
+      orderFound = true;
       
-      // Obtener email del usuario si hay user_id
+      console.log('✅ Pedido encontrado:', {
+        id: order.id,
+        total: orderTotal,
+        status: orderStatus,
+        user_id: order.user_id || 'null'
+      });
+      
+      // Obtener email del usuario si hay user_id (opcional, no crítico)
       if (order.user_id) {
         try {
           const { data: { user } } = await supabaseClient.auth.getUser();
@@ -50,22 +83,27 @@ if (orderId) {
             userEmail = user.email;
           }
         } catch (userErr) {
-          console.log('ℹ️ No se pudo obtener email del usuario');
+          console.log('ℹ️ No se pudo obtener email del usuario (no crítico)');
         }
       }
-      
-      console.log('✅ Pedido encontrado:', {
-        id: order.id,
-        total: orderTotal,
-        status: orderStatus
-      });
     } else {
       console.error('❌ Error obteniendo pedido:', error);
       console.error('❌ OrderId usado:', orderId, 'Tipo:', typeof orderId);
+      console.error('❌ Detalles del error:', {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint
+      });
     }
   } catch (err) {
-    console.error('❌ Error obteniendo el pedido:', err);
+    console.error('❌ Error inesperado obteniendo el pedido:', err);
+    console.error('❌ Stack:', err instanceof Error ? err.stack : 'N/A');
   }
+} else {
+  console.warn('⚠️ No hay orderId en los parámetros de la URL');
+  console.warn('⚠️ URL completa:', Astro.url.href);
+  console.warn('⚠️ Search params:', Object.fromEntries(Astro.url.searchParams.entries()));
 }
 ---
 
@@ -92,15 +130,25 @@ if (orderId) {
       <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-6 space-y-4">
         <div class="flex justify-between items-center">
           <span class="text-white/90 font-semibold">Pedido asociado:</span>
-          <span class="font-bold text-primary text-xl" id="order-id-display">#{orderId || '—'}</span>
+          <span class="font-bold text-primary text-xl" id="order-id-display">
+            {orderId ? `#${orderId}` : '—'}
+          </span>
         </div>
         
-          <div class="flex justify-between items-center border-t border-primary/30 pt-4">
-            <span class="text-white/90 font-semibold">Monto a pagar:</span>
+        <div class="flex justify-between items-center border-t border-primary/30 pt-4">
+          <span class="text-white/90 font-semibold">Monto a pagar:</span>
           <span class="font-bold text-primary text-xl" data-order-total>
             {orderTotal ? `$${orderTotal.toLocaleString('es-CL')}` : orderId ? 'Cargando...' : '—'}
           </span>
+        </div>
+        
+        {!orderFound && orderId && (
+          <div class="bg-yellow-500/10 border-l-4 border-yellow-500 p-3 rounded mt-2">
+            <p class="text-xs text-yellow-200">
+              ⚠️ No se pudo cargar la información del pedido. El cliente intentará cargarla automáticamente.
+            </p>
           </div>
+        )}
         
         <button
           id="pay-button"
@@ -137,26 +185,34 @@ if (orderId) {
     </div>
   </section>
 
-  <script define:vars={{ orderTotal: orderTotal, orderId: orderId }}>
+  <script define:vars={{ orderTotal: orderTotal, orderId: orderId, orderFound: orderFound }}>
     document.addEventListener('DOMContentLoaded', async () => {
       const payButton = document.getElementById('pay-button');
       const payButtonText = document.getElementById('pay-button-text');
       const urlParams = new URLSearchParams(window.location.search);
       const orderIdFromUrl = urlParams.get('orderId') || orderId;
 
-      console.log('🔍 Estado inicial:', {
+      console.log('🔍 Estado inicial (cliente):', {
         payButton: !!payButton,
-        orderId: orderIdFromUrl,
+        orderIdFromUrl: orderIdFromUrl,
         orderIdFromServer: orderId,
         orderTotal: orderTotal,
+        orderFound: orderFound,
         buttonDisabled: payButton?.disabled,
         urlParams: window.location.search
       });
 
       // Actualizar el display del orderId si está disponible
       const orderIdDisplay = document.getElementById('order-id-display');
-      if (orderIdDisplay && orderIdFromUrl) {
-        orderIdDisplay.textContent = `#${orderIdFromUrl}`;
+      if (orderIdDisplay) {
+        if (orderIdFromUrl) {
+          orderIdDisplay.textContent = `#${orderIdFromUrl}`;
+          console.log('✅ OrderId actualizado en UI:', orderIdFromUrl);
+        } else {
+          console.warn('⚠️ No hay orderId para mostrar');
+        }
+      } else {
+        console.error('❌ Elemento order-id-display no encontrado');
       }
 
       if (!payButton) {
@@ -184,10 +240,11 @@ if (orderId) {
         return;
       }
 
-      // Si no hay orderTotal, intentar obtenerlo del servidor
+      // Si no hay orderTotal o no se encontró el pedido, intentar obtenerlo del cliente
       let finalOrderTotal = orderTotal;
-      if (!finalOrderTotal) {
-        console.log('⚠️ No hay orderTotal, intentando obtener del servidor...');
+      if (!finalOrderTotal || !orderFound) {
+        console.log('⚠️ No hay orderTotal o pedido no encontrado, intentando obtener del cliente...');
+        console.log('⚠️ orderTotal:', finalOrderTotal, 'orderFound:', orderFound);
         try {
           // Usar Supabase desde el CDN (ya cargado en BaseLayout)
           if (typeof supabase === 'undefined') {
@@ -354,7 +411,7 @@ if (orderId) {
             }
 
             const error = new Error(errorMessage);
-            (error as any).details = errorDetails;
+            error.details = errorDetails;
             throw error;
           }
           
@@ -390,12 +447,13 @@ if (orderId) {
             console.error('❌ Token presente:', !!result.token);
             throw new Error(result.error || 'Error al iniciar el pago: respuesta inválida');
           }
-        } catch (error: any) {
+        } catch (error) {
           console.error('❌ Error completo iniciando pago:', error);
           payButton.disabled = false;
           payButtonText.textContent = 'Pagar ahora';
           
           let errorMessage = (error && error.message) ? error.message : 'Error al iniciar el pago. Por favor, intenta nuevamente o contacta con soporte.';
+          let errorDetails = error && error.details ? error.details : null;
           
           // Mostrar error en la UI en lugar de solo alert
           const errorContainer = document.createElement('div');
@@ -404,7 +462,7 @@ if (orderId) {
             <p class="text-sm text-red-200 mb-2">
               <strong>Error al iniciar el pago:</strong> ${errorMessage}
             </p>
-            ${error.details ? `<p class="text-xs text-red-300 mb-2">${JSON.stringify(error.details)}</p>` : ''}
+            ${errorDetails ? `<p class="text-xs text-red-300 mb-2">${JSON.stringify(errorDetails)}</p>` : ''}
             <p class="text-xs text-red-300">
               Si el problema persiste, por favor contacta con soporte e incluye el número de pedido: #${orderIdFromUrl}
             </p>
