@@ -331,7 +331,7 @@ export const POST: APIRoute = async ({ request }) => {
         updated_at: new Date().toISOString()
       })
       .eq('id', order.id);
-    
+
     // Si falla con 'pending_payment', intentar con 'pending'
     if (updateResult.error && updateResult.error.message?.includes('invalid input value for enum') && !isApproved) {
       console.log('⚠️ pending_payment no es válido, intentando con pending...');
@@ -441,12 +441,12 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Preparar respuesta con todos los campos disponibles
     const responseData = {
-      success: isApproved,
+        success: isApproved,
       responseCode: commitResponse.responseCode ?? (isApproved ? 0 : -1), // Si no hay responseCode pero está aprobado, usar 0
       responseMessage: commitResponse.responseMessage || (isApproved ? 'Transacción aprobada' : 'Transacción rechazada'),
-      buyOrder: commitResponse.buyOrder,
-      amount: commitResponse.amount,
-      authorizationCode: commitResponse.authorizationCode,
+        buyOrder: commitResponse.buyOrder,
+        amount: commitResponse.amount,
+        authorizationCode: commitResponse.authorizationCode,
       orderId: order.id,
       // Información adicional requerida por Transbank
       transactionDate: commitResponse.transactionDate || new Date().toISOString(),

@@ -22,7 +22,7 @@ El sistema soporta dos servicios de email:
 1. Ve a **API Keys** en el dashboard
 2. Haz clic en **Create API Key**
 3. Dale un nombre (ej: "MIMOTO Production")
-4. Copia la API Key (solo se muestra una vez)
+4. Copia la API Key (re_6J3rig8h_BqiQ83uWy74vWzpcBAqMDfb4)
 
 ### Paso 3: Configurar dominio (Opcional pero recomendado)
 

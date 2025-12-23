@@ -176,9 +176,23 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Enviar notificaciones (no bloqueante)
+    console.log('📨 Preparando notificaciones:', {
+      orderId: orderId,
+      status: status,
+      hasEmail: !!customerEmail,
+      hasPhone: !!customerPhone,
+      email: customerEmail,
+      phone: customerPhone,
+      name: customerName
+    });
+    
     sendNotifications(orderId, status, customerEmail, customerPhone, customerName, order.total_amount)
+      .then(() => {
+        console.log('✅ Notificaciones enviadas exitosamente');
+      })
       .catch(error => {
-        console.error('Error enviando notificaciones (no crítico):', error);
+        console.error('❌ Error enviando notificaciones (no crítico):', error);
+        console.error('❌ Stack trace:', error.stack);
       });
 
     return new Response(
@@ -290,27 +304,68 @@ async function sendNotifications(
       // Intentar enviar con Resend
       if (emailService === 'resend' && resendApiKey) {
         const resendUrl = 'https://api.resend.com/emails';
+        const emailPayload = {
+          from: `${fromName} <${fromEmail}>`,
+          to: [email],
+          subject: `${notification.title} - Pedido #${orderId}`,
+          html: emailHtml,
+        };
+
+        console.log('📤 Enviando email con Resend:', {
+          url: resendUrl,
+          from: emailPayload.from,
+          to: emailPayload.to,
+          subject: emailPayload.subject,
+          hasHtml: !!emailPayload.html,
+          htmlLength: emailPayload.html.length
+        });
+
         const response = await fetch(resendUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${resendApiKey}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            from: `${fromName} <${fromEmail}>`,
-            to: [email],
-            subject: `${notification.title} - Pedido #${orderId}`,
-            html: emailHtml,
-          }),
+          body: JSON.stringify(emailPayload),
+        });
+
+        const responseText = await response.text();
+        console.log('📥 Respuesta de Resend:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          body: responseText
         });
 
         if (response.ok) {
-          const result = await response.json();
-          console.log('✅ Email enviado exitosamente con Resend:', result);
+          try {
+            const result = JSON.parse(responseText);
+            console.log('✅ Email enviado exitosamente con Resend:', {
+              id: result.id,
+              from: result.from,
+              to: result.to,
+              created_at: result.created_at
+            });
+          } catch (e) {
+            console.log('✅ Email enviado exitosamente con Resend (respuesta no JSON):', responseText);
+          }
         } else {
-          const error = await response.json();
-          console.error('❌ Error enviando email con Resend:', error);
-          throw new Error(`Resend error: ${JSON.stringify(error)}`);
+          try {
+            const error = JSON.parse(responseText);
+            console.error('❌ Error enviando email con Resend:', {
+              status: response.status,
+              error: error,
+              message: error.message,
+              name: error.name
+            });
+            throw new Error(`Resend error (${response.status}): ${JSON.stringify(error)}`);
+          } catch (e) {
+            console.error('❌ Error enviando email con Resend (respuesta no JSON):', {
+              status: response.status,
+              response: responseText
+            });
+            throw new Error(`Resend error (${response.status}): ${responseText}`);
+          }
         }
       }
       // Intentar enviar con SendGrid
