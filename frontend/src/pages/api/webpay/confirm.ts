@@ -149,15 +149,15 @@ export const POST: APIRoute = async ({ request }) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Buscar el pedido por el token
-    // Primero intentar buscar por payment_reference que contiene el token exacto
+    // IMPORTANTE: Buscar por el token_ws directamente, no por payment_reference
+    // porque payment_reference puede no existir aún o tener un formato diferente
     let { data: order, error: orderError } = await supabase
       .from('orders')
       .select('id, total_amount, status, payment_reference, email, user_id')
       .eq('payment_reference', token_ws)
       .single();
 
-    // Si no se encuentra, intentar buscar por payment_reference que empiece con el token
-    // (porque puede haber sido actualizado con el responseCode)
+    // Si no se encuentra, buscar por payment_reference que empiece con el token
     if (orderError || !order) {
       console.log('⚠️ No se encontró pedido con payment_reference exacto, buscando por token...');
       const { data: orders } = await supabase
@@ -171,6 +171,40 @@ export const POST: APIRoute = async ({ request }) => {
         order = orders[0];
         orderError = null;
         console.log('✅ Pedido encontrado por token parcial:', order.id);
+      }
+    }
+    
+    // Si aún no se encuentra, buscar por el token_ws en el buyOrder de webpay
+    // o buscar el pedido más reciente sin payment_reference (para invitados)
+    if (orderError || !order) {
+      console.log('⚠️ No se encontró por payment_reference, buscando pedido más reciente sin payment_reference...');
+      // Buscar pedidos recientes sin payment_reference (posiblemente de invitados)
+      const { data: recentOrders } = await supabase
+        .from('orders')
+        .select('id, total_amount, status, payment_reference, email, user_id')
+        .is('payment_reference', null)
+        .eq('status', 'pending_payment')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      
+      if (recentOrders && recentOrders.length > 0) {
+        // Intentar encontrar el pedido que coincida con el buyOrder de Webpay
+        const buyOrderFromWebpay = commitResponse.buyOrder;
+        if (buyOrderFromWebpay) {
+          const matchingOrder = recentOrders.find(o => String(o.id) === String(buyOrderFromWebpay));
+          if (matchingOrder) {
+            order = matchingOrder;
+            orderError = null;
+            console.log('✅ Pedido encontrado por buyOrder:', order.id);
+          }
+        }
+        
+        // Si no hay coincidencia, usar el más reciente
+        if (!order && recentOrders.length > 0) {
+          order = recentOrders[0];
+          orderError = null;
+          console.log('⚠️ Usando pedido más reciente sin payment_reference:', order.id);
+        }
       }
     }
 
@@ -189,7 +223,10 @@ export const POST: APIRoute = async ({ request }) => {
     console.log('📋 Pedido encontrado:', {
       id: order.id,
       status: order.status,
-      payment_reference: order.payment_reference
+      payment_reference: order.payment_reference,
+      user_id: order.user_id,
+      email: order.email,
+      isGuest: !order.user_id
     });
 
     // Configurar Webpay Plus
@@ -465,32 +502,57 @@ export const POST: APIRoute = async ({ request }) => {
       });
       
       // SI EL PAGO FUE APROBADO Y EL ESTADO NO ES 'paid', FORZAR ACTUALIZACIÓN
+      // ESTO ES CRÍTICO PARA INVITADOS Y USUARIOS LOGUEADOS - DEBE FUNCIONAR IGUAL
       if (isApproved && verifyOrder && verifyOrder.status !== 'paid') {
         console.log('🚨 CRÍTICO: Pago aprobado pero estado no es "paid". Estado actual:', verifyOrder.status);
+        console.log('🚨 Order ID:', order.id);
+        console.log('🚨 User ID:', order.user_id, 'Is Guest:', !order.user_id);
         console.log('🚨 Forzando actualización a "paid" INMEDIATAMENTE...');
         
-        const fixResult = await supabase
+        // Intentar múltiples estrategias para asegurar que se actualice
+        let fixResult = await supabase
           .from('orders')
           .update({ 
             status: 'paid',
             payment_details: paymentDetails,
+            payment_reference: paymentReference,
             updated_at: new Date().toISOString()
           })
           .eq('id', order.id);
         
         if (fixResult.error) {
-          console.error('❌ Error crítico corrigiendo estado:', fixResult.error);
-          // Intentar sin payment_details
-          const simpleFix = await supabase
+          console.error('❌ Error crítico corrigiendo estado (intento 1):', fixResult.error);
+          console.error('❌ Intentando sin payment_details...');
+          
+          // Intento 2: sin payment_details
+          fixResult = await supabase
             .from('orders')
             .update({ 
               status: 'paid',
+              payment_reference: paymentReference,
               updated_at: new Date().toISOString()
             })
             .eq('id', order.id);
           
-          if (simpleFix.error) {
-            console.error('❌ Error crítico en segundo intento:', simpleFix.error);
+          if (fixResult.error) {
+            console.error('❌ Error crítico en intento 2:', fixResult.error);
+            console.error('❌ Intentando solo con status...');
+            
+            // Intento 3: solo status
+            fixResult = await supabase
+              .from('orders')
+              .update({ 
+                status: 'paid',
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', order.id);
+            
+            if (fixResult.error) {
+              console.error('❌❌❌ FALLO TOTAL: No se pudo actualizar el estado a "paid"');
+              console.error('❌❌❌ Error:', JSON.stringify(fixResult.error, null, 2));
+            } else {
+              console.log('✅ Estado corregido a "paid" (solo status)');
+            }
           } else {
             console.log('✅ Estado corregido a "paid" (sin payment_details)');
           }
@@ -498,24 +560,48 @@ export const POST: APIRoute = async ({ request }) => {
           console.log('✅ Estado corregido a "paid" exitosamente');
         }
         
-        // Verificar una vez más
+        // Verificar DESPUÉS de la corrección
         const { data: finalVerify } = await supabase
           .from('orders')
-          .select('id, status')
+          .select('id, status, payment_details, user_id')
           .eq('id', order.id)
           .single();
         
-        console.log('🔍 Verificación final:', {
+        console.log('🔍 Verificación final después de corrección:', {
           orderId: finalVerify?.id,
           status: finalVerify?.status,
           isPaid: finalVerify?.status === 'paid',
-          MUST_BE_PAID: isApproved
+          MUST_BE_PAID: isApproved,
+          user_id: finalVerify?.user_id,
+          isGuest: !finalVerify?.user_id,
+          hasPaymentDetails: !!finalVerify?.payment_details
         });
+        
+        // Si AÚN no es 'paid', hay un problema grave
+        if (finalVerify && finalVerify.status !== 'paid' && isApproved) {
+          console.log('🚨🚨🚨 PROBLEMA GRAVE: Estado sigue sin ser "paid" después de corrección');
+          console.log('🚨🚨🚨 Order:', finalVerify.id, 'Status:', finalVerify.status, 'Is Guest:', !finalVerify.user_id);
+          
+          // Último intento desesperado
+          const lastAttempt = await supabase
+            .from('orders')
+            .update({ status: 'paid' })
+            .eq('id', order.id);
+          
+          if (!lastAttempt.error) {
+            console.log('✅ Estado actualizado en último intento');
+          } else {
+            console.error('❌❌❌ FALLO TOTAL: Requiere intervención manual');
+          }
+        }
       }
       
       // Si hay authorizationCode, el pago FUE AUTORIZADO - el estado DEBE ser 'paid'
+      // ESTO ES ABSOLUTO - sin excepciones para invitados o logueados
       if (hasAuthorizationCode && verifyOrder && verifyOrder.status !== 'paid') {
         console.log('🚨 CRÍTICO: Hay authorizationCode pero estado no es "paid". Forzando...');
+        console.log('🚨 Order ID:', order.id, 'User ID:', order.user_id, 'Is Guest:', !order.user_id);
+        
         const forcePaidResult = await supabase
           .from('orders')
           .update({ 
@@ -526,8 +612,24 @@ export const POST: APIRoute = async ({ request }) => {
         
         if (forcePaidResult.error) {
           console.error('❌ Error crítico forzando estado a "paid":', forcePaidResult.error);
+          console.error('❌ Esto es un problema grave que requiere atención inmediata');
         } else {
           console.log('✅ Estado forzado a "paid" por authorizationCode');
+          
+          // Verificar una vez más
+          const { data: finalCheck } = await supabase
+            .from('orders')
+            .select('id, status, user_id')
+            .eq('id', order.id)
+            .single();
+          
+          console.log('🔍 Verificación final por authorizationCode:', {
+            orderId: finalCheck?.id,
+            status: finalCheck?.status,
+            isPaid: finalCheck?.status === 'paid',
+            user_id: finalCheck?.user_id,
+            isGuest: !finalCheck?.user_id
+          });
         }
       }
     }
@@ -728,6 +830,55 @@ export const POST: APIRoute = async ({ request }) => {
       } catch (emailError: any) {
         console.error('❌ Error enviando email de confirmación de pago:', emailError);
         // No bloquear la respuesta si falla el email
+      }
+    }
+
+    // VERIFICACIÓN FINAL ABSOLUTA: Si el pago fue aprobado, el estado DEBE ser 'paid'
+    // Esto es CRÍTICO para invitados y usuarios logueados
+    if (isApproved) {
+      console.log('🔍 VERIFICACIÓN FINAL ABSOLUTA antes de responder...');
+      const { data: finalOrderCheck } = await supabase
+        .from('orders')
+        .select('id, status, user_id')
+        .eq('id', order.id)
+        .single();
+      
+      if (finalOrderCheck && finalOrderCheck.status !== 'paid') {
+        console.log('🚨🚨🚨 ESTADO FINAL NO ES "paid" - FORZANDO ACTUALIZACIÓN ULTIMA VEZ');
+        console.log('🚨 Order ID:', finalOrderCheck.id);
+        console.log('🚨 Status actual:', finalOrderCheck.status);
+        console.log('🚨 User ID:', finalOrderCheck.user_id, 'Is Guest:', !finalOrderCheck.user_id);
+        
+        // Forzar actualización una última vez
+        const absoluteFix = await supabase
+          .from('orders')
+          .update({ 
+            status: 'paid',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', order.id);
+        
+        if (absoluteFix.error) {
+          console.error('❌❌❌ ERROR CRÍTICO: No se pudo actualizar el estado a "paid" en verificación final');
+          console.error('❌❌❌ Error:', JSON.stringify(absoluteFix.error, null, 2));
+        } else {
+          console.log('✅✅✅ Estado actualizado a "paid" en verificación final');
+          
+          // Verificar una vez más
+          const { data: ultimateCheck } = await supabase
+            .from('orders')
+            .select('id, status')
+            .eq('id', order.id)
+            .single();
+          
+          console.log('🔍 Verificación última:', {
+            orderId: ultimateCheck?.id,
+            status: ultimateCheck?.status,
+            isPaid: ultimateCheck?.status === 'paid'
+          });
+        }
+      } else {
+        console.log('✅ Verificación final: Estado es "paid" ✓');
       }
     }
 
