@@ -79,6 +79,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
   total_amount NUMERIC(12, 2) NOT NULL,
   status public.order_status NOT NULL DEFAULT 'pending_payment',
   payment_reference TEXT,
+  payment_details JSONB, -- Detalles completos del pago (código de autorización, fecha, tipo de pago, etc.)
   notes TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

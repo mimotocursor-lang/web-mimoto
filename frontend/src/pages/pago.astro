@@ -49,10 +49,10 @@ if (orderId) {
     if (error || !order) {
       console.log('🔍 Buscando pedido como string:', orderId);
       const result = await supabaseClient
-        .from('orders')
+      .from('orders')
         .select('id, total_amount, status, user_id, created_at')
-        .eq('id', orderId)
-        .single();
+      .eq('id', orderId)
+      .single();
       order = result.data;
       error = result.error;
       
@@ -78,10 +78,10 @@ if (orderId) {
       // Obtener email del usuario si hay user_id (opcional, no crítico)
       if (order.user_id) {
         try {
-          const { data: { user } } = await supabaseClient.auth.getUser();
-          if (user) {
-            userEmail = user.email;
-          }
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (user) {
+        userEmail = user.email;
+      }
         } catch (userErr) {
           console.log('ℹ️ No se pudo obtener email del usuario (no crítico)');
         }
@@ -135,8 +135,8 @@ if (orderId) {
           </span>
         </div>
         
-        <div class="flex justify-between items-center border-t border-primary/30 pt-4">
-          <span class="text-white/90 font-semibold">Monto a pagar:</span>
+          <div class="flex justify-between items-center border-t border-primary/30 pt-4">
+            <span class="text-white/90 font-semibold">Monto a pagar:</span>
           <span class="font-bold text-primary text-xl" data-order-total>
             {orderTotal ? `$${orderTotal.toLocaleString('es-CL')}` : orderId ? 'Cargando...' : '—'}
           </span>
@@ -276,10 +276,10 @@ if (orderId) {
           // Si no se encuentra, intentar como string
           if (error || !order) {
             const result = await supabaseClient
-              .from('orders')
+            .from('orders')
               .select('id, total_amount, status')
-              .eq('id', orderIdFromUrl)
-              .single();
+            .eq('id', orderIdFromUrl)
+            .single();
             order = result.data;
             error = result.error;
           }
@@ -478,7 +478,7 @@ if (orderId) {
             buttonContainer.insertBefore(errorContainer, payButton);
           } else {
             // Fallback a alert si no se puede insertar en la UI
-            alert(errorMessage);
+          alert(errorMessage);
           }
         }
       });

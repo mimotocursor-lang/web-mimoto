@@ -114,9 +114,27 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
         }
 
         const result = await response.json();
-        console.log('📋 Resultado de confirmación:', result);
+        console.log('📋 Resultado de confirmación completo:', JSON.stringify(result, null, 2));
+        console.log('📋 responseCode:', result.responseCode, 'Tipo:', typeof result.responseCode);
+        console.log('📋 success:', result.success, 'Tipo:', typeof result.success);
+        console.log('📋 responseMessage:', result.responseMessage);
 
-        if (result.success) {
+        // Verificar si el pago fue aprobado
+        // El pago es exitoso si responseCode === 0 (según documentación de Transbank)
+        // También verificamos result.success como respaldo
+        const responseCodeIsZero = result.responseCode === 0 || result.responseCode === '0';
+        const successIsTrue = result.success === true || result.success === 'true';
+        const isPaymentApproved = responseCodeIsZero || successIsTrue;
+        
+        console.log('🔍 Análisis de aprobación:', {
+          responseCodeIsZero,
+          successIsTrue,
+          isPaymentApproved,
+          responseCode: result.responseCode,
+          success: result.success
+        });
+
+        if (isPaymentApproved) {
           // Verificar si ya fue confirmado anteriormente
           if (result.alreadyConfirmed) {
             statusEl.innerHTML = `
@@ -261,7 +279,7 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
                   <span class="text-white/90 font-semibold block mb-2">Productos:</span>
                   <ul class="space-y-1">
                     ${result.orderItems.map(item => `
-                      <li class="text-white/80 text-sm">• ${item.product_name || item.name || 'Producto'} - ${item.quantity || 1} unidad(es)</li>
+                      <li class="text-white/80 text-sm">• ${item.name || item.product_name || 'Producto'} - ${item.quantity || 1} unidad(es) - $${Number(item.price || 0).toLocaleString('es-CL')}</li>
                     `).join('')}
                   </ul>
                 </div>
@@ -280,13 +298,35 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
           `;
           }
         } else {
-          // Pago rechazado - Mostrar token destacado
+          // Pago rechazado - Mostrar información del pedido sin token
           console.log('❌ Pago rechazado, detalles:', {
             responseCode: result.responseCode,
             responseMessage: result.responseMessage,
             orderId: result.orderId,
             amount: result.amount
           });
+          
+          // Obtener información del pedido para mostrar
+          let orderInfo = null;
+          try {
+            if (typeof supabase !== 'undefined' && result.orderId) {
+              const supabaseUrl = window.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
+              const supabaseAnonKey = window.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+              const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+              
+              const { data: order, error: orderError } = await supabaseClient
+                .from('orders')
+                .select('id, total_amount, status, created_at')
+                .eq('id', result.orderId)
+                .single();
+              
+              if (!orderError && order) {
+                orderInfo = order;
+              }
+            }
+          } catch (e) {
+            console.log('⚠️ No se pudo obtener información del pedido:', e);
+          }
           
           statusEl.innerHTML = `
             <div class="text-center">
@@ -297,29 +337,37 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
               </div>
               <h2 class="text-2xl font-bold text-white mb-2">Pago Rechazado</h2>
               <p class="text-white/90 mb-2">${result.responseMessage || 'Tu pago no pudo ser procesado.'}</p>
-              <p class="text-white/70 text-sm mb-2">Código de respuesta: ${result.responseCode || 'N/A'}</p>
-              ${result.orderId ? `<p class="text-white/70 text-sm mb-4">ID del pedido: ${result.orderId}</p>` : ''}
+              <p class="text-white/70 text-sm mb-4">Código de respuesta: ${result.responseCode || 'N/A'}</p>
               
-              <!-- Token destacado para transacciones rechazadas -->
-              <div class="bg-red-500/10 border-2 border-red-500/50 rounded-lg p-4 mb-4">
-                <h3 class="text-lg font-bold text-red-400 mb-2">🔑 Token de Transacción Rechazada</h3>
-                <div class="flex items-center gap-2 mb-2">
-                  <code class="flex-1 bg-gray-900/50 p-2 rounded text-xs font-mono text-red-300 break-all">${tokenWs}</code>
-                  <button 
-                    onclick="navigator.clipboard.writeText('${tokenWs}').then(() => { this.textContent = '✅ Copiado!'; setTimeout(() => { this.textContent = '📋 Copiar'; }, 2000); })"
-                    class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded transition-colors"
-                    title="Copiar token"
-                  >
-                    📋 Copiar
-                  </button>
+              ${orderInfo ? `
+              <!-- Información del pedido -->
+              <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-6 space-y-3 mb-4 text-left">
+                <h3 class="text-lg font-bold text-primary mb-4 text-center">Información del Pedido</h3>
+                
+                <div class="flex justify-between">
+                  <span class="text-white/90">Número de pedido:</span>
+                  <span class="font-bold text-primary">#${orderInfo.id}</span>
                 </div>
-                <p class="text-xs text-white/70 mt-2">
-                  💡 <strong>Este es el token que Transbank necesita.</strong> Cópialo y envíalo donde te lo soliciten.
-                </p>
+                
+                <div class="flex justify-between">
+                  <span class="text-white/90">Monto:</span>
+                  <span class="font-bold text-primary">$${Number(orderInfo.total_amount).toLocaleString('es-CL')} CLP</span>
+                </div>
+                
+                <div class="flex justify-between">
+                  <span class="text-white/90">Estado:</span>
+                  <span class="font-bold text-primary">${orderInfo.status || 'Pendiente'}</span>
+                </div>
               </div>
+              ` : result.orderId ? `
+              <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 mb-4">
+                <p class="text-white/90">ID del pedido: <span class="font-bold text-primary">#${result.orderId}</span></p>
+                ${result.amount ? `<p class="text-white/90 mt-2">Monto: <span class="font-bold text-primary">$${Number(result.amount).toLocaleString('es-CL')} CLP</span></p>` : ''}
+              </div>
+              ` : ''}
               
               <div class="flex gap-4 justify-center">
-                <a href="/pago?orderId=${orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
+                <a href="/pago?orderId=${orderId || result.orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
                   Intentar nuevamente
                 </a>
                 <a href="/" class="inline-block px-6 py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors">

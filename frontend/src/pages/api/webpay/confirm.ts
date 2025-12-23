@@ -255,6 +255,21 @@ export const POST: APIRoute = async ({ request }) => {
     const isApproved = commitResponse.responseCode === 0;
     console.log('✅ Transacción aprobada:', isApproved);
 
+    // Preparar payment_details con toda la información de la transacción
+    const paymentDetails = {
+      authorizationCode: commitResponse.authorizationCode,
+      transactionDate: commitResponse.transactionDate || new Date().toISOString(),
+      paymentTypeCode: commitResponse.paymentTypeCode,
+      installmentsNumber: commitResponse.installmentsNumber || 0,
+      cardDetail: commitResponse.cardDetail || null,
+      buyOrder: commitResponse.buyOrder,
+      amount: commitResponse.amount,
+      responseCode: commitResponse.responseCode,
+      responseMessage: commitResponse.responseMessage,
+      vci: commitResponse.vci,
+      accountingDate: commitResponse.accountingDate
+    };
+
     // Actualizar el estado del pedido
     // Actualizar estado del pedido con fallback si el enum no acepta 'pending_payment'
     const newStatus = isApproved ? 'paid' : 'pending_payment';
@@ -263,6 +278,7 @@ export const POST: APIRoute = async ({ request }) => {
       .update({
         status: newStatus,
         payment_reference: `${token_ws}-${commitResponse.responseCode}`,
+        payment_details: paymentDetails, // Guardar detalles completos del pago
         updated_at: new Date().toISOString()
       })
       .eq('id', order.id);
@@ -275,6 +291,7 @@ export const POST: APIRoute = async ({ request }) => {
         .update({
           status: 'pending',
           payment_reference: `${token_ws}-${commitResponse.responseCode}`,
+          payment_details: paymentDetails, // Guardar detalles completos del pago
           updated_at: new Date().toISOString()
         })
         .eq('id', order.id);

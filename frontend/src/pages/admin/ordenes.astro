@@ -1,0 +1,526 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Gestión de Órdenes - Admin Mimoto">
+  <section class="max-w-7xl mx-auto px-4 py-16">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-bold text-ktm-light-text dark:text-ktm-text">Gestión de Órdenes</h1>
+      <nav class="flex gap-4 text-sm">
+        <a href="/admin" class="text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold">Dashboard</a>
+        <a href="/admin/ordenes" class="text-ktm-accent dark:text-ktm-accent font-bold">Órdenes</a>
+        <a href="/admin/productos" class="text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold">Productos</a>
+        <a href="/admin/motos-usadas" class="text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold">Motos Usadas</a>
+        <a href="/admin/banners" class="text-ktm-light-text/80 dark:text-ktm-text/80 hover:text-ktm-accent font-semibold">Banners</a>
+      </nav>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white dark:bg-ktm-surface/50 border-2 border-gray-200 dark:border-primary/30 rounded-xl p-4 mb-6 shadow-lg">
+      <div class="flex flex-wrap gap-4 items-center">
+        <label class="text-sm font-semibold text-gray-700 dark:text-ktm-text/80">Filtrar por estado:</label>
+        <select id="status-filter" class="px-4 py-2 border-2 border-gray-300 dark:border-primary/50 rounded-lg bg-white dark:bg-ktm-surface text-gray-900 dark:text-ktm-text focus:border-primary focus:outline-none">
+          <option value="all">Todas las órdenes</option>
+          <option value="paid">Pagadas</option>
+          <option value="order_received">Pedido Recibido</option>
+          <option value="order_confirmed">Pedido Confirmado</option>
+          <option value="order_delivered">Pedido Entregado</option>
+          <option value="pending_payment">Pendiente de Pago</option>
+          <option value="cancelled">Canceladas</option>
+        </select>
+        <button id="refresh-btn" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
+          🔄 Actualizar
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla de órdenes -->
+    <div class="bg-white dark:bg-ktm-surface/50 border-2 border-gray-200 dark:border-primary/30 rounded-xl shadow-lg overflow-hidden">
+      <div id="orders-container" class="p-6">
+        <p class="text-center text-gray-600 dark:text-ktm-text/70 py-8">Cargando órdenes...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal para ver detalles y cambiar estado -->
+  <div id="order-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white dark:bg-ktm-surface rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="sticky top-0 bg-white dark:bg-ktm-surface border-b-2 border-gray-200 dark:border-primary/30 p-6 flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-ktm-text">Detalles de la Orden</h2>
+        <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:text-ktm-text/70 dark:hover:text-ktm-text text-2xl">&times;</button>
+      </div>
+      <div id="modal-content" class="p-6">
+        <p class="text-center text-gray-600 dark:text-ktm-text/70 py-8">Cargando detalles...</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://prizpqahcluomioxnmex.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+    
+    let supabaseClient = null;
+    let currentFilter = 'all';
+    let currentOrderId = null;
+
+    function initOrders() {
+      if (typeof supabase === 'undefined') {
+        setTimeout(initOrders, 100);
+        return;
+      }
+
+      const supabaseUrl = (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_URL) || SUPABASE_URL;
+      const supabaseAnonKey = (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_ANON_KEY) || SUPABASE_KEY;
+      
+      supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+      
+      checkAdminAccess().then(function(hasAccess) {
+        if (hasAccess) {
+          loadOrders();
+          setupEventListeners();
+        }
+      });
+    }
+
+    async function checkAdminAccess() {
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) {
+          window.location.href = '/login?return=/admin/ordenes';
+          return false;
+        }
+
+        const { data: profile } = await supabaseClient
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (!profile || profile.role !== 'admin') {
+          alert('No tienes permisos para acceder a esta página');
+          window.location.href = '/';
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Error verificando acceso:', error);
+        window.location.href = '/login?return=/admin/ordenes';
+        return false;
+      }
+    }
+
+    function setupEventListeners() {
+      const statusFilter = document.getElementById('status-filter');
+      const refreshBtn = document.getElementById('refresh-btn');
+      const closeModal = document.getElementById('close-modal');
+      const orderModal = document.getElementById('order-modal');
+
+      if (statusFilter) {
+        statusFilter.addEventListener('change', function(e) {
+          currentFilter = e.target.value;
+          loadOrders();
+        });
+      }
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', loadOrders);
+      }
+
+      if (closeModal) {
+        closeModal.addEventListener('click', function() {
+          orderModal.classList.add('hidden');
+        });
+      }
+
+      if (orderModal) {
+        orderModal.addEventListener('click', function(e) {
+          if (e.target === orderModal) {
+            orderModal.classList.add('hidden');
+          }
+        });
+      }
+    }
+
+    async function loadOrders() {
+      const container = document.getElementById('orders-container');
+      if (!container) return;
+
+      container.innerHTML = '<p class="text-center text-gray-600 dark:text-ktm-text/70 py-8">Cargando órdenes...</p>';
+
+      try {
+        let query = supabaseClient
+          .from('orders')
+          .select(`
+            id,
+            total_amount,
+            status,
+            payment_reference,
+            payment_details,
+            created_at,
+            updated_at,
+            user_id,
+            users:user_id(email, full_name, phone)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (currentFilter !== 'all') {
+          query = query.eq('status', currentFilter);
+        }
+
+        const { data: orders, error } = await query;
+
+        if (error) throw error;
+
+        if (!orders || orders.length === 0) {
+          container.innerHTML = '<p class="text-center text-gray-600 dark:text-ktm-text/70 py-8">No hay órdenes para mostrar</p>';
+          return;
+        }
+
+        container.innerHTML = `
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b-2 border-gray-200 dark:border-primary/30">
+                  <th class="text-left py-3 px-4 font-bold text-gray-900 dark:text-ktm-text">ID</th>
+                  <th class="text-left py-3 px-4 font-bold text-gray-900 dark:text-ktm-text">Cliente</th>
+                  <th class="text-left py-3 px-4 font-bold text-gray-900 dark:text-ktm-text">Monto</th>
+                  <th class="text-left py-3 px-4 font-bold text-gray-900 dark:text-ktm-text">Estado</th>
+                  <th class="text-left py-3 px-4 font-bold text-gray-900 dark:text-ktm-text">Fecha</th>
+                  <th class="text-left py-3 px-4 font-bold text-gray-900 dark:text-ktm-text">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${orders.map(order => `
+                  <tr class="border-b border-gray-200 dark:border-primary/20 hover:bg-gray-50 dark:hover:bg-ktm-surface/30">
+                    <td class="py-3 px-4 text-gray-900 dark:text-ktm-text font-semibold">#${order.id}</td>
+                    <td class="py-3 px-4 text-gray-700 dark:text-ktm-text/80">
+                      ${order.users ? (order.users.full_name || order.users.email || 'Cliente') : 'Invitado'}
+                      ${order.users && order.users.email ? `<br><span class="text-xs text-gray-500">${order.users.email}</span>` : ''}
+                    </td>
+                    <td class="py-3 px-4 text-gray-900 dark:text-ktm-text font-bold">$${Number(order.total_amount).toLocaleString('es-CL')}</td>
+                    <td class="py-3 px-4">
+                      <span class="px-3 py-1 rounded-full text-xs font-semibold ${getStatusClass(order.status)}">
+                        ${getStatusLabel(order.status)}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-gray-600 dark:text-ktm-text/70 text-sm">
+                      ${new Date(order.created_at).toLocaleDateString('es-CL', { 
+                        year: 'numeric', 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </td>
+                    <td class="py-3 px-4">
+                      <button 
+                        onclick="showOrderDetails(${order.id})" 
+                        class="px-3 py-1 bg-primary text-white rounded hover:bg-primary-600 transition-colors text-sm"
+                      >
+                        Ver Detalles
+                      </button>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (error) {
+        console.error('Error cargando órdenes:', error);
+        container.innerHTML = `<p class="text-center text-red-500 py-8">Error al cargar órdenes: ${error.message}</p>`;
+      }
+    }
+
+    function getStatusLabel(status) {
+      const labels = {
+        'pending_payment': 'Pendiente de Pago',
+        'waiting_confirmation': 'Esperando Confirmación',
+        'paid': 'Pagado',
+        'order_received': 'Pedido Recibido',
+        'order_confirmed': 'Pedido Confirmado',
+        'order_delivered': 'Pedido Entregado',
+        'cancelled': 'Cancelado'
+      };
+      return labels[status] || status;
+    }
+
+    function getStatusClass(status) {
+      const classes = {
+        'pending_payment': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+        'waiting_confirmation': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+        'paid': 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+        'order_received': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+        'order_confirmed': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
+        'order_delivered': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
+        'cancelled': 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+      };
+      return classes[status] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+    }
+
+    async function showOrderDetails(orderId) {
+      currentOrderId = orderId;
+      const modal = document.getElementById('order-modal');
+      const modalContent = document.getElementById('modal-content');
+
+      if (!modal || !modalContent) return;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      modalContent.innerHTML = '<p class="text-center text-gray-600 dark:text-ktm-text/70 py-8">Cargando detalles...</p>';
+
+      try {
+        // Cargar orden con items y usuario
+        const { data: order, error: orderError } = await supabaseClient
+          .from('orders')
+          .select(`
+            *,
+            users:user_id(email, full_name, phone),
+            order_items:order_items(
+              id,
+              quantity,
+              unit_price,
+              total_price,
+              products:product_id(title, name, main_image_url)
+            )
+          `)
+          .eq('id', orderId)
+          .single();
+
+        if (orderError) throw orderError;
+
+        // Parsear payment_details si existe
+        let paymentDetails = null;
+        if (order.payment_details) {
+          try {
+            paymentDetails = typeof order.payment_details === 'string' 
+              ? JSON.parse(order.payment_details) 
+              : order.payment_details;
+          } catch (e) {
+            console.log('No se pudo parsear payment_details');
+          }
+        }
+
+        const formatDate = (dateString) => {
+          if (!dateString) return 'N/A';
+          return new Date(dateString).toLocaleString('es-CL', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        };
+
+        const getPaymentType = (code) => {
+          const types = {
+            'VD': 'Débito',
+            'VN': 'Crédito',
+            'VC': 'Crédito en Cuotas',
+            'SI': '3 cuotas sin interés',
+            'S2': '2 cuotas sin interés',
+            'NC': 'N Cuotas sin interés'
+          };
+          return types[code] || code || 'N/A';
+        };
+
+        modalContent.innerHTML = `
+          <div class="space-y-6">
+            <!-- Información del pedido -->
+            <div class="bg-gray-50 dark:bg-ktm-surface/30 rounded-lg p-4">
+              <h3 class="font-bold text-lg mb-4 text-gray-900 dark:text-ktm-text">Información del Pedido</h3>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Número de orden:</span>
+                  <span class="font-bold text-gray-900 dark:text-ktm-text ml-2">#${order.id}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Estado actual:</span>
+                  <span class="px-3 py-1 rounded-full text-xs font-semibold ml-2 ${getStatusClass(order.status)}">
+                    ${getStatusLabel(order.status)}
+                  </span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Monto total:</span>
+                  <span class="font-bold text-gray-900 dark:text-ktm-text ml-2">$${Number(order.total_amount).toLocaleString('es-CL')}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Fecha de creación:</span>
+                  <span class="text-gray-900 dark:text-ktm-text ml-2">${formatDate(order.created_at)}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Última actualización:</span>
+                  <span class="text-gray-900 dark:text-ktm-text ml-2">${formatDate(order.updated_at)}</span>
+                </div>
+                ${order.payment_reference ? `
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Referencia de pago:</span>
+                  <span class="text-gray-900 dark:text-ktm-text ml-2 font-mono text-xs">${order.payment_reference.substring(0, 20)}...</span>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Información del cliente -->
+            ${order.users ? `
+            <div class="bg-gray-50 dark:bg-ktm-surface/30 rounded-lg p-4">
+              <h3 class="font-bold text-lg mb-4 text-gray-900 dark:text-ktm-text">Información del Cliente</h3>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Nombre:</span>
+                  <span class="text-gray-900 dark:text-ktm-text ml-2">${order.users.full_name || 'N/A'}</span>
+                </div>
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Email:</span>
+                  <span class="text-gray-900 dark:text-ktm-text ml-2">${order.users.email || 'N/A'}</span>
+                </div>
+                ${order.users.phone ? `
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Teléfono:</span>
+                  <span class="text-gray-900 dark:text-ktm-text ml-2">${order.users.phone}</span>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+            ` : '<p class="text-gray-600 dark:text-ktm-text/70">Cliente invitado (sin cuenta)</p>'}
+
+            <!-- Comprobante de pago (si existe) -->
+            ${paymentDetails ? `
+            <div class="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border-2 border-green-200 dark:border-green-800">
+              <h3 class="font-bold text-lg mb-4 text-gray-900 dark:text-ktm-text">✅ Comprobante de Pago</h3>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                ${paymentDetails.authorizationCode ? `
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Código de autorización:</span>
+                  <span class="font-bold text-gray-900 dark:text-ktm-text ml-2">${paymentDetails.authorizationCode}</span>
+                </div>
+                ` : ''}
+                ${paymentDetails.transactionDate ? `
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Fecha de transacción:</span>
+                  <span class="text-gray-900 dark:text-ktm-text ml-2">${formatDate(paymentDetails.transactionDate)}</span>
+                </div>
+                ` : ''}
+                ${paymentDetails.paymentTypeCode ? `
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Tipo de pago:</span>
+                  <span class="text-gray-900 dark:text-ktm-text ml-2">${getPaymentType(paymentDetails.paymentTypeCode)}</span>
+                </div>
+                ` : ''}
+                ${paymentDetails.cardDetail ? `
+                <div>
+                  <span class="text-gray-600 dark:text-ktm-text/70">Tarjeta terminada en:</span>
+                  <span class="text-gray-900 dark:text-ktm-text ml-2">****${typeof paymentDetails.cardDetail === 'object' ? paymentDetails.cardDetail.cardNumber : paymentDetails.cardDetail}</span>
+                </div>
+                ` : ''}
+              </div>
+            </div>
+            ` : ''}
+
+            <!-- Items del pedido -->
+            ${order.order_items && order.order_items.length > 0 ? `
+            <div class="bg-gray-50 dark:bg-ktm-surface/30 rounded-lg p-4">
+              <h3 class="font-bold text-lg mb-4 text-gray-900 dark:text-ktm-text">Productos del Pedido</h3>
+              <div class="space-y-2">
+                ${order.order_items.map(item => `
+                  <div class="flex justify-between items-center p-3 bg-white dark:bg-ktm-surface rounded border border-gray-200 dark:border-primary/30">
+                    <div>
+                      <span class="font-semibold text-gray-900 dark:text-ktm-text">${item.products?.title || item.products?.name || 'Producto'}</span>
+                      <span class="text-gray-600 dark:text-ktm-text/70 text-sm ml-2">x${item.quantity}</span>
+                    </div>
+                    <span class="font-bold text-gray-900 dark:text-ktm-text">$${Number(item.total_price).toLocaleString('es-CL')}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+            ` : ''}
+
+            <!-- Cambiar estado -->
+            <div class="bg-primary/10 rounded-lg p-4 border-2 border-primary/30">
+              <h3 class="font-bold text-lg mb-4 text-gray-900 dark:text-ktm-text">Cambiar Estado del Pedido</h3>
+              <div class="flex flex-wrap gap-3">
+                ${order.status === 'paid' ? `
+                  <button onclick="updateOrderStatus(${order.id}, 'order_received')" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors">
+                    📦 Marcar como Pedido Recibido
+                  </button>
+                ` : ''}
+                ${order.status === 'order_received' ? `
+                  <button onclick="updateOrderStatus(${order.id}, 'order_confirmed')" class="px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 transition-colors">
+                    ✅ Marcar como Pedido Confirmado
+                  </button>
+                ` : ''}
+                ${order.status === 'order_confirmed' ? `
+                  <button onclick="updateOrderStatus(${order.id}, 'order_delivered')" class="px-4 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition-colors">
+                    🚚 Marcar como Pedido Entregado
+                  </button>
+                ` : ''}
+              </div>
+              <p class="text-xs text-gray-600 dark:text-ktm-text/70 mt-3">
+                💡 El cliente recibirá una notificación por WhatsApp/Email cuando cambies el estado.
+              </p>
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        console.error('Error cargando detalles:', error);
+        modalContent.innerHTML = `<p class="text-center text-red-500 py-8">Error al cargar detalles: ${error.message}</p>`;
+      }
+    }
+
+    async function updateOrderStatus(orderId, newStatus) {
+      if (!confirm(`¿Estás seguro de cambiar el estado del pedido #${orderId} a "${getStatusLabel(newStatus)}"?`)) {
+        return;
+      }
+
+      try {
+        // Obtener token de sesión
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const headers = {
+          'Content-Type': 'application/json',
+        };
+
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`;
+        }
+
+        const response = await fetch('/api/orders/update-status', {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify({
+            orderId: orderId,
+            status: newStatus
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Error al actualizar el estado');
+        }
+
+        alert('✅ Estado actualizado exitosamente. El cliente recibirá una notificación.');
+        
+        // Cerrar modal y recargar órdenes
+        document.getElementById('order-modal').classList.add('hidden');
+        loadOrders();
+      } catch (error) {
+        console.error('Error actualizando estado:', error);
+        alert('❌ Error al actualizar el estado: ' + error.message);
+      }
+    }
+
+    // Hacer funciones globales para onclick
+    window.showOrderDetails = showOrderDetails;
+    window.updateOrderStatus = updateOrderStatus;
+
+    // Inicializar
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initOrders);
+    } else {
+      initOrders();
+    }
+  </script>
+</BaseLayout>
+
