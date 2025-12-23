@@ -139,7 +139,58 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
             </div>
           `;
           } else {
-          // Pago exitoso
+          // Pago exitoso - Mostrar información completa según requerimientos de Transbank
+          const formatAmount = (amount) => {
+            if (!amount) return 'N/A';
+            if (typeof amount === 'number') {
+              return `$${amount.toLocaleString('es-CL')} CLP`;
+            }
+            return amount;
+          };
+          
+          const formatDate = (dateString) => {
+            if (!dateString) return 'N/A';
+            try {
+              const date = new Date(dateString);
+              return date.toLocaleString('es-CL', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+              });
+            } catch (e) {
+              return dateString;
+            }
+          };
+          
+          const getPaymentType = (paymentTypeCode) => {
+            const types = {
+              'VD': 'Débito',
+              'VN': 'Crédito',
+              'VC': 'Crédito en Cuotas',
+              'SI': 'Sin interés',
+              'S2': 'Sin interés (2 cuotas)',
+              'NC': 'Sin cuotas'
+            };
+            return types[paymentTypeCode] || 'N/A';
+          };
+          
+          const getCardLastDigits = (cardDetail) => {
+            if (!cardDetail) return 'N/A';
+            if (typeof cardDetail === 'object' && cardDetail.cardNumber) {
+              return cardDetail.cardNumber.slice(-4);
+            }
+            if (typeof cardDetail === 'string') {
+              return cardDetail.slice(-4);
+            }
+            return 'N/A';
+          };
+          
+          const installmentsText = result.installmentsNumber > 0 
+            ? `${result.installmentsNumber} cuota${result.installmentsNumber > 1 ? 's' : ''}`
+            : 'Sin cuotas';
+          
           statusEl.innerHTML = `
             <div class="text-center">
               <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/10 mb-4">
@@ -149,20 +200,74 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
               </div>
               <h2 class="text-2xl font-bold text-white mb-2">¡Pago Exitoso!</h2>
               <p class="text-white/90 mb-4">Tu pago ha sido procesado correctamente.</p>
-              <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 space-y-2 mb-4">
+              
+              <!-- Comprobante completo según requerimientos de Transbank -->
+              <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-6 space-y-3 mb-4 text-left">
+                <h3 class="text-lg font-bold text-primary mb-4 text-center">Comprobante de Pago</h3>
+                
+                <!-- Nombre del comercio -->
+                <div class="flex justify-between items-center pb-2 border-b border-gray-700">
+                  <span class="text-white/90 font-semibold">Comercio:</span>
+                  <span class="font-bold text-primary">MIMOTO</span>
+                </div>
+                
+                <!-- Número de orden de pedido -->
+                <div class="flex justify-between">
+                  <span class="text-white/90">Número de orden:</span>
+                  <span class="font-bold text-primary">${result.buyOrder || result.orderId || 'N/A'}</span>
+                </div>
+                
+                <!-- Monto y moneda -->
+                <div class="flex justify-between">
+                  <span class="text-white/90">Monto pagado:</span>
+                  <span class="font-bold text-primary">${formatAmount(result.amount)}</span>
+                </div>
+                
+                <!-- Código de autorización -->
                 <div class="flex justify-between">
                   <span class="text-white/90">Código de autorización:</span>
                   <span class="font-bold text-primary">${result.authorizationCode || 'N/A'}</span>
                 </div>
+                
+                <!-- Fecha de la transacción -->
                 <div class="flex justify-between">
-                  <span class="text-white/90">Monto pagado:</span>
-                  <span class="font-bold text-primary">$${result.amount ? (typeof result.amount === 'number' ? (result.amount >= 1000 ? (result.amount / 100).toLocaleString('es-CL') : result.amount.toLocaleString('es-CL')) : result.amount) : 'N/A'}</span>
+                  <span class="text-white/90">Fecha de transacción:</span>
+                  <span class="font-bold text-primary">${formatDate(result.transactionDate)}</span>
                 </div>
+                
+                <!-- Tipo de pago -->
                 <div class="flex justify-between">
-                  <span class="text-white/90">Token:</span>
-                  <span class="font-mono text-xs text-primary break-all">${tokenWs}</span>
+                  <span class="text-white/90">Tipo de pago:</span>
+                  <span class="font-bold text-primary">${getPaymentType(result.paymentTypeCode)}</span>
                 </div>
+                
+                <!-- Cantidad de cuotas -->
+                ${result.installmentsNumber > 0 ? `
+                <div class="flex justify-between">
+                  <span class="text-white/90">Cuotas:</span>
+                  <span class="font-bold text-primary">${installmentsText}</span>
+                </div>
+                ` : ''}
+                
+                <!-- Últimos 4 dígitos de la tarjeta -->
+                <div class="flex justify-between">
+                  <span class="text-white/90">Tarjeta terminada en:</span>
+                  <span class="font-bold text-primary">****${getCardLastDigits(result.cardDetail)}</span>
+                </div>
+                
+                <!-- Descripción de bienes/servicios -->
+                ${result.orderItems && result.orderItems.length > 0 ? `
+                <div class="pt-2 border-t border-gray-700">
+                  <span class="text-white/90 font-semibold block mb-2">Productos:</span>
+                  <ul class="space-y-1">
+                    ${result.orderItems.map(item => `
+                      <li class="text-white/80 text-sm">• ${item.product_name || item.name || 'Producto'} - ${item.quantity || 1} unidad(es)</li>
+                    `).join('')}
+                  </ul>
+                </div>
+                ` : ''}
               </div>
+              
               <div class="flex gap-4 justify-center">
                 <a href="/pedido/${result.orderId || orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
                   Ver mi pedido

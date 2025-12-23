@@ -239,12 +239,7 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log('📥 Respuesta de Webpay:', {
-      responseCode: commitResponse.responseCode,
-      responseMessage: commitResponse.responseMessage,
-      amount: commitResponse.amount,
-      authorizationCode: commitResponse.authorizationCode
-    });
+    console.log('📥 Respuesta completa de Webpay:', commitResponse);
 
     // Verificar el estado de la transacción
     const isApproved = commitResponse.responseCode === 0;
@@ -280,6 +275,31 @@ export const POST: APIRoute = async ({ request }) => {
       // Continuar aunque falle la actualización del status
     }
 
+    // Obtener información adicional del pedido para mostrar en el comprobante
+    // Obtener items del pedido con información del producto
+    let orderItems = [];
+    try {
+      const { data: items, error: itemsError } = await supabase
+        .from('order_items')
+        .select(`
+          quantity,
+          unit_price,
+          total_price,
+          product:products(title, name)
+        `)
+        .eq('order_id', order.id);
+      
+      if (!itemsError && items) {
+        orderItems = items.map(item => ({
+          name: item.product?.title || item.product?.name || 'Producto',
+          quantity: item.quantity,
+          price: item.unit_price
+        }));
+      }
+    } catch (e) {
+      console.log('⚠️ No se pudo obtener items del pedido:', e);
+    }
+
     return new Response(
       JSON.stringify({
         success: isApproved,
@@ -288,7 +308,13 @@ export const POST: APIRoute = async ({ request }) => {
         buyOrder: commitResponse.buyOrder,
         amount: commitResponse.amount,
         authorizationCode: commitResponse.authorizationCode,
-        orderId: order.id
+        orderId: order.id,
+        // Información adicional requerida por Transbank
+        transactionDate: commitResponse.transactionDate || new Date().toISOString(),
+        paymentTypeCode: commitResponse.paymentTypeCode || 'VD', // VD = Venta Débito, VN = Venta Normal, VC = Venta en cuotas
+        installmentsNumber: commitResponse.installmentsNumber || 0,
+        cardDetail: commitResponse.cardDetail || null, // Últimos 4 dígitos de la tarjeta
+        orderItems: orderItems // Items del pedido para mostrar en el comprobante
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
