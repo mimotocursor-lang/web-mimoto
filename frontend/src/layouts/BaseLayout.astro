@@ -4,6 +4,11 @@ import WhatsAppModal from '../components/WhatsAppModal.astro';
 
 const { title = 'Mimoto', description = '' } = Astro.props;
 
+// URL del sitio para meta tags
+const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://mimoto.cl';
+const logoUrl = `${siteUrl}/logo.png`;
+const currentUrl = `${siteUrl}${Astro.url.pathname}`;
+
 // Inyectar variables de entorno de Supabase en el HTML para que estén disponibles en el cliente
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
 const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
@@ -30,6 +35,44 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
     <link rel="apple-touch-icon" sizes="57x57" href="/icono-pestana.png" />
     <title>{title}</title>
     {description && <meta name="description" content={description} />}
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MIMOTO" />
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:image" content={logoUrl} />
+    <meta property="og:image:secure_url" content={logoUrl} />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Logo MIMOTO" />
+    <meta property="og:url" content={currentUrl} />
+    <meta property="og:locale" content="es_CL" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    {description && <meta name="twitter:description" content={description} />}
+    <meta name="twitter:image" content={logoUrl} />
+    <meta name="twitter:image:alt" content="Logo MIMOTO" />
+    
+    <!-- Datos estructurados JSON-LD para Google -->
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "MIMOTO",
+      "url": siteUrl,
+      "logo": logoUrl,
+      "image": logoUrl,
+      "description": description || "Servicio técnico de motos, reparación, venta de accesorios, repuestos y motos usadas.",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "CL"
+      },
+      "sameAs": [
+        "https://www.google.com/maps/place/Mimoto/@-33.416667,-70.583333"
+      ]
+    })} />
     <!-- Cargar Supabase desde el CDN en el head para que esté disponible temprano -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.supabaseLoaded = true; console.log('✅ Supabase CDN cargado en head')" onerror="console.error('❌ Error cargando Supabase desde CDN')"></script>
     <script is:inline define:vars={{ supabaseUrl, supabaseAnonKey }}>

@@ -442,28 +442,15 @@ function truncateText(text: string, maxLength: number = 150) {
       padding: 14px;
     }
     
-    /* En responsive, las cards inactivas deben estar ocultas pero no interferir */
+    /* En responsive, las cards inactivas deben estar ocultas */
     .google-review-card:not(.active) {
-      position: absolute;
-      visibility: hidden;
-      opacity: 0;
-      pointer-events: none;
+      display: none !important;
     }
     
     .google-review-card.active {
-      position: relative !important;
-      visibility: visible !important;
-      opacity: 1 !important;
-      pointer-events: auto !important;
-      z-index: 10 !important;
       display: block !important;
-    }
-    
-    /* Asegurar que la primera card siempre sea visible si tiene la clase active */
-    .google-review-card:first-child.active {
-      position: relative !important;
-      visibility: visible !important;
       opacity: 1 !important;
+      transform: translateX(0) !important;
     }
 
     .google-review-header {
@@ -547,19 +534,31 @@ function truncateText(text: string, maxLength: number = 150) {
     // Función segura para mostrar review con manejo de errores
     const safeShowReview = (index: number) => {
       try {
-        const validIndex = ((index % cards.length) + cards.length) % cards.length;
+        // Asegurar que el índice esté en rango válido usando módulo
+        // Manejar índices negativos y mayores al array
+        let validIndex = index;
+        if (validIndex < 0) {
+          validIndex = cards.length - 1; // Si es negativo, ir al último
+        } else if (validIndex >= cards.length) {
+          validIndex = 0; // Si es mayor, volver al primero
+        } else {
+          validIndex = validIndex % cards.length; // Módulo para loop
+        }
+        
+        // Asegurar que validIndex esté en rango válido
+        validIndex = Math.max(0, Math.min(validIndex, cards.length - 1));
+        
+        console.log(`🔄 Mostrando review ${validIndex + 1} de ${cards.length} (índice recibido: ${index}, índice válido: ${validIndex})`);
         
         // Primero activar la nueva card ANTES de desactivar la anterior
-        // Esto evita que todas las cards queden ocultas momentáneamente
+        // Esto evita que quede vacío momentáneamente
         if (cards[validIndex]) {
           const newCard = cards[validIndex] as HTMLElement;
           newCard.classList.add('active');
-          // Forzar estilos inline para asegurar visibilidad
-          newCard.style.position = 'relative';
-          newCard.style.visibility = 'visible';
+          // Forzar visibilidad
+          newCard.style.display = 'block';
           newCard.style.opacity = '1';
-          newCard.style.pointerEvents = 'auto';
-          newCard.style.zIndex = '10';
+          newCard.style.visibility = 'visible';
         }
         
         // Luego ocultar las demás cards
@@ -567,13 +566,7 @@ function truncateText(text: string, maxLength: number = 150) {
           if (i !== validIndex) {
             const inactiveCard = card as HTMLElement;
             inactiveCard.classList.remove('active');
-            // Solo aplicar estilos si estamos en responsive (pantalla pequeña)
-            if (window.innerWidth <= 768) {
-              inactiveCard.style.position = 'absolute';
-              inactiveCard.style.visibility = 'hidden';
-              inactiveCard.style.opacity = '0';
-              inactiveCard.style.pointerEvents = 'none';
-            }
+            inactiveCard.style.display = 'none';
           }
         });
         
@@ -587,36 +580,41 @@ function truncateText(text: string, maxLength: number = 150) {
         });
         
         currentIndex = validIndex;
+        
+        // Verificar que la card activa sea visible
+        const activeCard = cards[validIndex] as HTMLElement;
+        if (activeCard) {
+          if (!activeCard.classList.contains('active')) {
+            console.warn('⚠️ La card no tiene la clase active, corrigiendo...');
+            activeCard.classList.add('active');
+          }
+          // Asegurar visibilidad
+          activeCard.style.display = 'block';
+          activeCard.style.opacity = '1';
+          activeCard.style.visibility = 'visible';
+        }
       } catch (error) {
-        console.error('Error en showReview:', error);
+        console.error('❌ Error en showReview:', error);
         // Fallback: activar la primera card
         if (cards.length > 0) {
           const firstCard = cards[0] as HTMLElement;
           firstCard.classList.add('active');
-          firstCard.style.position = 'relative';
-          firstCard.style.visibility = 'visible';
+          firstCard.style.display = 'block';
           firstCard.style.opacity = '1';
-          firstCard.style.pointerEvents = 'auto';
-          firstCard.style.zIndex = '10';
+          firstCard.style.visibility = 'visible';
           
           cards.forEach((card, i) => {
             if (i !== 0) {
               const inactiveCard = card as HTMLElement;
               inactiveCard.classList.remove('active');
-              if (window.innerWidth <= 768) {
-                inactiveCard.style.position = 'absolute';
-                inactiveCard.style.visibility = 'hidden';
-                inactiveCard.style.opacity = '0';
-                inactiveCard.style.pointerEvents = 'none';
-              }
+              inactiveCard.style.display = 'none';
             }
           });
           
           if (indicators.length > 0) {
+            indicators[0].classList.add('active');
             indicators.forEach((indicator, i) => {
-              if (i === 0) {
-                indicator.classList.add('active');
-              } else {
+              if (i !== 0) {
                 indicator.classList.remove('active');
               }
             });
@@ -627,7 +625,6 @@ function truncateText(text: string, maxLength: number = 150) {
     };
     
     // Asegurar que la primera card esté activa desde el inicio
-    // Verificar si ya hay una card activa (del HTML)
     const initialActiveCard = document.querySelector('.google-review-card.active');
     if (initialActiveCard) {
       // Encontrar el índice de la card activa
@@ -636,27 +633,27 @@ function truncateText(text: string, maxLength: number = 150) {
           currentIndex = i;
         }
       });
-      // Forzar que la card activa sea visible
-      initialActiveCard.classList.add('active');
-      // Asegurar que tenga los estilos correctos
-      (initialActiveCard as HTMLElement).style.position = 'relative';
-      (initialActiveCard as HTMLElement).style.visibility = 'visible';
-      (initialActiveCard as HTMLElement).style.opacity = '1';
+      // Asegurar que la card activa sea visible
+      safeShowReview(currentIndex);
     } else {
       // Si no hay ninguna activa, activar la primera
       if (cards.length > 0) {
-        cards[0].classList.add('active');
-        (cards[0] as HTMLElement).style.position = 'relative';
-        (cards[0] as HTMLElement).style.visibility = 'visible';
-        (cards[0] as HTMLElement).style.opacity = '1';
         currentIndex = 0;
+        safeShowReview(0);
       }
     }
+    
+    console.log(`✅ Carrusel inicializado con ${cards.length} reviews. Índice inicial: ${currentIndex}`);
     
     // Cambiar review cada 5 segundos - loop infinito
     intervalId = setInterval(() => {
       // Incrementar índice y usar módulo para loop infinito
+      // Esto garantiza que cuando llegue a cards.length, vuelva a 0 automáticamente
       currentIndex = (currentIndex + 1) % cards.length;
+      
+      console.log(`⏭️ Siguiente review: ${currentIndex + 1} de ${cards.length} (índice: ${currentIndex})`);
+      
+      // Mostrar el review
       safeShowReview(currentIndex);
     }, 5000);
     
@@ -672,8 +669,16 @@ function truncateText(text: string, maxLength: number = 150) {
           clearInterval(intervalId);
         }
         intervalId = setInterval(() => {
-          currentIndex = (currentIndex + 1) % cards.length;
-          safeShowReview(currentIndex);
+          currentIndex = currentIndex + 1;
+          
+          // Si llegamos al final del array, volver a 0 (loop infinito)
+          if (currentIndex >= cards.length) {
+            currentIndex = 0;
+          }
+          
+          const nextIndex = currentIndex % cards.length;
+          safeShowReview(nextIndex);
+          currentIndex = nextIndex;
         }, 5000);
       });
     });
@@ -682,6 +687,8 @@ function truncateText(text: string, maxLength: number = 150) {
     const ensureActiveCard = () => {
       const activeCard = document.querySelector('.google-review-card.active');
       if (!activeCard && cards.length > 0) {
+        console.warn('⚠️ No hay card activa, activando la primera...');
+        currentIndex = 0;
         safeShowReview(0);
       }
     };
@@ -695,6 +702,16 @@ function truncateText(text: string, maxLength: number = 150) {
     // Verificar después de que el DOM esté completamente cargado
     setTimeout(ensureActiveCard, 500);
     
+    // Verificar periódicamente que siempre haya una card visible
+    setInterval(() => {
+      const activeCard = document.querySelector('.google-review-card.active');
+      if (!activeCard && cards.length > 0) {
+        console.warn('⚠️ Verificación periódica: No hay card activa, activando la primera...');
+        currentIndex = 0;
+        safeShowReview(0);
+      }
+    }, 2000); // Verificar cada 2 segundos
+    
     // Verificar después de 1 segundo para asegurar que todo esté estable
     setTimeout(() => {
       const activeCard = document.querySelector('.google-review-card.active');
@@ -704,8 +721,11 @@ function truncateText(text: string, maxLength: number = 150) {
         cardEl.style.visibility = 'visible';
         cardEl.style.opacity = '1';
         cardEl.style.zIndex = '10';
+        cardEl.style.display = 'block';
       } else {
-        ensureActiveCard();
+        console.warn('⚠️ Después de 1 segundo: No hay card activa, activando la primera...');
+        currentIndex = 0;
+        safeShowReview(0);
       }
     }, 1000);
     
