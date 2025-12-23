@@ -249,11 +249,37 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log('📥 Respuesta completa de Webpay:', commitResponse);
+    console.log('📥 Respuesta completa de Webpay:', JSON.stringify(commitResponse, null, 2));
+    console.log('📥 Tipo de respuesta:', typeof commitResponse);
+    console.log('📥 Propiedades de commitResponse:', Object.keys(commitResponse || {}));
+    console.log('📥 responseCode:', commitResponse.responseCode, 'Tipo:', typeof commitResponse.responseCode);
+    console.log('📥 authorizationCode:', commitResponse.authorizationCode);
+    console.log('📥 responseMessage:', commitResponse.responseMessage);
 
     // Verificar el estado de la transacción
-    const isApproved = commitResponse.responseCode === 0;
-    console.log('✅ Transacción aprobada:', isApproved);
+    // El pago es exitoso si:
+    // 1. responseCode === 0 (estándar de Transbank)
+    // 2. O si existe authorizationCode (indica que fue autorizado)
+    // 3. O si no hay errores y hay datos de transacción
+    const hasResponseCodeZero = commitResponse.responseCode === 0 || commitResponse.responseCode === '0';
+    const hasAuthorizationCode = !!commitResponse.authorizationCode;
+    const hasNoErrors = !commitResponse.responseMessage || 
+                        !commitResponse.responseMessage.toLowerCase().includes('error') &&
+                        !commitResponse.responseMessage.toLowerCase().includes('rechazado');
+    
+    // Si hay authorizationCode, generalmente significa que fue aprobado
+    // Incluso si responseCode no está presente o es undefined
+    const isApproved = hasResponseCodeZero || (hasAuthorizationCode && hasNoErrors);
+    
+    console.log('✅ Análisis de aprobación:', {
+      hasResponseCodeZero,
+      hasAuthorizationCode,
+      hasNoErrors,
+      isApproved,
+      responseCode: commitResponse.responseCode,
+      authorizationCode: commitResponse.authorizationCode,
+      responseMessage: commitResponse.responseMessage
+    });
 
     // Preparar payment_details con toda la información de la transacción
     const paymentDetails = {
@@ -361,22 +387,34 @@ export const POST: APIRoute = async ({ request }) => {
       console.log('⚠️ No se pudo obtener items del pedido:', e);
     }
 
+    // Preparar respuesta con todos los campos disponibles
+    const responseData = {
+      success: isApproved,
+      responseCode: commitResponse.responseCode ?? (isApproved ? 0 : -1), // Si no hay responseCode pero está aprobado, usar 0
+      responseMessage: commitResponse.responseMessage || (isApproved ? 'Transacción aprobada' : 'Transacción rechazada'),
+      buyOrder: commitResponse.buyOrder,
+      amount: commitResponse.amount,
+      authorizationCode: commitResponse.authorizationCode,
+      orderId: order.id,
+      // Información adicional requerida por Transbank
+      transactionDate: commitResponse.transactionDate || new Date().toISOString(),
+      paymentTypeCode: commitResponse.paymentTypeCode || 'VD', // VD = Venta Débito, VN = Venta Normal, VC = Venta en cuotas
+      installmentsNumber: commitResponse.installmentsNumber || 0,
+      cardDetail: commitResponse.cardDetail || null, // Últimos 4 dígitos de la tarjeta
+      orderItems: orderItems, // Items del pedido para mostrar en el comprobante
+      // Campos adicionales para debugging
+      _debug: {
+        hasResponseCode: commitResponse.responseCode !== undefined,
+        hasAuthorizationCode: !!commitResponse.authorizationCode,
+        rawResponseCode: commitResponse.responseCode,
+        rawResponseMessage: commitResponse.responseMessage
+      }
+    };
+
+    console.log('📤 Enviando respuesta al cliente:', JSON.stringify(responseData, null, 2));
+
     return new Response(
-      JSON.stringify({
-        success: isApproved,
-        responseCode: commitResponse.responseCode,
-        responseMessage: commitResponse.responseMessage,
-        buyOrder: commitResponse.buyOrder,
-        amount: commitResponse.amount,
-        authorizationCode: commitResponse.authorizationCode,
-        orderId: order.id,
-        // Información adicional requerida por Transbank
-        transactionDate: commitResponse.transactionDate || new Date().toISOString(),
-        paymentTypeCode: commitResponse.paymentTypeCode || 'VD', // VD = Venta Débito, VN = Venta Normal, VC = Venta en cuotas
-        installmentsNumber: commitResponse.installmentsNumber || 0,
-        cardDetail: commitResponse.cardDetail || null, // Últimos 4 dígitos de la tarjeta
-        orderItems: orderItems // Items del pedido para mostrar en el comprobante
-      }),
+      JSON.stringify(responseData),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
 

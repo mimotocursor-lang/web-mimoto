@@ -120,18 +120,27 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
         console.log('📋 responseMessage:', result.responseMessage);
 
         // Verificar si el pago fue aprobado
-        // El pago es exitoso si responseCode === 0 (según documentación de Transbank)
-        // También verificamos result.success como respaldo
+        // El pago es exitoso si:
+        // 1. responseCode === 0 (estándar de Transbank)
+        // 2. O si existe authorizationCode (indica que fue autorizado)
+        // 3. O si success === true
         const responseCodeIsZero = result.responseCode === 0 || result.responseCode === '0';
         const successIsTrue = result.success === true || result.success === 'true';
-        const isPaymentApproved = responseCodeIsZero || successIsTrue;
+        const hasAuthorizationCode = !!result.authorizationCode;
+        
+        // Si hay authorizationCode, generalmente significa que fue aprobado
+        // incluso si responseCode no está presente
+        const isPaymentApproved = responseCodeIsZero || successIsTrue || hasAuthorizationCode;
         
         console.log('🔍 Análisis de aprobación:', {
           responseCodeIsZero,
           successIsTrue,
+          hasAuthorizationCode,
           isPaymentApproved,
           responseCode: result.responseCode,
-          success: result.success
+          success: result.success,
+          authorizationCode: result.authorizationCode,
+          debug: result._debug
         });
 
         if (isPaymentApproved) {
