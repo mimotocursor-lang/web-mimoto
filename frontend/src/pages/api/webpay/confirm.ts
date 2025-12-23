@@ -929,24 +929,35 @@ export const POST: APIRoute = async ({ request }) => {
     // Preparar respuesta con todos los campos disponibles
     // CRÍTICO: Si isApproved es true (hay transactionDate y amount), success DEBE ser true
     // y responseCode DEBE ser 0, incluso si Webpay devolvió -1
-    const finalSuccess = isApproved;
-    const finalResponseCode = isApproved ? 0 : (commitResponse.responseCode ?? -1);
-    const finalResponseMessage = isApproved 
+    
+    // VERIFICACIÓN FINAL ABSOLUTA: Si hay transactionDate y amount, el pago FUE EXITOSO
+    // Esto es CRÍTICO - no importa qué diga responseCode
+    const finalHasTransactionData = !!(commitResponse.transactionDate && commitResponse.amount);
+    const finalIsApproved = finalHasTransactionData || isApproved;
+    
+    console.log('📤📤📤 PREPARANDO RESPUESTA FINAL:');
+    console.log('📤 isApproved (calculado antes):', isApproved);
+    console.log('📤 finalHasTransactionData (verificación final):', finalHasTransactionData);
+    console.log('📤 transactionDate:', commitResponse.transactionDate);
+    console.log('📤 amount:', commitResponse.amount);
+    console.log('📤 finalIsApproved (RESULTADO FINAL):', finalIsApproved);
+    
+    const finalSuccess = finalIsApproved; // Si hay transactionDate y amount, success es true
+    const finalResponseCode = finalIsApproved ? 0 : (commitResponse.responseCode ?? -1);
+    const finalResponseMessage = finalIsApproved 
       ? 'Transacción aprobada' 
       : (commitResponse.responseMessage || 'Transacción rechazada');
     
-    console.log('📤 Preparando respuesta:', {
-      isApproved: isApproved,
-      finalSuccess: finalSuccess,
-      finalResponseCode: finalResponseCode,
-      originalResponseCode: commitResponse.responseCode,
-      hasTransactionData: hasTransactionData
-    });
+    console.log('📤 Valores finales de respuesta:');
+    console.log('📤 finalSuccess:', finalSuccess);
+    console.log('📤 finalResponseCode:', finalResponseCode);
+    console.log('📤 finalResponseMessage:', finalResponseMessage);
+    console.log('📤 originalResponseCode:', commitResponse.responseCode);
     
     const responseData = {
-        success: finalSuccess, // Si isApproved es true, success es true
-      responseCode: finalResponseCode, // Si isApproved es true, responseCode es 0
-      responseMessage: finalResponseMessage, // Si isApproved es true, mensaje es "aprobada"
+        success: finalSuccess, // Si hay transactionDate y amount, success es true
+      responseCode: finalResponseCode, // Si hay transactionDate y amount, responseCode es 0
+      responseMessage: finalResponseMessage, // Si hay transactionDate y amount, mensaje es "aprobada"
         buyOrder: commitResponse.buyOrder,
         amount: commitResponse.amount,
         authorizationCode: commitResponse.authorizationCode,
