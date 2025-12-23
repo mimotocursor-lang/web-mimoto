@@ -1,0 +1,596 @@
+---
+// Datos de reviews de Google
+const reviews = [
+  {
+    name: "Horacio Larrain",
+    rating: 5,
+    date: "Hace 3 semanas",
+    text: "Fueron recomendados por varios contactos míos. Llegué con una 1050 por un problema de válvulas y luego volví para servicios de transmisión. Excelente servicio y mecánicos de primer nivel.",
+    isLocalGuide: false,
+    reviewCount: 10
+  },
+  {
+    name: "ricardo mukarker",
+    rating: 5,
+    date: "Hace 3 semanas",
+    text: "Un excelente servicio y mecánicos de primer nivel muy buen servicio. fui por un problema de frenos y me solucionaron el problema muy rápido lo recomiendo",
+    isLocalGuide: true,
+    reviewCount: 23
+  },
+  {
+    name: "Ignacio Fuentes Padilla",
+    rating: 5,
+    date: "Hace 8 meses",
+    text: "Excelente experiencia con don claudio y don hugo, me vieron mi 1190, me explicaron detalles de la moto, siempre don claudio con las ganas de explicar y educar y lo mejor de todo un servicio impecable.",
+    isLocalGuide: false,
+    reviewCount: 3
+  },
+  {
+    name: "mekniqo",
+    rating: 5,
+    date: "Hace 7 meses",
+    text: "Excelente servicio técnico KTM, fui muy bien atendido por sus propios dueños, se hizo una mantención x kilometraje de mi 990 adventure y se solucionó un problema de mezcla excesivamente rica, ahora se nota el cambio en la suavidad.",
+    isLocalGuide: false,
+    reviewCount: 3
+  },
+  {
+    name: "David Fandiño",
+    rating: 5,
+    date: "Hace 3 años",
+    text: "Definitivamente el mejor servicio al cliente que he recibido por parte de un taller de motos en Santiago. Hugo (la persona que me atendió) y Benjamín (el mecánico) me dieron un excelente trato. Mi moto estuvo lista en tan solo un par de días.",
+    isLocalGuide: false,
+    reviewCount: 2
+  },
+  {
+    name: "Luis Rueda",
+    rating: 5,
+    date: "Hace 2 años",
+    text: "Excelente servicio. serios y responsables. Buenos consejos de conducción.",
+    isLocalGuide: true,
+    reviewCount: 83
+  },
+  {
+    name: "Vicente Villalon",
+    rating: 5,
+    date: "Hace un año",
+    text: "Taller muy profesional y ordenado. Dejaron mi moto en perfectas condiciones. Adicionalmente la atención es de primer nivel. Muy cordiales y preocupados",
+    isLocalGuide: false,
+    reviewCount: 5
+  },
+  {
+    name: "mariano forti",
+    rating: 5,
+    date: "Hace un año",
+    text: "Exelente todo, vinimos de apuro a cambiar la cadena de la moto, nos atendieron rápido y de 10. Es un taller chico, pero con gente que sabe",
+    isLocalGuide: true,
+    reviewCount: 51
+  },
+  {
+    name: "fernando sandoval",
+    rating: 5,
+    date: "Hace un año",
+    text: "Gran servicio, excelente post venta. Años llevando mis motos y siempre recomendados. Además de ser autorizados KTM, les he llevado otras marcas y siempre con el mismo nivel de excelencia.",
+    isLocalGuide: true,
+    reviewCount: 59
+  }
+];
+
+function getStars(rating: number) {
+  return '⭐'.repeat(rating);
+}
+
+function truncateText(text: string, maxLength: number = 150) {
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength).trim() + '...';
+}
+---
+
+<div class="google-reviews-carousel-container">
+  <div class="google-reviews-carousel">
+    {reviews.map((review, index) => (
+      <div 
+        class={`google-review-card ${index === 0 ? 'active' : ''}`}
+        data-review-index={index}
+      >
+        <div class="google-review-header">
+          <div class="google-review-author">
+            <div class="google-review-avatar">
+              {review.name.charAt(0).toUpperCase()}
+            </div>
+            <div class="google-review-author-info">
+              <div class="google-review-name">
+                {review.name}
+                {review.isLocalGuide && (
+                  <span class="google-local-guide-badge" title="Local Guide">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                  </span>
+                )}
+              </div>
+              <div class="google-review-meta">
+                <span class="google-review-rating">{getStars(review.rating)}</span>
+                {review.reviewCount > 0 && (
+                  <span class="google-review-count">{review.reviewCount} opiniones</span>
+                )}
+              </div>
+            </div>
+          </div>
+          <div class="google-review-date">{review.date}</div>
+        </div>
+        <div class="google-review-text">
+          {truncateText(review.text)}
+        </div>
+        <div class="google-review-footer">
+          <a 
+            href="https://www.google.com/maps/place/Mimoto/@-33.416667,-70.583333?entry=ttu"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="google-review-link"
+          >
+            Ver en Google →
+          </a>
+        </div>
+      </div>
+    ))}
+  </div>
+  
+  <!-- Indicadores -->
+  <div class="google-reviews-indicators">
+    {reviews.map((_, index) => (
+      <button
+        class={`google-review-indicator ${index === 0 ? 'active' : ''}`}
+        data-review-index={index}
+        aria-label={`Review ${index + 1}`}
+      ></button>
+    ))}
+  </div>
+  
+  <!-- Botón para dejar review -->
+  <div class="google-review-cta">
+    <a 
+      href="https://www.google.com/maps/place/Mimoto/@-33.416667,-70.583333?entry=ttu"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="google-review-button"
+    >
+      Deja tu opinión en Google
+    </a>
+  </div>
+</div>
+
+<style>
+  .google-reviews-carousel-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .google-reviews-carousel {
+    position: relative;
+    min-height: 280px;
+    width: 100%;
+  }
+
+  .google-review-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+    pointer-events: none;
+    /* Light mode */
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    visibility: hidden;
+  }
+
+  /* Dark mode - más opaco para mejor contraste */
+  .dark .google-review-card {
+    background: rgba(30, 41, 59, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  }
+
+  .google-review-card.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+    position: relative;
+    z-index: 1;
+    visibility: visible;
+  }
+
+  .google-review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+  }
+
+  .google-review-author {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+  }
+
+  .google-review-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .google-review-author-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .google-review-name {
+    font-weight: bold;
+    /* Light mode */
+    color: #1a1a1a;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  /* Dark mode - texto más claro para contraste */
+  .dark .google-review-name {
+    color: #ffffff;
+  }
+
+  .google-local-guide-badge {
+    display: inline-flex;
+    align-items: center;
+    color: #4285F4;
+    flex-shrink: 0;
+  }
+
+  .google-review-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .google-review-rating {
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .google-review-count {
+    font-size: 11px;
+    /* Light mode */
+    color: rgba(0, 0, 0, 0.6);
+  }
+
+  /* Dark mode */
+  .dark .google-review-count {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .google-review-date {
+    font-size: 11px;
+    /* Light mode */
+    color: rgba(0, 0, 0, 0.6);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Dark mode */
+  .dark .google-review-date {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .google-review-text {
+    /* Light mode */
+    color: rgba(0, 0, 0, 0.85);
+    font-size: 13px;
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  /* Dark mode - texto más claro */
+  .dark .google-review-text {
+    color: rgba(255, 255, 255, 0.95);
+  }
+
+  .google-review-footer {
+    /* Light mode */
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+    padding-top: 12px;
+  }
+
+  /* Dark mode */
+  .dark .google-review-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  .google-review-link {
+    color: #4285F4;
+    font-size: 12px;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .google-review-link:hover {
+    color: #5a9df4;
+    text-decoration: underline;
+  }
+
+  .google-reviews-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 12px;
+    margin-bottom: 8px;
+  }
+
+  .google-review-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: none;
+    /* Light mode */
+    background: rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: background 0.3s, transform 0.3s;
+    padding: 0;
+  }
+
+  /* Dark mode */
+  .dark .google-review-indicator {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .google-review-indicator:hover {
+    /* Light mode */
+    background: rgba(0, 0, 0, 0.4);
+    transform: scale(1.2);
+  }
+
+  /* Dark mode */
+  .dark .google-review-indicator:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  .google-review-indicator.active {
+    background: #ff6600;
+    transform: scale(1.3);
+  }
+
+  .google-review-cta {
+    text-align: center;
+    margin-top: 8px;
+  }
+
+  .google-review-button {
+    display: inline-block;
+    padding: 10px 20px;
+    /* Light mode - más visible */
+    background: rgba(255, 102, 0, 0.9);
+    border: 1px solid rgba(255, 102, 0, 1);
+    border-radius: 8px;
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 700;
+    transition: all 0.3s;
+  }
+
+  /* Dark mode - botón más visible */
+  .dark .google-review-button {
+    background: rgba(255, 102, 0, 0.8);
+    border: 1px solid rgba(255, 102, 0, 1);
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .google-review-button:hover {
+    /* Light mode */
+    background: rgba(255, 102, 0, 1);
+    border-color: rgba(255, 102, 0, 1);
+    box-shadow: 0 4px 12px rgba(255, 102, 0, 0.4);
+    transform: translateY(-2px);
+  }
+
+  /* Dark mode */
+  .dark .google-review-button:hover {
+    background: rgba(255, 102, 0, 1);
+    border-color: rgba(255, 102, 0, 1);
+    box-shadow: 0 4px 12px rgba(255, 102, 0, 0.4);
+  }
+
+  /* Responsive - reducir espacios en móviles */
+  @media (max-width: 768px) {
+    .google-reviews-carousel-container {
+      max-width: 100%;
+      width: 100%;
+      display: block;
+      visibility: visible;
+    }
+
+    .google-reviews-carousel {
+      min-height: 260px;
+      width: 100%;
+      display: block;
+    }
+
+    .google-review-card {
+      padding: 14px;
+      position: absolute;
+      visibility: hidden;
+    }
+    
+    .google-review-card.active {
+      position: relative;
+      visibility: visible;
+    }
+
+    .google-review-header {
+      margin-bottom: 8px;
+    }
+
+    .google-review-text {
+      margin-bottom: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .google-review-footer {
+      padding-top: 8px;
+    }
+
+    .google-review-avatar {
+      width: 32px;
+      height: 32px;
+      font-size: 14px;
+    }
+
+    .google-review-name {
+      font-size: 13px;
+    }
+
+    .google-reviews-indicators {
+      margin-top: 8px;
+      margin-bottom: 4px;
+    }
+
+    .google-review-cta {
+      margin-top: 4px;
+    }
+
+    .google-review-button {
+      padding: 8px 16px;
+      font-size: 11px;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const cards = document.querySelectorAll('.google-review-card');
+    const indicators = document.querySelectorAll('.google-review-indicator');
+    
+    // Asegurar que siempre haya al menos una card visible
+    if (cards.length === 0) return;
+    
+    // Si solo hay una card, asegurarse de que esté visible
+    if (cards.length === 1) {
+      cards[0].classList.add('active');
+      if (indicators.length > 0) {
+        indicators[0].classList.add('active');
+      }
+      return;
+    }
+    
+    let currentIndex = 0;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    
+    // Función segura para mostrar review con manejo de errores
+    const safeShowReview = (index: number) => {
+      try {
+        const validIndex = ((index % cards.length) + cards.length) % cards.length;
+        
+        // Ocultar todas las cards
+        cards.forEach((card, i) => {
+          if (i === validIndex) {
+            card.classList.add('active');
+          } else {
+            card.classList.remove('active');
+          }
+        });
+        
+        // Actualizar indicadores
+        indicators.forEach((indicator, i) => {
+          if (i === validIndex) {
+            indicator.classList.add('active');
+          } else {
+            indicator.classList.remove('active');
+          }
+        });
+        
+        currentIndex = validIndex;
+      } catch (error) {
+        console.error('Error en showReview:', error);
+        // Fallback: activar la primera card
+        if (cards.length > 0) {
+          cards[0].classList.add('active');
+          if (indicators.length > 0) {
+            indicators[0].classList.add('active');
+          }
+          currentIndex = 0;
+        }
+      }
+    };
+    
+    // Inicializar con el primer review
+    safeShowReview(0);
+    
+    // Cambiar review cada 5 segundos - loop infinito
+    intervalId = setInterval(() => {
+      // Incrementar índice y usar módulo para loop infinito
+      currentIndex = (currentIndex + 1) % cards.length;
+      safeShowReview(currentIndex);
+    }, 5000);
+    
+    // Permitir click en indicadores
+    indicators.forEach((indicator, index) => {
+      indicator.addEventListener('click', () => {
+        // Validar índice antes de asignar
+        const validIndex = Math.max(0, Math.min(index, cards.length - 1));
+        currentIndex = validIndex;
+        safeShowReview(currentIndex);
+        // Reiniciar el intervalo después de un click manual
+        if (intervalId) {
+          clearInterval(intervalId);
+        }
+        intervalId = setInterval(() => {
+          currentIndex = (currentIndex + 1) % cards.length;
+          safeShowReview(currentIndex);
+        }, 5000);
+      });
+    });
+    
+    // Asegurar que siempre haya una card visible (fallback múltiple)
+    const ensureActiveCard = () => {
+      const activeCard = document.querySelector('.google-review-card.active');
+      if (!activeCard && cards.length > 0) {
+        safeShowReview(0);
+      }
+    };
+    
+    // Verificar inmediatamente
+    ensureActiveCard();
+    
+    // Verificar después de un breve delay
+    setTimeout(ensureActiveCard, 100);
+    
+    // Verificar periódicamente para asegurar que siempre haya una card visible
+    setInterval(() => {
+      const activeCard = document.querySelector('.google-review-card.active');
+      if (!activeCard && cards.length > 0) {
+        safeShowReview(currentIndex);
+      }
+    }, 2000);
+  });
+</script>

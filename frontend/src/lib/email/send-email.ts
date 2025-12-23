@@ -159,8 +159,9 @@ export function generateEmailHTML(options: {
   logoUrl?: string;
   footerMessage?: string;
 }): string {
-  const logoUrl = options.logoUrl || 'https://mimoto.cl/logo.jpg';
+  // Usar la URL del logo desde variables de entorno o la URL por defecto
   const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://mimoto.cl';
+  const logoUrl = options.logoUrl || import.meta.env.PUBLIC_EMAIL_LOGO_URL || `${siteUrl}/logo.png`;
   
   return `
     <!DOCTYPE html>
@@ -191,6 +192,17 @@ export function generateEmailHTML(options: {
         .logo {
           max-width: 150px;
           height: auto;
+          margin-bottom: 15px;
+          display: block;
+          margin-left: auto;
+          margin-right: auto;
+        }
+        .logo-fallback {
+          display: none;
+          font-size: 32px;
+          font-weight: bold;
+          color: white;
+          letter-spacing: 2px;
           margin-bottom: 15px;
         }
         .content { 
@@ -267,7 +279,20 @@ export function generateEmailHTML(options: {
     <body>
       <div class="email-container">
         <div class="header">
-          <img src="${logoUrl}" alt="MIMOTO" class="logo" />
+          <!-- Logo con fallback a texto si la imagen no carga -->
+          <!--[if mso]>
+          <div style="font-size: 32px; font-weight: bold; color: white; letter-spacing: 2px; margin-bottom: 15px; text-align: center;">MIMOTO</div>
+          <![endif]-->
+          <!--[if !mso]><!-->
+          <img 
+            src="${logoUrl}" 
+            alt="MIMOTO" 
+            class="logo"
+            width="150"
+            height="auto"
+            style="max-width: 150px; height: auto; display: block; margin: 0 auto 15px auto; border: 0; outline: none; text-decoration: none;"
+          />
+          <!--<![endif]-->
           <h1 style="margin: 0; font-size: 24px;">${options.title}</h1>
         </div>
         <div class="content">

@@ -519,13 +519,14 @@ export const POST: APIRoute = async ({ request }) => {
           // Importar función de envío de email
           const { sendEmail, generateEmailHTML } = await import('../../../lib/email/send-email');
           
+          const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://mimoto.cl';
           const emailHtml = generateEmailHTML({
             title: '✅ Pago Confirmado',
             message: `Tu pago ha sido confirmado exitosamente. Tu pedido #${order.id} está siendo procesado.`,
             orderId: order.id,
             amount: Number(order.total_amount),
             items: orderItems,
-            logoUrl: 'https://mimoto.cl/logo.jpg'
+            logoUrl: `${siteUrl}/logo.png`
           });
 
           console.log('📧 Preparando envío de email de confirmación de pago...');

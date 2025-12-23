@@ -308,13 +308,14 @@ async function sendNotifications(
       const { sendEmail, generateEmailHTML } = await import('../../../lib/email/send-email');
       
       // Generar HTML del email con logo y diseño mejorado
+      const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'https://mimoto.cl';
       const emailHtml = generateEmailHTML({
         title: notification.title,
         message: `Hola${name ? ' ' + name.split(' ')[0] : ''},<br><br>${notification.message}`,
         orderId: orderId,
         amount: amount,
         items: orderItems,
-        logoUrl: 'https://mimoto.cl/logo.jpg'
+        logoUrl: `${siteUrl}/logo.png`
       });
 
       console.log('📧 Preparando envío de email con Resend...');
