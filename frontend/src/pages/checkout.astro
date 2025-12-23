@@ -103,12 +103,93 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       totalEl.textContent = '$' + total.toLocaleString('es-CL');
     }
 
+    async function loadUserData() {
+      const userEl = document.getElementById('checkout-user');
+      if (!userEl) return;
+      
+      try {
+        // Usar Supabase desde el CDN (ya cargado en BaseLayout)
+        if (typeof supabase === 'undefined') {
+          console.warn('⚠️ Supabase no disponible aún, esperando...');
+          setTimeout(loadUserData, 500);
+          return;
+        }
+        
+        const SUPABASE_URL = 'https://prizpqahcluomioxnmex.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
+        
+        const supabaseUrl = (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_URL) || SUPABASE_URL;
+        const supabaseAnonKey = (typeof window !== 'undefined' && window.PUBLIC_SUPABASE_ANON_KEY) || SUPABASE_KEY;
+        const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+        
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        
+        if (error || !session) {
+          userEl.innerHTML = `
+            <div class="text-yellow-400">
+              <p class="mb-2">⚠️ No estás autenticado</p>
+              <p class="text-xs text-white/70 mb-3">Puedes continuar como invitado, pero te recomendamos <a href="/login" class="text-primary underline">iniciar sesión</a> para un mejor seguimiento de tu pedido.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        const user = session.user;
+        let userName = user.email?.split('@')[0] || 'Usuario';
+        let userEmail = user.email || '';
+        
+        // Intentar obtener nombre completo del perfil
+        try {
+          const { data: profile } = await supabaseClient
+            .from('users')
+            .select('full_name, email')
+            .eq('id', user.id)
+            .single();
+          
+          if (profile) {
+            userName = profile.full_name || userName;
+            userEmail = profile.email || userEmail;
+          }
+        } catch (profileError) {
+          console.log('ℹ️ No se pudo obtener perfil, usando datos básicos');
+        }
+        
+        userEl.innerHTML = `
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-white/70">Nombre:</span>
+              <span class="font-semibold text-white">${userName}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-white/70">Email:</span>
+              <span class="font-semibold text-white">${userEmail}</span>
+            </div>
+            ${user.phone ? `
+            <div class="flex justify-between">
+              <span class="text-white/70">Teléfono:</span>
+              <span class="font-semibold text-white">${user.phone}</span>
+            </div>
+            ` : ''}
+          </div>
+        `;
+      } catch (err) {
+        console.error('Error cargando datos del usuario:', err);
+        userEl.innerHTML = `
+          <div class="text-yellow-400">
+            <p>⚠️ No se pudieron cargar los datos del usuario</p>
+            <p class="text-xs text-white/70 mt-2">Puedes continuar como invitado.</p>
+          </div>
+        `;
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       console.log('🛒 Checkout: Iniciando...');
       const cart = loadCart();
       console.log('🛒 Checkout: Carrito cargado:', cart.length, 'items');
       
       renderSummary(cart);
+      loadUserData();
 
       const confirmBtn = document.getElementById('confirm-order-btn');
       const errorEl = document.getElementById('checkout-error');

@@ -46,20 +46,31 @@ export const POST: APIRoute = async ({ request }) => {
     // Si no hay user_id, es un pedido de usuario no autenticado
     let userEmail = 'cliente@mimoto.cl';
     if (order.user_id) {
-    const { data: user, error: userError } = await supabase.auth.admin.getUserById(order.user_id);
-      if (!userError && user) {
-        userEmail = user.email || userEmail;
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(order.user_id);
+      if (!userError && userData?.user) {
+        userEmail = userData.user.email || userEmail;
       }
     }
 
     // Configurar Webpay Plus
-    // IMPORTANTE: Cambiar a Environment.Production cuando tengas las credenciales de producción
-    const environment = import.meta.env.PUBLIC_WEBPAY_ENVIRONMENT === 'production' 
+    const webpayEnvironment = import.meta.env.PUBLIC_WEBPAY_ENVIRONMENT;
+    const environment = webpayEnvironment === 'production' 
       ? Environment.Production 
       : Environment.Integration;
 
     const commerceCode = import.meta.env.PUBLIC_WEBPAY_COMMERCE_CODE || '597055555532';
     const apiKey = import.meta.env.PUBLIC_WEBPAY_API_KEY || '579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C';
+
+    console.log('🔧 Configuración de Webpay:', {
+      PUBLIC_WEBPAY_ENVIRONMENT: webpayEnvironment || 'no configurado (usando integración)',
+      resolvedEnvironment: environment === Environment.Production ? 'Production' : 'Integration',
+      isProduction: environment === Environment.Production,
+      commerceCode: commerceCode ? `${commerceCode.substring(0, 6)}...` : 'no configurado',
+      apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'no configurado',
+      webpayHost: environment === Environment.Production 
+        ? 'https://webpay3g.transbank.cl' 
+        : 'https://webpay3gint.transbank.cl'
+    });
 
     const options = new Options(commerceCode, apiKey, environment);
     const webpayPlus = new WebpayPlus.Transaction(options);

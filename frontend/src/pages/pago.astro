@@ -11,24 +11,60 @@ let userEmail = null;
 
 if (orderId) {
   try {
-    const { data: order, error } = await supabaseClient
-      .from('orders')
-      .select('total_amount, status, user_id')
-      .eq('id', orderId)
-      .single();
+    // Intentar obtener el pedido con el ID como número (BIGSERIAL)
+    const orderIdNum = Number(orderId);
+    let order = null;
+    let error = null;
+    
+    // Intentar primero con el ID como número
+    if (!isNaN(orderIdNum)) {
+      const result = await supabaseClient
+        .from('orders')
+        .select('id, total_amount, status, user_id, created_at')
+        .eq('id', orderIdNum)
+        .single();
+      order = result.data;
+      error = result.error;
+    }
+    
+    // Si no se encuentra, intentar con el ID como string
+    if (error || !order) {
+      const result = await supabaseClient
+        .from('orders')
+        .select('id, total_amount, status, user_id, created_at')
+        .eq('id', orderId)
+        .single();
+      order = result.data;
+      error = result.error;
+    }
 
     if (!error && order) {
       orderTotal = Number(order.total_amount);
       orderStatus = order.status;
       
-      // Obtener email del usuario
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      if (user) {
-        userEmail = user.email;
+      // Obtener email del usuario si hay user_id
+      if (order.user_id) {
+        try {
+          const { data: { user } } = await supabaseClient.auth.getUser();
+          if (user) {
+            userEmail = user.email;
+          }
+        } catch (userErr) {
+          console.log('ℹ️ No se pudo obtener email del usuario');
+        }
       }
+      
+      console.log('✅ Pedido encontrado:', {
+        id: order.id,
+        total: orderTotal,
+        status: orderStatus
+      });
+    } else {
+      console.error('❌ Error obteniendo pedido:', error);
+      console.error('❌ OrderId usado:', orderId, 'Tipo:', typeof orderId);
     }
   } catch (err) {
-    console.error('Error obteniendo el pedido:', err);
+    console.error('❌ Error obteniendo el pedido:', err);
   }
 }
 ---
@@ -157,16 +193,55 @@ if (orderId) {
           const supabaseAnonKey = window.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
           const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
 
-          const { data: order, error } = await supabaseClient
-            .from('orders')
-            .select('total_amount')
-            .eq('id', orderIdFromUrl)
-            .single();
+          // Intentar buscar el pedido como número primero
+          const orderIdNum = Number(orderIdFromUrl);
+          let order = null;
+          let error = null;
+          
+          if (!isNaN(orderIdNum)) {
+            const result = await supabaseClient
+              .from('orders')
+              .select('id, total_amount, status')
+              .eq('id', orderIdNum)
+              .single();
+            order = result.data;
+            error = result.error;
+          }
+          
+          // Si no se encuentra, intentar como string
+          if (error || !order) {
+            const result = await supabaseClient
+              .from('orders')
+              .select('id, total_amount, status')
+              .eq('id', orderIdFromUrl)
+              .single();
+            order = result.data;
+            error = result.error;
+          }
 
-          if (error) {
+          if (error || !order) {
             console.error('❌ Error obteniendo pedido:', error);
+            console.error('❌ OrderId usado:', orderIdFromUrl, 'Tipo:', typeof orderIdFromUrl);
+            console.error('❌ OrderId como número:', orderIdNum);
+            
+            // Mostrar mensaje de error más detallado
             payButton.disabled = true;
             payButtonText.textContent = 'Error: Pedido no encontrado';
+            
+            const errorMsg = document.createElement('div');
+            errorMsg.className = 'bg-red-500/10 border-l-4 border-red-500 p-4 rounded mt-4';
+            errorMsg.innerHTML = `
+              <p class="text-sm text-red-200 mb-2">
+                <strong>Error:</strong> No se encontró el pedido #${orderIdFromUrl} en la base de datos.
+              </p>
+              <p class="text-xs text-red-300 mb-3">
+                Esto puede ocurrir si el pedido fue eliminado o si hay un problema con la conexión a la base de datos.
+              </p>
+              <a href="/checkout" class="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-primary-600 transition-colors text-sm">
+                Volver al Checkout
+              </a>
+            `;
+            payButton.parentElement?.appendChild(errorMsg);
             return;
           }
 
