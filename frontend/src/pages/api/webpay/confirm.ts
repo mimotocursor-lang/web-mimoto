@@ -519,9 +519,10 @@ export const POST: APIRoute = async ({ request }) => {
           // Importar función de envío de email
           const { sendEmail, generateEmailHTML } = await import('../../../lib/email/send-email');
           
+          const customerFirstName = customerName ? customerName.split(' ')[0] : '';
           const emailHtml = generateEmailHTML({
-            title: '✅ Pago Confirmado',
-            message: `Tu pago ha sido confirmado exitosamente. Tu pedido #${order.id} está siendo procesado.`,
+            title: '✅ Compra Exitosa',
+            message: `Hola${customerFirstName ? ' ' + customerFirstName : ''},<br><br>Tu pago ha sido confirmado exitosamente. Tu pedido #${order.id} está siendo procesado.<br><br>Te notificaremos cuando tu pedido sea confirmado y esté listo para entrega.`,
             orderId: order.id,
             amount: Number(order.total_amount),
             items: orderItems,
@@ -531,11 +532,11 @@ export const POST: APIRoute = async ({ request }) => {
           console.log('📧 Preparando envío de email de confirmación de pago...');
           console.log('📧 Email HTML generado, longitud:', emailHtml.length);
           console.log('📧 Destinatario:', customerEmail);
-          console.log('📧 Asunto: Pago Confirmado - Pedido #' + order.id);
+          console.log('📧 Asunto: Compra Exitosa - Pedido #' + order.id);
           
           const emailResult = await sendEmail({
             to: customerEmail,
-            subject: `Pago Confirmado - Pedido #${order.id}`,
+            subject: `Compra Exitosa - Pedido #${order.id}`,
             html: emailHtml
           });
 
