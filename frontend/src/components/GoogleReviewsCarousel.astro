@@ -171,17 +171,12 @@ function truncateText(text: string, maxLength: number = 150) {
     position: relative;
     min-height: 280px;
     width: 100%;
+    overflow: visible;
   }
 
   .google-review-card {
-    position: absolute;
-    top: 0;
-    left: 0;
+    display: none;
     width: 100%;
-    opacity: 0;
-    transform: translateX(20px);
-    transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
-    pointer-events: none;
     /* Light mode */
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(10px);
@@ -189,7 +184,16 @@ function truncateText(text: string, maxLength: number = 150) {
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    visibility: hidden;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+  }
+  
+  /* La primera card con clase active debe ser visible desde el inicio */
+  .google-review-card.active {
+    display: block !important;
+    opacity: 1 !important;
+    transform: translateX(0) !important;
   }
 
   /* Dark mode - más opaco para mejor contraste */
@@ -200,12 +204,9 @@ function truncateText(text: string, maxLength: number = 150) {
   }
 
   .google-review-card.active {
-    opacity: 1;
-    transform: translateX(0);
-    pointer-events: auto;
-    position: relative;
-    z-index: 1;
-    visibility: visible;
+    display: block !important;
+    opacity: 1 !important;
+    transform: translateX(0) !important;
   }
 
   .google-review-header {
@@ -430,20 +431,39 @@ function truncateText(text: string, maxLength: number = 150) {
     }
 
     .google-reviews-carousel {
-      min-height: 260px;
+      min-height: 280px;
       width: 100%;
       display: block;
+      position: relative;
+      overflow: visible;
     }
 
     .google-review-card {
       padding: 14px;
+    }
+    
+    /* En responsive, las cards inactivas deben estar ocultas pero no interferir */
+    .google-review-card:not(.active) {
       position: absolute;
       visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
     }
     
     .google-review-card.active {
-      position: relative;
-      visibility: visible;
+      position: relative !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      z-index: 10 !important;
+      display: block !important;
+    }
+    
+    /* Asegurar que la primera card siempre sea visible si tiene la clase active */
+    .google-review-card:first-child.active {
+      position: relative !important;
+      visibility: visible !important;
+      opacity: 1 !important;
     }
 
     .google-review-header {
@@ -473,10 +493,16 @@ function truncateText(text: string, maxLength: number = 150) {
     .google-reviews-indicators {
       margin-top: 8px;
       margin-bottom: 4px;
+      display: flex;
+      visibility: visible;
+      opacity: 1;
     }
 
     .google-review-cta {
       margin-top: 4px;
+      display: block;
+      visibility: visible;
+      opacity: 1;
     }
 
     .google-review-button {
@@ -487,7 +513,15 @@ function truncateText(text: string, maxLength: number = 150) {
 </style>
 
 <script>
-  document.addEventListener('DOMContentLoaded', () => {
+  // Esperar a que el DOM esté completamente cargado
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCarousel);
+  } else {
+    // DOM ya está listo
+    setTimeout(initCarousel, 100);
+  }
+  
+  function initCarousel() {
     const cards = document.querySelectorAll('.google-review-card');
     const indicators = document.querySelectorAll('.google-review-indicator');
     
@@ -496,7 +530,11 @@ function truncateText(text: string, maxLength: number = 150) {
     
     // Si solo hay una card, asegurarse de que esté visible
     if (cards.length === 1) {
-      cards[0].classList.add('active');
+      const singleCard = cards[0] as HTMLElement;
+      singleCard.classList.add('active');
+      singleCard.style.position = 'relative';
+      singleCard.style.visibility = 'visible';
+      singleCard.style.opacity = '1';
       if (indicators.length > 0) {
         indicators[0].classList.add('active');
       }
@@ -511,12 +549,31 @@ function truncateText(text: string, maxLength: number = 150) {
       try {
         const validIndex = ((index % cards.length) + cards.length) % cards.length;
         
-        // Ocultar todas las cards
+        // Primero activar la nueva card ANTES de desactivar la anterior
+        // Esto evita que todas las cards queden ocultas momentáneamente
+        if (cards[validIndex]) {
+          const newCard = cards[validIndex] as HTMLElement;
+          newCard.classList.add('active');
+          // Forzar estilos inline para asegurar visibilidad
+          newCard.style.position = 'relative';
+          newCard.style.visibility = 'visible';
+          newCard.style.opacity = '1';
+          newCard.style.pointerEvents = 'auto';
+          newCard.style.zIndex = '10';
+        }
+        
+        // Luego ocultar las demás cards
         cards.forEach((card, i) => {
-          if (i === validIndex) {
-            card.classList.add('active');
-          } else {
-            card.classList.remove('active');
+          if (i !== validIndex) {
+            const inactiveCard = card as HTMLElement;
+            inactiveCard.classList.remove('active');
+            // Solo aplicar estilos si estamos en responsive (pantalla pequeña)
+            if (window.innerWidth <= 768) {
+              inactiveCard.style.position = 'absolute';
+              inactiveCard.style.visibility = 'hidden';
+              inactiveCard.style.opacity = '0';
+              inactiveCard.style.pointerEvents = 'none';
+            }
           }
         });
         
@@ -534,17 +591,67 @@ function truncateText(text: string, maxLength: number = 150) {
         console.error('Error en showReview:', error);
         // Fallback: activar la primera card
         if (cards.length > 0) {
-          cards[0].classList.add('active');
+          const firstCard = cards[0] as HTMLElement;
+          firstCard.classList.add('active');
+          firstCard.style.position = 'relative';
+          firstCard.style.visibility = 'visible';
+          firstCard.style.opacity = '1';
+          firstCard.style.pointerEvents = 'auto';
+          firstCard.style.zIndex = '10';
+          
+          cards.forEach((card, i) => {
+            if (i !== 0) {
+              const inactiveCard = card as HTMLElement;
+              inactiveCard.classList.remove('active');
+              if (window.innerWidth <= 768) {
+                inactiveCard.style.position = 'absolute';
+                inactiveCard.style.visibility = 'hidden';
+                inactiveCard.style.opacity = '0';
+                inactiveCard.style.pointerEvents = 'none';
+              }
+            }
+          });
+          
           if (indicators.length > 0) {
-            indicators[0].classList.add('active');
+            indicators.forEach((indicator, i) => {
+              if (i === 0) {
+                indicator.classList.add('active');
+              } else {
+                indicator.classList.remove('active');
+              }
+            });
           }
           currentIndex = 0;
         }
       }
     };
     
-    // Inicializar con el primer review
-    safeShowReview(0);
+    // Asegurar que la primera card esté activa desde el inicio
+    // Verificar si ya hay una card activa (del HTML)
+    const initialActiveCard = document.querySelector('.google-review-card.active');
+    if (initialActiveCard) {
+      // Encontrar el índice de la card activa
+      cards.forEach((card, i) => {
+        if (card === initialActiveCard) {
+          currentIndex = i;
+        }
+      });
+      // Forzar que la card activa sea visible
+      initialActiveCard.classList.add('active');
+      // Asegurar que tenga los estilos correctos
+      (initialActiveCard as HTMLElement).style.position = 'relative';
+      (initialActiveCard as HTMLElement).style.visibility = 'visible';
+      (initialActiveCard as HTMLElement).style.opacity = '1';
+    } else {
+      // Si no hay ninguna activa, activar la primera
+      if (cards.length > 0) {
+        cards[0].classList.add('active');
+        (cards[0] as HTMLElement).style.position = 'relative';
+        (cards[0] as HTMLElement).style.visibility = 'visible';
+        (cards[0] as HTMLElement).style.opacity = '1';
+        currentIndex = 0;
+      }
+    }
     
     // Cambiar review cada 5 segundos - loop infinito
     intervalId = setInterval(() => {
@@ -585,12 +692,40 @@ function truncateText(text: string, maxLength: number = 150) {
     // Verificar después de un breve delay
     setTimeout(ensureActiveCard, 100);
     
+    // Verificar después de que el DOM esté completamente cargado
+    setTimeout(ensureActiveCard, 500);
+    
+    // Verificar después de 1 segundo para asegurar que todo esté estable
+    setTimeout(() => {
+      const activeCard = document.querySelector('.google-review-card.active');
+      if (activeCard) {
+        const cardEl = activeCard as HTMLElement;
+        cardEl.style.position = 'relative';
+        cardEl.style.visibility = 'visible';
+        cardEl.style.opacity = '1';
+        cardEl.style.zIndex = '10';
+      } else {
+        ensureActiveCard();
+      }
+    }, 1000);
+    
     // Verificar periódicamente para asegurar que siempre haya una card visible
-    setInterval(() => {
+    const checkInterval = setInterval(() => {
       const activeCard = document.querySelector('.google-review-card.active');
       if (!activeCard && cards.length > 0) {
+        console.log('⚠️ No hay card activa detectada, reactivando...');
         safeShowReview(currentIndex);
       }
-    }, 2000);
-  });
+      // Verificar también que la card activa sea visible
+      if (activeCard) {
+        const computedStyle = window.getComputedStyle(activeCard);
+        if (computedStyle.visibility === 'hidden' || computedStyle.opacity === '0') {
+          console.log('⚠️ Card activa no es visible, corrigiendo...');
+          activeCard.classList.remove('active');
+          safeShowReview(currentIndex);
+        }
+      }
+    }, 1000);
+  }
 </script>
+
