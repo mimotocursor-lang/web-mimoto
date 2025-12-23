@@ -14,6 +14,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let body;
     let items;
     let orderEmail: string | null = null; // Email para notificaciones - definido fuera del try para que esté disponible en todo el scope
+    let orderPhone: string | null = null;
+    let orderRut: string | null = null;
+    let addressStreet: string | null = null;
+    let addressNumber: string | null = null;
+    let addressApartment: string | null = null;
+    let addressCity: string | null = null;
     
     try {
       // En Astro, a veces request.json() falla si el body está vacío
@@ -71,12 +77,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       
       items = body.items;
       orderEmail = body.email || null; // Email para notificaciones
-      const orderPhone = body.phone || null;
-      const orderRut = body.rut || null;
-      const addressStreet = body.address_street || null;
-      const addressNumber = body.address_number || null;
-      const addressApartment = body.address_apartment || null;
-      const addressCity = body.address_city || null;
+      orderPhone = body.phone || null;
+      orderRut = body.rut || null;
+      addressStreet = body.address_street || null;
+      addressNumber = body.address_number || null;
+      addressApartment = body.address_apartment || null;
+      addressCity = body.address_city || null;
       console.log('📥 Items extraídos:', items ? `Array con ${items.length} items` : 'NO HAY ITEMS');
       console.log('📥 Email extraído:', orderEmail || 'NO HAY EMAIL');
       console.log('📥 Datos del cliente:', { phone: orderPhone, rut: orderRut, city: addressCity });
@@ -312,12 +318,12 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       user_id: userId,
       total_amount: totalAmount,
       email: finalEmail, // Email para notificaciones
-      phone: body.phone || null,
-      rut: body.rut || null,
-      address_street: body.address_street || null,
-      address_number: body.address_number || null,
-      address_apartment: body.address_apartment || null,
-      address_city: body.address_city || null,
+      phone: orderPhone,
+      rut: orderRut,
+      address_street: addressStreet,
+      address_number: addressNumber,
+      address_apartment: addressApartment,
+      address_city: addressCity,
     };
     
     let { data: order, error: orderError } = await supabase
