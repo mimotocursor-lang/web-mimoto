@@ -152,7 +152,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Primero intentar buscar por payment_reference que contiene el token exacto
     let { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, total_amount, status, payment_reference')
+      .select('id, total_amount, status, payment_reference, email, user_id')
       .eq('payment_reference', token_ws)
       .single();
 
@@ -162,7 +162,7 @@ export const POST: APIRoute = async ({ request }) => {
       console.log('⚠️ No se encontró pedido con payment_reference exacto, buscando por token...');
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, total_amount, status, payment_reference')
+        .select('id, total_amount, status, payment_reference, email, user_id')
         .like('payment_reference', `${token_ws}%`)
         .order('created_at', { ascending: false })
         .limit(1);
@@ -398,7 +398,7 @@ export const POST: APIRoute = async ({ request }) => {
         paymentDetailsSaved: !!paymentDetails
       });
       
-      // Verificar que se actualizó correctamente
+      // Verificar que se actualizó correctamente - FORZAR ACTUALIZACIÓN SI ES NECESARIO
       const { data: verifyOrder } = await supabase
         .from('orders')
         .select('id, status, payment_details')
@@ -410,21 +410,60 @@ export const POST: APIRoute = async ({ request }) => {
         status: verifyOrder?.status,
         hasPaymentDetails: !!verifyOrder?.payment_details,
         expectedStatus: newStatus,
-        statusMatches: verifyOrder?.status === newStatus
+        statusMatches: verifyOrder?.status === newStatus,
+        isApproved: isApproved,
+        hasAuthorizationCode: hasAuthorizationCode
       });
       
-      // Si el estado no coincide, intentar corregirlo
+      // Si el estado no coincide Y el pago fue aprobado, FORZAR actualización a 'paid'
       if (verifyOrder && verifyOrder.status !== newStatus && isApproved) {
-        console.log('⚠️ El estado no coincide, intentando corregir...');
+        console.log('⚠️ El estado no coincide con lo esperado. Estado actual:', verifyOrder.status, 'Esperado:', newStatus);
+        console.log('⚠️ Forzando actualización a "paid" porque el pago fue aprobado...');
+        
         const fixResult = await supabase
           .from('orders')
-          .update({ status: 'paid' })
+          .update({ 
+            status: 'paid',
+            updated_at: new Date().toISOString()
+          })
           .eq('id', order.id);
         
         if (fixResult.error) {
           console.error('❌ Error corrigiendo estado:', fixResult.error);
+          console.error('❌ Detalles del error:', JSON.stringify(fixResult.error, null, 2));
         } else {
           console.log('✅ Estado corregido a "paid"');
+          
+          // Verificar nuevamente después de la corrección
+          const { data: finalVerify } = await supabase
+            .from('orders')
+            .select('id, status')
+            .eq('id', order.id)
+            .single();
+          
+          console.log('🔍 Verificación final después de corrección:', {
+            orderId: finalVerify?.id,
+            status: finalVerify?.status,
+            isPaid: finalVerify?.status === 'paid'
+          });
+        }
+      }
+      
+      // Si hay authorizationCode pero el estado no es 'paid', forzar actualización
+      if (hasAuthorizationCode && verifyOrder && verifyOrder.status !== 'paid') {
+        console.log('⚠️ Hay authorizationCode pero el estado no es "paid". Forzando actualización...');
+        const forcePaidResult = await supabase
+          .from('orders')
+          .update({ 
+            status: 'paid',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', order.id);
+        
+        if (forcePaidResult.error) {
+          console.error('❌ Error forzando estado a "paid":', forcePaidResult.error);
+        } else {
+          console.log('✅ Estado forzado a "paid" exitosamente');
         }
       }
     }

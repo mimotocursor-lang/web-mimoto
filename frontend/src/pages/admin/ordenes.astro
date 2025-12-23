@@ -200,7 +200,26 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
                 </tr>
               </thead>
               <tbody>
-                ${orders.map(order => `
+                ${orders.map(order => {
+                  // Parsear payment_details si existe para determinar el estado real
+                  let paymentDetails = null;
+                  if (order.payment_details) {
+                    try {
+                      paymentDetails = typeof order.payment_details === 'string' 
+                        ? JSON.parse(order.payment_details) 
+                        : order.payment_details;
+                    } catch (e) {
+                      // Ignorar errores de parsing
+                    }
+                  }
+                  
+                  // Si hay payment_details que indiquen pago exitoso pero el estado es pending_payment,
+                  // mostrar como "Pagado" visualmente
+                  const displayStatus = (paymentDetails && 
+                    (paymentDetails.responseCode === 0 || paymentDetails.responseCode === '0' || paymentDetails.authorizationCode) && 
+                    order.status === 'pending_payment') ? 'paid' : order.status;
+                  
+                  return `
                   <tr class="border-b border-gray-200 dark:border-primary/20 hover:bg-gray-50 dark:hover:bg-ktm-surface/30">
                     <td class="py-3 px-4 text-gray-900 dark:text-ktm-text font-semibold">#${order.id}</td>
                     <td class="py-3 px-4 text-gray-700 dark:text-ktm-text/80">
@@ -209,8 +228,8 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
                     </td>
                     <td class="py-3 px-4 text-gray-900 dark:text-ktm-text font-bold">$${Number(order.total_amount).toLocaleString('es-CL')}</td>
                     <td class="py-3 px-4">
-                      <span class="px-3 py-1 rounded-full text-xs font-semibold ${getStatusClass(order.status)}">
-                        ${getStatusLabel(order.status)}
+                      <span class="px-3 py-1 rounded-full text-xs font-semibold ${getStatusClass(displayStatus)}">
+                        ${getStatusLabel(displayStatus, paymentDetails)}
                       </span>
                     </td>
                     <td class="py-3 px-4 text-gray-600 dark:text-ktm-text/70 text-sm">
@@ -242,7 +261,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
     }
 
-    function getStatusLabel(status) {
+    function getStatusLabel(status, paymentDetails = null) {
+      // Si hay payment_details que indiquen pago exitoso pero el estado es pending_payment,
+      // mostrar como "Pagado (Pendiente de actualización)"
+      if (status === 'pending_payment' && paymentDetails) {
+        const isPaid = paymentDetails.responseCode === 0 || paymentDetails.responseCode === '0' || !!paymentDetails.authorizationCode;
+        if (isPaid) {
+          return '✅ Pagado (Pendiente de actualización)';
+        }
+      }
+      
       const labels = {
         'pending_payment': 'Pendiente de Pago',
         'waiting_confirmation': 'Esperando Confirmación',
