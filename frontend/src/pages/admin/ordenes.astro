@@ -171,7 +171,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 
         const { data: orders, error } = await query;
 
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Error en query de órdenes:', error);
+          throw error;
+        }
+
+        console.log('📋 Órdenes cargadas:', {
+          total: orders?.length || 0,
+          estados: orders?.map(o => ({ id: o.id, status: o.status })) || []
+        });
 
         if (!orders || orders.length === 0) {
           container.innerHTML = '<p class="text-center text-gray-600 dark:text-ktm-text/70 py-8">No hay órdenes para mostrar</p>';
@@ -283,13 +291,20 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               quantity,
               unit_price,
               total_price,
-              products:product_id(title, name, main_image_url)
+              products:product_id(name, main_image_url)
             )
           `)
           .eq('id', orderId)
           .single();
 
         if (orderError) throw orderError;
+
+        console.log('📋 Orden cargada:', {
+          id: order.id,
+          status: order.status,
+          payment_reference: order.payment_reference,
+          has_payment_details: !!order.payment_details
+        });
 
         // Parsear payment_details si existe
         let paymentDetails = null;
@@ -298,10 +313,29 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             paymentDetails = typeof order.payment_details === 'string' 
               ? JSON.parse(order.payment_details) 
               : order.payment_details;
+            console.log('📋 Payment details parseados:', {
+              responseCode: paymentDetails?.responseCode,
+              authorizationCode: paymentDetails?.authorizationCode,
+              isApproved: paymentDetails?.responseCode === 0
+            });
           } catch (e) {
-            console.log('No se pudo parsear payment_details');
+            console.log('⚠️ No se pudo parsear payment_details:', e);
           }
+        } else {
+          console.log('⚠️ No hay payment_details en la orden');
         }
+
+        // Verificar si hay payment_reference que indique un pago exitoso
+        const hasPaymentReference = order.payment_reference && order.payment_reference.length > 0;
+        console.log('🔍 Análisis de la orden:', {
+          orderId: order.id,
+          status: order.status,
+          hasPaymentDetails: !!paymentDetails,
+          hasPaymentReference: hasPaymentReference,
+          paymentReference: order.payment_reference,
+          paymentDetailsResponseCode: paymentDetails?.responseCode,
+          shouldBePaid: paymentDetails?.responseCode === 0 && order.status === 'pending_payment'
+        });
 
         const formatDate = (dateString) => {
           if (!dateString) return 'N/A';
@@ -427,7 +461,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
                 ${order.order_items.map(item => `
                   <div class="flex justify-between items-center p-3 bg-white dark:bg-ktm-surface rounded border border-gray-200 dark:border-primary/30">
                     <div>
-                      <span class="font-semibold text-gray-900 dark:text-ktm-text">${item.products?.title || item.products?.name || 'Producto'}</span>
+                      <span class="font-semibold text-gray-900 dark:text-ktm-text">${item.products?.name || 'Producto'}</span>
                       <span class="text-gray-600 dark:text-ktm-text/70 text-sm ml-2">x${item.quantity}</span>
                     </div>
                     <span class="font-bold text-gray-900 dark:text-ktm-text">$${Number(item.total_price).toLocaleString('es-CL')}</span>
@@ -437,10 +471,29 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             </div>
             ` : ''}
 
+            <!-- Detectar si el pago fue exitoso pero el estado no se actualizó -->
+            ${paymentDetails && paymentDetails.responseCode === 0 && order.status !== 'paid' && order.status !== 'order_received' && order.status !== 'order_confirmed' && order.status !== 'order_delivered' ? `
+            <div class="bg-yellow-500/10 border-2 border-yellow-500 rounded-lg p-4 mb-4">
+              <h3 class="font-bold text-lg mb-2 text-yellow-800 dark:text-yellow-400">⚠️ Pago Exitoso Detectado</h3>
+              <p class="text-sm text-yellow-700 dark:text-yellow-300 mb-3">
+                El pago fue exitoso (código de autorización: ${paymentDetails.authorizationCode || 'N/A'}), 
+                pero el estado del pedido no se actualizó correctamente.
+              </p>
+              <button onclick="updateOrderStatus(${order.id}, 'paid')" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors font-semibold">
+                ✅ Corregir Estado a "Pagado"
+              </button>
+            </div>
+            ` : ''}
+
             <!-- Cambiar estado -->
             <div class="bg-primary/10 rounded-lg p-4 border-2 border-primary/30">
               <h3 class="font-bold text-lg mb-4 text-gray-900 dark:text-ktm-text">Cambiar Estado del Pedido</h3>
               <div class="flex flex-wrap gap-3">
+                ${order.status === 'pending_payment' && paymentDetails && paymentDetails.responseCode === 0 ? `
+                  <button onclick="updateOrderStatus(${order.id}, 'paid')" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+                    ✅ Marcar como Pagado (Pago detectado)
+                  </button>
+                ` : ''}
                 ${order.status === 'paid' ? `
                   <button onclick="updateOrderStatus(${order.id}, 'order_received')" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors">
                     📦 Marcar como Pedido Recibido

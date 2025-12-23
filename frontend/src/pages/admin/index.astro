@@ -159,10 +159,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           supabaseClient.from('used_motorcycles').select('id, status'),
         ]);
 
-        // Calcular total de ventas (solo órdenes pagadas)
+        // Calcular total de ventas (órdenes pagadas y en proceso)
+        // Incluir: paid, order_received, order_confirmed, order_delivered
+        const paidStatuses = ['paid', 'order_received', 'order_confirmed', 'order_delivered'];
         const totalSales = ordersRes.data
-          ?.filter(function(o) { return o.status === 'paid'; })
+          ?.filter(function(o) { return paidStatuses.includes(o.status); })
           .reduce(function(sum, o) { return sum + Number(o.total_amount || 0); }, 0) || 0;
+        
+        console.log('💰 Ventas calculadas:', {
+          totalOrders: ordersRes.data?.length || 0,
+          paidOrders: ordersRes.data?.filter(function(o) { return paidStatuses.includes(o.status); }).length || 0,
+          totalSales: totalSales
+        });
 
         // Contar productos activos
         const productsActive = productsRes.data ? productsRes.data.filter(function(p) { return p.status === 'active'; }).length : 0;

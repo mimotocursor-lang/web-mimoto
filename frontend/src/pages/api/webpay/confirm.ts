@@ -273,6 +273,15 @@ export const POST: APIRoute = async ({ request }) => {
     // Actualizar el estado del pedido
     // Actualizar estado del pedido con fallback si el enum no acepta 'pending_payment'
     const newStatus = isApproved ? 'paid' : 'pending_payment';
+    
+    console.log('🔄 Actualizando estado del pedido:', {
+      orderId: order.id,
+      oldStatus: order.status,
+      newStatus: newStatus,
+      isApproved: isApproved,
+      responseCode: commitResponse.responseCode
+    });
+    
     let updateResult = await supabase
       .from('orders')
       .update({
@@ -298,8 +307,33 @@ export const POST: APIRoute = async ({ request }) => {
     }
     
     if (updateResult.error) {
-      console.error('Error actualizando estado del pedido:', updateResult.error);
+      console.error('❌ Error actualizando estado del pedido:', updateResult.error);
+      console.error('❌ Detalles del error:', {
+        message: updateResult.error.message,
+        code: updateResult.error.code,
+        details: updateResult.error.details,
+        hint: updateResult.error.hint
+      });
       // Continuar aunque falle la actualización del status
+    } else {
+      console.log('✅ Estado del pedido actualizado exitosamente:', {
+        orderId: order.id,
+        newStatus: newStatus,
+        paymentDetailsSaved: !!paymentDetails
+      });
+      
+      // Verificar que se actualizó correctamente
+      const { data: verifyOrder } = await supabase
+        .from('orders')
+        .select('id, status, payment_details')
+        .eq('id', order.id)
+        .single();
+      
+      console.log('🔍 Verificación post-actualización:', {
+        orderId: verifyOrder?.id,
+        status: verifyOrder?.status,
+        hasPaymentDetails: !!verifyOrder?.payment_details
+      });
     }
 
     // Obtener información adicional del pedido para mostrar en el comprobante
@@ -312,13 +346,13 @@ export const POST: APIRoute = async ({ request }) => {
           quantity,
           unit_price,
           total_price,
-          product:products(title, name)
+          products:product_id(name)
         `)
         .eq('order_id', order.id);
       
       if (!itemsError && items) {
         orderItems = items.map(item => ({
-          name: item.product?.title || item.product?.name || 'Producto',
+          name: item.products?.name || 'Producto',
           quantity: item.quantity,
           price: item.unit_price
         }));
