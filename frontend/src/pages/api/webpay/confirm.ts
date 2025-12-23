@@ -219,7 +219,7 @@ export const POST: APIRoute = async ({ request }) => {
       console.log('⚠️ payment_reference actual:', order.payment_reference);
       // Si el payment_reference ya contiene el responseCode, significa que ya fue confirmado
       if (order.payment_reference && order.payment_reference.includes('-') && order.payment_reference !== token_ws) {
-        console.log('⚠️ Esta transacción ya fue confirmada anteriormente');
+        console.log('⚠️ Esta transacción ya fue confirmada anteriormente - NO se descontará stock nuevamente');
         // Devolver el estado actual sin volver a confirmar
         return new Response(
           JSON.stringify({
@@ -235,6 +235,16 @@ export const POST: APIRoute = async ({ request }) => {
           { status: 200, headers: { 'Content-Type': 'application/json' } }
         );
       }
+    }
+    
+    // Verificar si el stock ya fue descontado (marcador en payment_details)
+    let stockAlreadyDeducted = false;
+    try {
+      if (order.payment_details && typeof order.payment_details === 'object') {
+        stockAlreadyDeducted = (order.payment_details as any).stockDeducted === true;
+      }
+    } catch (e) {
+      // Ignorar errores de parsing
     }
 
     // Confirmar la transacción con Webpay
@@ -289,15 +299,31 @@ export const POST: APIRoute = async ({ request }) => {
       fullResponse: JSON.stringify(commitResponse, null, 2)
     });
     
-    // Si hay authorizationCode pero isApproved es false, forzar a true
-    // porque authorizationCode significa que Transbank autorizó el pago
-    if (hasAuthorizationCode && !isApproved) {
-      console.log('⚠️ Hay authorizationCode pero isApproved es false. Forzando a true porque authorizationCode indica pago autorizado.');
+    // Si hay authorizationCode, el pago FUE AUTORIZADO - esto es definitivo
+    // Si hay transactionDate y amount, la transacción se procesó
+    // Si el responseCode es 0, el pago fue exitoso
+    // FORZAR isApproved a true si cualquiera de estos es verdadero
+    if (hasAuthorizationCode || hasResponseCodeZero || hasTransactionData) {
+      if (!isApproved) {
+        console.log('🚨 CRÍTICO: Hay indicadores de pago exitoso pero isApproved es false. Forzando a true.');
+        console.log('🚨 Indicadores:', {
+          hasAuthorizationCode,
+          hasResponseCodeZero,
+          hasTransactionData,
+          responseCode: commitResponse.responseCode
+        });
+      }
       isApproved = true;
+    }
+    
+    // Si hay authorizationCode, SIEMPRE es pago exitoso
+    if (hasAuthorizationCode) {
+      isApproved = true;
+      console.log('✅ authorizationCode presente - pago AUTORIZADO, isApproved = true');
     }
 
     // Preparar payment_details con toda la información de la transacción
-    const paymentDetails = {
+    let paymentDetails: any = {
       authorizationCode: commitResponse.authorizationCode,
       transactionDate: commitResponse.transactionDate || new Date().toISOString(),
       paymentTypeCode: commitResponse.paymentTypeCode,
@@ -308,11 +334,14 @@ export const POST: APIRoute = async ({ request }) => {
       responseCode: commitResponse.responseCode,
       responseMessage: commitResponse.responseMessage,
       vci: commitResponse.vci,
-      accountingDate: commitResponse.accountingDate
+      accountingDate: commitResponse.accountingDate,
+      stockDeducted: false // Se actualizará después de descontar stock
     };
 
+    // DESCONTAR STOCK PRIMERO (antes de actualizar el estado)
+
     // Actualizar el estado del pedido
-    // Actualizar estado del pedido con fallback si el enum no acepta 'pending_payment'
+    // SIEMPRE actualizar a 'paid' si el pago fue aprobado (sin importar si es invitado o logueado)
     const newStatus = isApproved ? 'paid' : 'pending_payment';
     
     console.log('🔄 Actualizando estado del pedido:', {
@@ -320,7 +349,10 @@ export const POST: APIRoute = async ({ request }) => {
       oldStatus: order.status,
       newStatus: newStatus,
       isApproved: isApproved,
-      responseCode: commitResponse.responseCode
+      responseCode: commitResponse.responseCode,
+      authorizationCode: commitResponse.authorizationCode,
+      user_id: order.user_id,
+      isGuest: !order.user_id
     });
     
     // Preparar payment_reference
@@ -337,17 +369,61 @@ export const POST: APIRoute = async ({ request }) => {
       paymentDetailsStringified: JSON.stringify(paymentDetails)
     });
     
+    // ACTUALIZAR ESTADO - SIEMPRE a 'paid' si isApproved es true
     let updateResult = await supabase
       .from('orders')
       .update({
-        status: newStatus,
+        status: isApproved ? 'paid' : 'pending_payment',
         payment_reference: paymentReference,
         payment_details: paymentDetails, // Guardar detalles completos del pago
         updated_at: new Date().toISOString()
       })
       .eq('id', order.id);
+    
+    console.log('📝 Resultado de actualización inicial:', {
+      success: !updateResult.error,
+      error: updateResult.error?.message,
+      statusUpdated: isApproved ? 'paid' : 'pending_payment'
+    });
 
-    // Si falla con 'pending_payment', intentar con 'pending'
+    // Si hay error Y el pago fue aprobado, FORZAR actualización a 'paid' de todas formas
+    if (updateResult.error && isApproved) {
+      console.error('❌ Error actualizando estado del pedido:', updateResult.error);
+      console.error('❌ PERO el pago fue aprobado, forzando actualización a "paid"...');
+      
+      // Intentar múltiples veces si es necesario
+      let forceUpdateResult = await supabase
+        .from('orders')
+        .update({
+          status: 'paid',
+          payment_reference: paymentReference,
+          payment_details: paymentDetails,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', order.id);
+      
+      if (forceUpdateResult.error) {
+        console.error('❌ Error forzando estado a "paid":', forceUpdateResult.error);
+        // Intentar una vez más sin payment_details
+        forceUpdateResult = await supabase
+          .from('orders')
+          .update({
+            status: 'paid',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', order.id);
+        
+        if (!forceUpdateResult.error) {
+          console.log('✅ Estado forzado a "paid" (sin payment_details)');
+          updateResult = forceUpdateResult;
+        }
+      } else {
+        console.log('✅ Estado forzado a "paid" exitosamente');
+        updateResult = forceUpdateResult;
+      }
+    }
+    
+    // Si falla con 'pending_payment' y NO es aprobado, intentar con 'pending'
     if (updateResult.error && updateResult.error.message?.includes('invalid input value for enum') && !isApproved) {
       console.log('⚠️ pending_payment no es válido, intentando con pending...');
       updateResult = await supabase
@@ -355,41 +431,14 @@ export const POST: APIRoute = async ({ request }) => {
         .update({
           status: 'pending',
           payment_reference: `${token_ws}-${commitResponse.responseCode}`,
-          payment_details: paymentDetails, // Guardar detalles completos del pago
+          payment_details: paymentDetails,
           updated_at: new Date().toISOString()
         })
         .eq('id', order.id);
     }
     
     if (updateResult.error) {
-      console.error('❌ Error actualizando estado del pedido:', updateResult.error);
-      console.error('❌ Detalles del error:', {
-        message: updateResult.error.message,
-        code: updateResult.error.code,
-        details: updateResult.error.details,
-        hint: updateResult.error.hint,
-        fullError: JSON.stringify(updateResult.error, null, 2)
-      });
-      
-      // Si el error es por enum inválido, intentar con 'paid' directamente
-      if (updateResult.error.message?.includes('invalid input value for enum')) {
-        console.log('⚠️ Intentando actualizar con estado "paid" directamente...');
-        const retryResult = await supabase
-          .from('orders')
-          .update({
-            status: 'paid',
-            payment_reference: `${token_ws}-${commitResponse.responseCode || 'approved'}`,
-            payment_details: paymentDetails,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', order.id);
-        
-        if (retryResult.error) {
-          console.error('❌ Error en segundo intento:', retryResult.error);
-        } else {
-          console.log('✅ Estado actualizado en segundo intento');
-        }
-      }
+      console.error('❌ Error final actualizando estado del pedido:', updateResult.error);
       // Continuar aunque falle la actualización del status
     } else {
       console.log('✅ Estado del pedido actualizado exitosamente:', {
@@ -398,7 +447,8 @@ export const POST: APIRoute = async ({ request }) => {
         paymentDetailsSaved: !!paymentDetails
       });
       
-      // Verificar que se actualizó correctamente - FORZAR ACTUALIZACIÓN SI ES NECESARIO
+      // VERIFICAR Y FORZAR ACTUALIZACIÓN SI ES NECESARIO
+      // Esto es CRÍTICO: si el pago fue aprobado, el estado DEBE ser 'paid'
       const { data: verifyOrder } = await supabase
         .from('orders')
         .select('id, status, payment_details')
@@ -408,50 +458,64 @@ export const POST: APIRoute = async ({ request }) => {
       console.log('🔍 Verificación post-actualización:', {
         orderId: verifyOrder?.id,
         status: verifyOrder?.status,
-        hasPaymentDetails: !!verifyOrder?.payment_details,
-        expectedStatus: newStatus,
-        statusMatches: verifyOrder?.status === newStatus,
+        expectedStatus: isApproved ? 'paid' : 'pending_payment',
         isApproved: isApproved,
-        hasAuthorizationCode: hasAuthorizationCode
+        hasAuthorizationCode: hasAuthorizationCode,
+        responseCode: commitResponse.responseCode
       });
       
-      // Si el estado no coincide Y el pago fue aprobado, FORZAR actualización a 'paid'
-      if (verifyOrder && verifyOrder.status !== newStatus && isApproved) {
-        console.log('⚠️ El estado no coincide con lo esperado. Estado actual:', verifyOrder.status, 'Esperado:', newStatus);
-        console.log('⚠️ Forzando actualización a "paid" porque el pago fue aprobado...');
+      // SI EL PAGO FUE APROBADO Y EL ESTADO NO ES 'paid', FORZAR ACTUALIZACIÓN
+      if (isApproved && verifyOrder && verifyOrder.status !== 'paid') {
+        console.log('🚨 CRÍTICO: Pago aprobado pero estado no es "paid". Estado actual:', verifyOrder.status);
+        console.log('🚨 Forzando actualización a "paid" INMEDIATAMENTE...');
         
         const fixResult = await supabase
           .from('orders')
           .update({ 
             status: 'paid',
+            payment_details: paymentDetails,
             updated_at: new Date().toISOString()
           })
           .eq('id', order.id);
         
         if (fixResult.error) {
-          console.error('❌ Error corrigiendo estado:', fixResult.error);
-          console.error('❌ Detalles del error:', JSON.stringify(fixResult.error, null, 2));
-        } else {
-          console.log('✅ Estado corregido a "paid"');
-          
-          // Verificar nuevamente después de la corrección
-          const { data: finalVerify } = await supabase
+          console.error('❌ Error crítico corrigiendo estado:', fixResult.error);
+          // Intentar sin payment_details
+          const simpleFix = await supabase
             .from('orders')
-            .select('id, status')
-            .eq('id', order.id)
-            .single();
+            .update({ 
+              status: 'paid',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', order.id);
           
-          console.log('🔍 Verificación final después de corrección:', {
-            orderId: finalVerify?.id,
-            status: finalVerify?.status,
-            isPaid: finalVerify?.status === 'paid'
-          });
+          if (simpleFix.error) {
+            console.error('❌ Error crítico en segundo intento:', simpleFix.error);
+          } else {
+            console.log('✅ Estado corregido a "paid" (sin payment_details)');
+          }
+        } else {
+          console.log('✅ Estado corregido a "paid" exitosamente');
         }
+        
+        // Verificar una vez más
+        const { data: finalVerify } = await supabase
+          .from('orders')
+          .select('id, status')
+          .eq('id', order.id)
+          .single();
+        
+        console.log('🔍 Verificación final:', {
+          orderId: finalVerify?.id,
+          status: finalVerify?.status,
+          isPaid: finalVerify?.status === 'paid',
+          MUST_BE_PAID: isApproved
+        });
       }
       
-      // Si hay authorizationCode pero el estado no es 'paid', forzar actualización
+      // Si hay authorizationCode, el pago FUE AUTORIZADO - el estado DEBE ser 'paid'
       if (hasAuthorizationCode && verifyOrder && verifyOrder.status !== 'paid') {
-        console.log('⚠️ Hay authorizationCode pero el estado no es "paid". Forzando actualización...');
+        console.log('🚨 CRÍTICO: Hay authorizationCode pero estado no es "paid". Forzando...');
         const forcePaidResult = await supabase
           .from('orders')
           .update({ 
@@ -461,97 +525,115 @@ export const POST: APIRoute = async ({ request }) => {
           .eq('id', order.id);
         
         if (forcePaidResult.error) {
-          console.error('❌ Error forzando estado a "paid":', forcePaidResult.error);
+          console.error('❌ Error crítico forzando estado a "paid":', forcePaidResult.error);
         } else {
-          console.log('✅ Estado forzado a "paid" exitosamente');
+          console.log('✅ Estado forzado a "paid" por authorizationCode');
         }
       }
     }
 
     // Descontar stock cuando el pago es exitoso (solo una vez cuando isApproved es true)
-    if (isApproved) {
+    // NO descontar si ya fue descontado anteriormente
+    if (isApproved && !stockAlreadyDeducted) {
       try {
-        console.log('📦 Descontando stock de productos...');
+        console.log('📦 INICIANDO descuento de stock de productos...');
+        console.log('📦 Order ID:', order.id);
+        console.log('📦 Stock ya descontado?', stockAlreadyDeducted);
         
-        // Obtener items del pedido con información del producto
+        // Obtener items del pedido (sin relación primero para verificar)
         const { data: orderItemsForStock, error: itemsError } = await supabase
           .from('order_items')
-          .select(`
-            product_id,
-            quantity,
-            products:product_id(id, stock)
-          `)
+          .select('product_id, quantity')
           .eq('order_id', order.id);
+        
+        console.log('📦 Items del pedido obtenidos:', {
+          count: orderItemsForStock?.length || 0,
+          items: orderItemsForStock,
+          error: itemsError?.message
+        });
         
         if (itemsError) {
           console.error('❌ Error obteniendo items del pedido para descontar stock:', itemsError);
         } else if (orderItemsForStock && orderItemsForStock.length > 0) {
+          let stockDeductedSuccessfully = true;
+          
           // Descontar stock de cada producto
           for (const item of orderItemsForStock) {
             if (item.product_id && item.quantity) {
-              const productId = item.product_id;
-              const quantityToDeduct = item.quantity;
-              const currentStock = item.products?.stock ?? null;
+              const productId = Number(item.product_id);
+              const quantityToDeduct = Number(item.quantity);
               
-              if (currentStock === null) {
-                console.warn(`⚠️ No se pudo obtener stock del producto ${productId}, obteniendo stock actual...`);
-                // Obtener el stock actual del producto
-                const { data: productData, error: productError } = await supabase
-                  .from('products')
-                  .select('stock')
-                  .eq('id', productId)
-                  .single();
-                
-                if (productError || !productData) {
-                  console.error(`❌ Error obteniendo stock del producto ${productId}:`, productError);
-                  continue;
-                }
-                
-                const actualStock = productData.stock || 0;
-                const newStock = Math.max(0, actualStock - quantityToDeduct);
-                
-                const { error: stockError } = await supabase
-                  .from('products')
-                  .update({ 
-                    stock: newStock,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', productId);
-                
-                if (stockError) {
-                  console.error(`❌ Error descontando stock del producto ${productId}:`, stockError);
-                } else {
-                  console.log(`✅ Stock descontado: ${quantityToDeduct} unidades del producto ${productId} (${actualStock} -> ${newStock})`);
-                }
-              } else {
-                console.log(`📦 Descontando ${quantityToDeduct} unidades del producto ${productId} (stock actual: ${currentStock})`);
-                
-                // Actualizar stock (asegurarse de que no sea negativo)
-                const newStock = Math.max(0, currentStock - quantityToDeduct);
-                
-                const { error: stockError } = await supabase
-                  .from('products')
-                  .update({ 
-                    stock: newStock,
-                    updated_at: new Date().toISOString()
-                  })
-                  .eq('id', productId);
-                
-                if (stockError) {
-                  console.error(`❌ Error descontando stock del producto ${productId}:`, stockError);
-                } else {
-                  console.log(`✅ Stock actualizado: producto ${productId}, nuevo stock: ${newStock}`);
-                }
+              console.log(`📦 Procesando producto ${productId}, cantidad a descontar: ${quantityToDeduct}`);
+              
+              // Obtener el stock actual del producto
+              const { data: productData, error: productError } = await supabase
+                .from('products')
+                .select('id, stock, name')
+                .eq('id', productId)
+                .single();
+              
+              if (productError || !productData) {
+                console.error(`❌ Error obteniendo producto ${productId}:`, productError);
+                stockDeductedSuccessfully = false;
+                continue;
               }
+              
+              const currentStock = Number(productData.stock) || 0;
+              const newStock = Math.max(0, currentStock - quantityToDeduct);
+              
+              console.log(`📦 Producto: ${productData.name || productId}`);
+              console.log(`📦 Stock actual: ${currentStock}, cantidad a descontar: ${quantityToDeduct}, nuevo stock: ${newStock}`);
+              
+              // Actualizar stock
+              const { data: updatedProduct, error: stockError } = await supabase
+                .from('products')
+                .update({ 
+                  stock: newStock,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', productId)
+                .select('id, stock, name');
+              
+              if (stockError) {
+                console.error(`❌ Error descontando stock del producto ${productId}:`, stockError);
+                console.error(`❌ Detalles del error:`, JSON.stringify(stockError, null, 2));
+                stockDeductedSuccessfully = false;
+              } else if (updatedProduct && updatedProduct.length > 0) {
+                console.log(`✅ Stock actualizado exitosamente:`);
+                console.log(`✅ Producto: ${updatedProduct[0].name || productId}`);
+                console.log(`✅ Stock anterior: ${currentStock}`);
+                console.log(`✅ Stock nuevo: ${updatedProduct[0].stock}`);
+                console.log(`✅ Cantidad descontada: ${quantityToDeduct}`);
+              } else {
+                console.warn(`⚠️ No se actualizó ningún producto con ID ${productId}`);
+                stockDeductedSuccessfully = false;
+              }
+            } else {
+              console.warn(`⚠️ Item inválido:`, item);
             }
           }
+          
+          // Marcar en payment_details que el stock fue descontado
+          if (stockDeductedSuccessfully) {
+            paymentDetails.stockDeducted = true;
+            console.log('✅ Stock descontado exitosamente - marcado en payment_details');
+          } else {
+            console.warn('⚠️ Algunos productos no pudieron actualizar stock');
+          }
+          
+          console.log('✅ Proceso de descuento de stock completado');
         } else {
           console.log('⚠️ No se encontraron items del pedido para descontar stock');
         }
-      } catch (stockError) {
-        console.error('❌ Error al descontar stock:', stockError);
+      } catch (stockError: any) {
+        console.error('❌ Error crítico al descontar stock:', stockError);
+        console.error('❌ Stack:', stockError.stack);
         // No fallar la confirmación del pago si hay error al descontar stock
       }
+    } else if (stockAlreadyDeducted) {
+      console.log('⚠️ Stock ya fue descontado anteriormente para este pedido');
+    } else {
+      console.log('⚠️ Pago no aprobado, no se descuenta stock');
     }
 
     // Obtener información adicional del pedido para mostrar en el comprobante
