@@ -76,6 +76,7 @@ CREATE INDEX IF NOT EXISTS used_motorcycles_status_idx
 CREATE TABLE IF NOT EXISTS public.orders (
   id BIGSERIAL PRIMARY KEY,
   user_id UUID REFERENCES public.users (id),
+  email TEXT, -- Email del cliente para esta orden (puede ser diferente al email de la cuenta)
   total_amount NUMERIC(12, 2) NOT NULL,
   status public.order_status NOT NULL DEFAULT 'pending_payment',
   payment_reference TEXT,

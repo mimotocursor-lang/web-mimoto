@@ -155,21 +155,34 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         }
         
         userEl.innerHTML = `
-          <div class="space-y-2">
-            <div class="flex justify-between">
-              <span class="text-white/70">Nombre:</span>
-              <span class="font-semibold text-white">${userName}</span>
+          <div class="space-y-4">
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-white/70">Nombre:</span>
+                <span class="font-semibold text-white">${userName}</span>
+              </div>
+              ${user.phone ? `
+              <div class="flex justify-between">
+                <span class="text-white/70">Teléfono:</span>
+                <span class="font-semibold text-white">${user.phone}</span>
+              </div>
+              ` : ''}
             </div>
-            <div class="flex justify-between">
-              <span class="text-white/70">Email:</span>
-              <span class="font-semibold text-white">${userEmail}</span>
+            <div class="border-t border-primary/30 pt-3">
+              <label for="checkout-email" class="block text-sm font-semibold text-white mb-2">
+                Email para notificaciones del pedido:
+              </label>
+              <input
+                type="email"
+                id="checkout-email"
+                value="${userEmail}"
+                placeholder="tu@email.com"
+                class="w-full px-4 py-2 bg-gray-800 border-2 border-primary/30 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-primary transition-colors"
+              />
+              <p class="text-xs text-white/60 mt-1">
+                Este email recibirá las notificaciones sobre el estado de tu pedido. Puedes cambiarlo si lo deseas.
+              </p>
             </div>
-            ${user.phone ? `
-            <div class="flex justify-between">
-              <span class="text-white/70">Teléfono:</span>
-              <span class="font-semibold text-white">${user.phone}</span>
-            </div>
-            ` : ''}
           </div>
         `;
       } catch (err) {
@@ -276,8 +289,31 @@ import BaseLayout from '../layouts/BaseLayout.astro';
             }
           }
 
+          // Obtener email del campo de input
+          const emailInput = document.getElementById('checkout-email') as HTMLInputElement;
+          const orderEmail = emailInput ? emailInput.value.trim() : '';
+          
+          if (!orderEmail) {
+            if (errorEl) errorEl.textContent = 'Por favor, ingresa un email válido para recibir notificaciones del pedido.';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirmar compra';
+            return;
+          }
+          
+          // Validar formato de email básico
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(orderEmail)) {
+            if (errorEl) errorEl.textContent = 'Por favor, ingresa un email válido.';
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirmar compra';
+            return;
+          }
+
           // Preparar el body
-          const requestBody = { items: items };
+          const requestBody = { 
+            items: items,
+            email: orderEmail
+          };
           const bodyString = JSON.stringify(requestBody);
           
           console.log('🛒 Checkout: Body a enviar:', bodyString);

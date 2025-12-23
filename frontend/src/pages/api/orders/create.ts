@@ -68,7 +68,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
       
       items = body.items;
+      const orderEmail = body.email || null; // Email para notificaciones
       console.log('📥 Items extraídos:', items ? `Array con ${items.length} items` : 'NO HAY ITEMS');
+      console.log('📥 Email extraído:', orderEmail || 'NO HAY EMAIL');
       
       if (!items) {
         console.error('❌ Body no tiene propiedad "items"');
@@ -160,6 +162,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       let orderData: any = {
         user_id: null, // Permitir NULL para usuarios no autenticados
         total_amount: totalAmount,
+        email: orderEmail, // Email para notificaciones
       };
       
       // Intentar insertar con status, si falla intentar sin status (usar default)
@@ -243,10 +246,24 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       sum + (item.priceSnapshot || item.price || 0) * (item.quantity || 1), 0
     );
 
+    // Obtener email del usuario si no se proporcionó uno en el body
+    let finalEmail = orderEmail;
+    if (!finalEmail && userId) {
+      try {
+        const { data: userData } = await supabase.auth.getUser(authHeader!.substring(7));
+        if (userData?.user?.email) {
+          finalEmail = userData.user.email;
+        }
+      } catch (e) {
+        console.log('⚠️ No se pudo obtener email del usuario');
+      }
+    }
+
     // Intentar insertar con status, si falla intentar sin status (usar default)
     let orderData: any = {
       user_id: userId,
       total_amount: totalAmount,
+      email: finalEmail, // Email para notificaciones
     };
     
     let { data: order, error: orderError } = await supabase

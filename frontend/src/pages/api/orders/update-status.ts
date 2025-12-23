@@ -157,7 +157,8 @@ export const POST: APIRoute = async ({ request }) => {
     });
 
     // Obtener información del cliente para notificaciones
-    let customerEmail = null;
+    // Priorizar el email de la orden, luego el email del usuario
+    let customerEmail = order.email || null;
     let customerPhone = null;
     let customerName = null;
 
@@ -169,11 +170,18 @@ export const POST: APIRoute = async ({ request }) => {
         .single();
 
       if (customer) {
-        customerEmail = customer.email;
+        // Usar email de la orden si existe, sino usar email del usuario
+        customerEmail = customerEmail || customer.email;
         customerPhone = customer.phone;
         customerName = customer.full_name;
       }
     }
+    
+    console.log('📧 Email para notificaciones:', {
+      orderEmail: order.email,
+      customerEmail: customerEmail,
+      hasEmail: !!customerEmail
+    });
 
     // Enviar notificaciones (no bloqueante)
     console.log('📨 Preparando notificaciones:', {
@@ -334,8 +342,13 @@ async function sendNotifications(
           status: response.status,
           statusText: response.statusText,
           ok: response.ok,
-          body: responseText
+          headers: Object.fromEntries(response.headers.entries()),
+          body: responseText,
+          bodyLength: responseText.length
         });
+        
+        // Log completo de la respuesta para debugging
+        console.log('📥 Respuesta completa de Resend (raw):', responseText);
 
         if (response.ok) {
           try {
