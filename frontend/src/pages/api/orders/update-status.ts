@@ -328,16 +328,33 @@ async function sendNotifications(
           htmlLength: emailPayload.html.length
         });
 
-        const response = await fetch(resendUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(emailPayload),
-        });
-
-        const responseText = await response.text();
+        let response;
+        let responseText;
+        
+        try {
+          console.log('📤 Haciendo fetch a Resend...');
+          response = await fetch(resendUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${resendApiKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(emailPayload),
+          });
+          
+          console.log('📥 Fetch completado, status:', response.status);
+          responseText = await response.text();
+          console.log('📥 Response text obtenido, length:', responseText.length);
+        } catch (fetchError: any) {
+          console.error('❌ Error en el fetch a Resend:', {
+            message: fetchError.message,
+            name: fetchError.name,
+            stack: fetchError.stack,
+            cause: fetchError.cause
+          });
+          throw fetchError;
+        }
+        
         console.log('📥 Respuesta de Resend:', {
           status: response.status,
           statusText: response.statusText,
@@ -349,6 +366,7 @@ async function sendNotifications(
         
         // Log completo de la respuesta para debugging
         console.log('📥 Respuesta completa de Resend (raw):', responseText);
+        console.log('📥 Respuesta completa de Resend (JSON parseado):', JSON.parse(responseText || '{}'));
 
         if (response.ok) {
           try {
