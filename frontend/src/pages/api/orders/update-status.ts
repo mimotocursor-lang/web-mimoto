@@ -79,10 +79,10 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    // Obtener la orden actual
+    // Obtener la orden actual (incluir email para notificaciones)
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, status, user_id, total_amount, payment_reference')
+      .select('id, status, user_id, total_amount, payment_reference, email')
       .eq('id', orderId)
       .single();
 
@@ -194,7 +194,7 @@ export const POST: APIRoute = async ({ request }) => {
       name: customerName
     });
     
-    sendNotifications(orderId, status, customerEmail, customerPhone, customerName, order.total_amount)
+    sendNotifications(supabase, orderId, status, customerEmail, customerPhone, customerName, order.total_amount)
       .then(() => {
         console.log('✅ Notificaciones enviadas exitosamente');
       })
@@ -226,6 +226,7 @@ export const POST: APIRoute = async ({ request }) => {
 
 // Función para enviar notificaciones (no bloqueante)
 async function sendNotifications(
+  supabase: any,
   orderId: number,
   status: string,
   email: string | null,
@@ -261,30 +262,46 @@ async function sendNotifications(
   if (email) {
     try {
       console.log('📧 Intentando enviar email:', {
-        to: email
+        to: email,
+        orderId: orderId,
+        status: status,
+        hasSupabase: !!supabase
       });
 
       // Obtener items del pedido para el email
       let orderItems = [];
       try {
-        const { data: items } = await supabase
-          .from('order_items')
-          .select(`
-            quantity,
-            unit_price,
-            products:product_id(name)
-          `)
-          .eq('order_id', orderId);
-        
-        if (items) {
-          orderItems = items.map(item => ({
-            name: item.products?.name || 'Producto',
-            quantity: item.quantity,
-            price: item.unit_price
-          }));
+        if (!supabase) {
+          console.error('❌ Supabase no está disponible en sendNotifications');
+        } else {
+          console.log('📦 Obteniendo items del pedido para el email...');
+          const { data: items, error: itemsError } = await supabase
+            .from('order_items')
+            .select(`
+              quantity,
+              unit_price,
+              products:product_id(name)
+            `)
+            .eq('order_id', orderId);
+          
+          if (itemsError) {
+            console.error('❌ Error obteniendo items del pedido:', itemsError);
+          } else if (items) {
+            orderItems = items.map(item => ({
+              name: item.products?.name || 'Producto',
+              quantity: item.quantity,
+              price: item.unit_price
+            }));
+            console.log('📦 Items del pedido obtenidos:', orderItems.length, 'items');
+          } else {
+            console.log('⚠️ No se encontraron items para el pedido');
+          }
         }
-      } catch (e) {
-        console.log('⚠️ No se pudo obtener items del pedido para el email:', e);
+      } catch (e: any) {
+        console.error('❌ Error en try-catch obteniendo items del pedido:', {
+          message: e.message,
+          stack: e.stack
+        });
       }
 
       // Importar función de envío de email
@@ -300,6 +317,11 @@ async function sendNotifications(
         logoUrl: 'https://mimoto.cl/logo.jpg'
       });
 
+      console.log('📧 Preparando envío de email con Resend...');
+      console.log('📧 Email HTML generado, longitud:', emailHtml.length);
+      console.log('📧 Destinatario:', email);
+      console.log('📧 Asunto:', `${notification.title} - Pedido #${orderId}`);
+      
       // Usar la función compartida de envío de email
       const emailResult = await sendEmail({
         to: email,
@@ -307,13 +329,22 @@ async function sendNotifications(
         html: emailHtml
       });
 
+      console.log('📧 Resultado del envío de email:', {
+        success: emailResult.success,
+        resendId: emailResult.resendId || 'N/A',
+        error: emailResult.error || 'N/A',
+        to: email
+      });
+
       if (emailResult.success) {
         console.log('✅ Email enviado exitosamente:', {
           resendId: emailResult.resendId,
           to: email
         });
+        console.log('✅ Puedes verificar el email en: https://resend.com/emails');
       } else {
         console.error('❌ Error enviando email:', emailResult.error);
+        console.error('❌ Revisa las variables de entorno: RESEND_API_KEY, FROM_EMAIL, FROM_NAME');
         // No lanzar error para que no bloquee la actualización del estado
       }
     } catch (error: any) {

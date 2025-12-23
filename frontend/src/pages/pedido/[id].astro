@@ -18,7 +18,7 @@ if (id) {
   try {
     const { data, error } = await supabaseClient
       .from('orders')
-      .select('id, total_amount, status, payment_reference, created_at, updated_at')
+      .select('id, total_amount, status, payment_reference, payment_details, created_at, updated_at')
       .eq('id', id)
       .single();
 
@@ -79,6 +79,32 @@ if (id) {
             <div class="flex justify-between items-center border-t border-primary/30 pt-4">
               <span class="text-white/90 font-semibold">Referencia de pago:</span>
               <span class="font-mono text-xs text-primary break-all">{order.payment_reference}</span>
+            </div>
+          )}
+          
+          {order.payment_details && typeof order.payment_details === 'object' && (
+            <div class="border-t border-primary/30 pt-4 space-y-2">
+              <span class="text-white/90 font-semibold block mb-2">Detalles del pago:</span>
+              {order.payment_details.authorizationCode && (
+                <div class="flex justify-between">
+                  <span class="text-white/70 text-sm">Código de autorización:</span>
+                  <span class="text-primary font-mono text-sm">{order.payment_details.authorizationCode}</span>
+                </div>
+              )}
+              {order.payment_details.responseCode !== undefined && (
+                <div class="flex justify-between">
+                  <span class="text-white/70 text-sm">Código de respuesta:</span>
+                  <span class={`font-mono text-sm ${order.payment_details.responseCode === 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {order.payment_details.responseCode}
+                  </span>
+                </div>
+              )}
+              {order.payment_details.transactionDate && (
+                <div class="flex justify-between">
+                  <span class="text-white/70 text-sm">Fecha de transacción:</span>
+                  <span class="text-white/70 text-sm">{new Date(order.payment_details.transactionDate).toLocaleString('es-CL')}</span>
+                </div>
+              )}
             </div>
           )}
           
