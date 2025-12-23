@@ -393,9 +393,22 @@ export const POST: APIRoute = async ({ request }) => {
     });
     
     // Preparar payment_reference
-    const paymentReference = commitResponse.responseCode !== undefined 
-      ? `${token_ws}-${commitResponse.responseCode}` 
-      : `${token_ws}-${isApproved ? 'approved' : 'pending'}`;
+    // CRÍTICO: Si isApproved es true, NUNCA usar 'pending' en payment_reference
+    // Si el pago fue aprobado, usar 'paid' o 'approved'
+    let paymentReference: string;
+    if (isApproved) {
+      // Pago aprobado - usar 'paid' o 'approved', NUNCA 'pending'
+      paymentReference = commitResponse.responseCode !== undefined 
+        ? `${token_ws}-${commitResponse.responseCode === 0 ? 'paid' : 'approved'}` 
+        : `${token_ws}-paid`;
+      console.log('✅ Payment reference para pago APROBADO:', paymentReference);
+    } else {
+      // Pago rechazado o pendiente
+      paymentReference = commitResponse.responseCode !== undefined 
+        ? `${token_ws}-${commitResponse.responseCode}` 
+        : `${token_ws}-rejected`;
+      console.log('⚠️ Payment reference para pago RECHAZADO:', paymentReference);
+    }
     
     console.log('💾 Guardando en base de datos:', {
       orderId: order.id,
@@ -407,11 +420,33 @@ export const POST: APIRoute = async ({ request }) => {
     });
     
     // ACTUALIZAR ESTADO - SIEMPRE a 'paid' si isApproved es true
+    // CRÍTICO: Asegurar que el estado sea 'paid' cuando el pago fue aprobado
+    const finalStatus = isApproved ? 'paid' : 'pending_payment';
+    
+    console.log('💾 ACTUALIZANDO ESTADO EN BASE DE DATOS:', {
+      orderId: order.id,
+      finalStatus: finalStatus,
+      isApproved: isApproved,
+      paymentReference: paymentReference,
+      hasPaymentDetails: !!paymentDetails,
+      isGuest: !order.user_id
+    });
+    
+    // CRÍTICO: Si isApproved es true, el estado DEBE ser 'paid' sin excepciones
+    if (isApproved && finalStatus !== 'paid') {
+      console.error('🚨🚨🚨 ERROR CRÍTICO: isApproved es true pero finalStatus no es "paid"');
+      console.error('🚨🚨🚨 Forzando finalStatus a "paid"');
+      // No usar finalStatus, usar directamente 'paid'
+    }
+    
+    // Asegurar que el estado sea 'paid' si isApproved es true
+    const statusToUpdate = isApproved ? 'paid' : 'pending_payment';
+    
     let updateResult = await supabase
       .from('orders')
       .update({
-        status: isApproved ? 'paid' : 'pending_payment',
-        payment_reference: paymentReference,
+        status: statusToUpdate, // NUNCA 'pending_payment' si isApproved es true
+        payment_reference: paymentReference, // NUNCA con '-pending' si isApproved es true
         payment_details: paymentDetails, // Guardar detalles completos del pago
         updated_at: new Date().toISOString()
       })
@@ -420,8 +455,19 @@ export const POST: APIRoute = async ({ request }) => {
     console.log('📝 Resultado de actualización inicial:', {
       success: !updateResult.error,
       error: updateResult.error?.message,
-      statusUpdated: isApproved ? 'paid' : 'pending_payment'
+      statusUpdated: statusToUpdate,
+      expectedStatus: isApproved ? 'paid' : 'pending_payment',
+      isApproved: isApproved,
+      isGuest: !order.user_id,
+      paymentReference: paymentReference
     });
+    
+    // Si hay error PERO el pago fue aprobado, esto es CRÍTICO
+    if (updateResult.error && isApproved) {
+      console.error('❌❌❌ ERROR CRÍTICO: No se pudo actualizar estado a "paid" para pago aprobado');
+      console.error('❌❌❌ Order ID:', order.id);
+      console.error('❌❌❌ Error:', JSON.stringify(updateResult.error, null, 2));
+    }
 
     // Si hay error Y el pago fue aprobado, FORZAR actualización a 'paid' de todas formas
     if (updateResult.error && isApproved) {
