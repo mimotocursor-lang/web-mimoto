@@ -1119,7 +1119,7 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
 
         // Prevenir múltiples ejecuciones del mismo click
         let isAddingToCart = false;
-        
+
         document.body.addEventListener('click', (event) => {
           const target = event.target;
           if (!(target instanceof HTMLElement)) return;
@@ -1148,20 +1148,20 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
           btn.setAttribute('data-processing', 'true');
           
           try {
-            let cart = loadCart();
-            const existing = cart.find((item) => item.id === id);
+          let cart = loadCart();
+          const existing = cart.find((item) => item.id === id);
             
-            if (existing) {
-              existing.quantity += 1;
+          if (existing) {
+            existing.quantity += 1;
               console.log('✅ Cantidad incrementada para:', name, 'Nueva cantidad:', existing.quantity);
-            } else {
-              cart.push({ id, name, price, quantity: 1 });
+          } else {
+            cart.push({ id, name, price, quantity: 1 });
               console.log('✅ Producto agregado al carrito:', name);
-            }
+          }
             
-            saveCart(cart);
-            renderCart(cart);
-            openCart();
+          saveCart(cart);
+          renderCart(cart);
+          openCart();
           } catch (error) {
             console.error('❌ Error agregando al carrito:', error);
           } finally {
@@ -1306,7 +1306,7 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
           
           if (authStatusEl) authStatusEl.innerHTML = authHTML;
           if (authStatusMobileEl) authStatusMobileEl.innerHTML = authHTMLMobile;
-          
+
           // Mostrar enlace "Mis Pedidos" en el menú móvil
           const mobileMenuAuthLinks = document.getElementById('mobile-menu-auth-links');
           if (mobileMenuAuthLinks) {
@@ -1319,10 +1319,10 @@ const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJ
               
               if (logoutBtn) {
                 logoutBtn.replaceWith(logoutBtn.cloneNode(true)); // Clonar para remover listeners
-                document.getElementById('logout-btn')?.addEventListener('click', async () => {
-                  await supabaseClient.auth.signOut();
-                  window.location.href = '/';
-                });
+          document.getElementById('logout-btn')?.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            window.location.href = '/';
+          });
               }
               
               if (logoutBtnMobile) {

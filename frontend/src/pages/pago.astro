@@ -108,36 +108,36 @@ if (orderId) {
 ---
 
 <BaseLayout title="Pago - Mimoto">
-  <section class="max-w-2xl mx-auto px-4 py-12 md:py-16 space-y-8">
-    <div class="text-center mb-8">
-      <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Pago de tu pedido</h1>
-      <p class="text-white/80">Finaliza tu compra realizando el pago</p>
+  <section class="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 space-y-6 sm:space-y-8">
+    <div class="text-center mb-6 sm:mb-8">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">Pago de tu pedido</h1>
+      <p class="text-sm sm:text-base text-white/80">Finaliza tu compra realizando el pago</p>
     </div>
 
-    <div class="bg-gray-900/50 border-2 border-primary rounded-xl p-8 shadow-lg space-y-6 backdrop-blur-sm">
+    <div class="bg-gray-900/50 border-2 border-primary rounded-xl p-4 sm:p-6 md:p-8 shadow-lg space-y-4 sm:space-y-6 backdrop-blur-sm">
       <div class="text-center">
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
-          <svg class="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/10 mb-3 sm:mb-4">
+          <svg class="w-8 h-8 sm:w-10 sm:h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
         </div>
-        <p class="text-white/90 text-lg">
+        <p class="text-white/90 text-base sm:text-lg">
           Para finalizar tu compra, realiza el pago en el siguiente enlace. Una vez que el
           pago se confirme, validaremos tu pedido manualmente.
         </p>
       </div>
 
-      <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-6 space-y-4">
-        <div class="flex justify-between items-center">
-          <span class="text-white/90 font-semibold">Pedido asociado:</span>
-          <span class="font-bold text-primary text-xl" id="order-id-display">
+      <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 sm:p-6 space-y-3 sm:space-y-4">
+        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+          <span class="text-white/90 font-semibold text-sm sm:text-base">Pedido asociado:</span>
+          <span class="font-bold text-primary text-lg sm:text-xl" id="order-id-display">
             {orderId ? `#${orderId}` : '—'}
           </span>
         </div>
         
-          <div class="flex justify-between items-center border-t border-primary/30 pt-4">
-            <span class="text-white/90 font-semibold">Monto a pagar:</span>
-          <span class="font-bold text-primary text-xl" data-order-total>
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center border-t border-primary/30 pt-3 sm:pt-4 gap-2">
+            <span class="text-white/90 font-semibold text-sm sm:text-base">Monto a pagar:</span>
+          <span class="font-bold text-primary text-lg sm:text-xl" data-order-total>
             {orderTotal ? `$${orderTotal.toLocaleString('es-CL')}` : orderId ? 'Cargando...' : '—'}
           </span>
         </div>
@@ -153,10 +153,10 @@ if (orderId) {
         <button
           id="pay-button"
           type="button"
-          class="w-full inline-flex items-center justify-center px-8 py-4 rounded-lg bg-primary text-white font-bold hover:bg-primary-600 transition-colors shadow-md text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full inline-flex items-center justify-center px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-lg bg-primary text-white font-bold hover:bg-primary-600 transition-colors shadow-md text-base sm:text-lg disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={!orderId}
         >
-          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
           <span id="pay-button-text">Pagar ahora</span>
@@ -168,8 +168,8 @@ if (orderId) {
         )}
       </div>
 
-      <div class="bg-primary/10 border-l-4 border-primary p-4 rounded">
-        <p class="text-sm text-white/90">
+      <div class="bg-primary/10 border-l-4 border-primary p-3 sm:p-4 rounded">
+        <p class="text-xs sm:text-sm text-white/90">
           <strong>Importante:</strong> Después de realizar el pago, recibirás una confirmación por WhatsApp o correo
           cuando tu pedido cambie a estado <strong>en revisión</strong>.
         </p>

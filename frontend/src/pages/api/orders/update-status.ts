@@ -235,11 +235,6 @@ async function sendNotifications(
   amount: number
 ) {
   const statusMessages = {
-    'paid': {
-      title: 'Pago Confirmado',
-      message: `Tu pago ha sido confirmado exitosamente. Tu pedido #${orderId} está siendo procesado.`,
-      whatsapp: `¡Hola${name ? ' ' + name.split(' ')[0] : ''}! ✅\n\nTu pago por $${Number(amount).toLocaleString('es-CL')} ha sido confirmado exitosamente.\n\nTu pedido #${orderId} está siendo procesado. Te notificaremos cuando sea confirmado.`
-    },
     'order_received': {
       title: 'Pedido Recibido',
       message: `Tu pedido #${orderId} ha sido recibido y está siendo procesado.`,
@@ -259,14 +254,9 @@ async function sendNotifications(
 
   const notification = statusMessages[status as keyof typeof statusMessages];
   if (!notification) {
-    console.log('⚠️ No hay notificación configurada para el estado:', status);
-    console.log('⚠️ Estados con notificación configurada:', Object.keys(statusMessages));
+    console.log('No hay notificación configurada para el estado:', status);
     return;
   }
-  
-  console.log('📨 Enviando notificación para estado:', status);
-  console.log('📨 Título:', notification.title);
-  console.log('📨 Mensaje:', notification.message);
 
   // Enviar email (si está configurado)
   if (email) {

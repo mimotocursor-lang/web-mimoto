@@ -45,18 +45,18 @@ if (id) {
 ---
 
 <BaseLayout title={`Pedido #${id} - Mimoto`}>
-  <section class="max-w-3xl mx-auto px-4 py-12 md:py-16 space-y-8">
-    <div class="text-center mb-8">
-      <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Estado del pedido #{id}</h1>
-      <div class="w-24 h-1 bg-primary mx-auto"></div>
+  <section class="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 space-y-6 sm:space-y-8">
+    <div class="text-center mb-6 sm:mb-8">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">Estado del pedido #{id}</h1>
+      <div class="w-16 sm:w-24 h-1 bg-primary mx-auto"></div>
     </div>
     
     {order ? (
-      <div class="bg-gray-900/50 border-2 border-primary rounded-xl p-8 shadow-lg space-y-6 backdrop-blur-sm">
-        <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-6 space-y-4">
-          <div class="flex justify-between items-center">
-            <span class="text-white/90 font-semibold">Estado:</span>
-            <span class={`font-bold text-xl ${
+      <div class="bg-gray-900/50 border-2 border-primary rounded-xl p-4 sm:p-6 md:p-8 shadow-lg space-y-4 sm:space-y-6 backdrop-blur-sm">
+        <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 sm:p-6 space-y-3 sm:space-y-4">
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+            <span class="text-white/90 font-semibold text-sm sm:text-base">Estado:</span>
+            <span class={`font-bold text-lg sm:text-xl ${
               order.status === 'paid' ? 'text-green-500' :
               order.status === 'pending_payment' || order.status === 'pending' ? 'text-yellow-500' :
               order.status === 'cancelled' ? 'text-red-500' :
@@ -70,67 +70,67 @@ if (id) {
             </span>
           </div>
           
-          <div class="flex justify-between items-center border-t border-primary/30 pt-4">
-            <span class="text-white/90 font-semibold">Monto total:</span>
-            <span class="font-bold text-primary text-xl">${Number(order.total_amount).toLocaleString('es-CL')}</span>
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center border-t border-primary/30 pt-3 sm:pt-4 gap-2">
+            <span class="text-white/90 font-semibold text-sm sm:text-base">Monto total:</span>
+            <span class="font-bold text-primary text-lg sm:text-xl">${Number(order.total_amount).toLocaleString('es-CL')}</span>
           </div>
           
           {order.payment_reference && (
-            <div class="flex justify-between items-center border-t border-primary/30 pt-4">
-              <span class="text-white/90 font-semibold">Referencia de pago:</span>
-              <span class="font-mono text-xs text-primary break-all">{order.payment_reference}</span>
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center border-t border-primary/30 pt-3 sm:pt-4 gap-2">
+              <span class="text-white/90 font-semibold text-sm sm:text-base">Referencia de pago:</span>
+              <span class="font-mono text-xs text-primary break-all text-right sm:text-left">{order.payment_reference}</span>
             </div>
           )}
           
           {order.payment_details && typeof order.payment_details === 'object' && (
-            <div class="border-t border-primary/30 pt-4 space-y-2">
-              <span class="text-white/90 font-semibold block mb-2">Detalles del pago:</span>
+            <div class="border-t border-primary/30 pt-3 sm:pt-4 space-y-2">
+              <span class="text-white/90 font-semibold block mb-2 text-sm sm:text-base">Detalles del pago:</span>
               {order.payment_details.authorizationCode && (
-                <div class="flex justify-between">
-                  <span class="text-white/70 text-sm">Código de autorización:</span>
-                  <span class="text-primary font-mono text-sm">{order.payment_details.authorizationCode}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/70 text-xs sm:text-sm">Código de autorización:</span>
+                  <span class="text-primary font-mono text-xs sm:text-sm break-all">{order.payment_details.authorizationCode}</span>
                 </div>
               )}
               {order.payment_details.responseCode !== undefined && (
-                <div class="flex justify-between">
-                  <span class="text-white/70 text-sm">Código de respuesta:</span>
-                  <span class={`font-mono text-sm ${order.payment_details.responseCode === 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/70 text-xs sm:text-sm">Código de respuesta:</span>
+                  <span class={`font-mono text-xs sm:text-sm ${order.payment_details.responseCode === 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {order.payment_details.responseCode}
                   </span>
                 </div>
               )}
               {order.payment_details.transactionDate && (
-                <div class="flex justify-between">
-                  <span class="text-white/70 text-sm">Fecha de transacción:</span>
-                  <span class="text-white/70 text-sm">{new Date(order.payment_details.transactionDate).toLocaleString('es-CL')}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/70 text-xs sm:text-sm">Fecha de transacción:</span>
+                  <span class="text-white/70 text-xs sm:text-sm">{new Date(order.payment_details.transactionDate).toLocaleString('es-CL')}</span>
                 </div>
               )}
             </div>
           )}
           
-          <div class="flex justify-between items-center border-t border-primary/30 pt-4">
-            <span class="text-white/90 font-semibold">Fecha de creación:</span>
-            <span class="text-white/70 text-sm">{new Date(order.created_at).toLocaleString('es-CL')}</span>
+          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center border-t border-primary/30 pt-3 sm:pt-4 gap-2">
+            <span class="text-white/90 font-semibold text-sm sm:text-base">Fecha de creación:</span>
+            <span class="text-white/70 text-xs sm:text-sm">{new Date(order.created_at).toLocaleString('es-CL')}</span>
           </div>
           
           {order.updated_at && order.updated_at !== order.created_at && (
-            <div class="flex justify-between items-center border-t border-primary/30 pt-4">
-              <span class="text-white/90 font-semibold">Última actualización:</span>
-              <span class="text-white/70 text-sm">{new Date(order.updated_at).toLocaleString('es-CL')}</span>
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center border-t border-primary/30 pt-3 sm:pt-4 gap-2">
+              <span class="text-white/90 font-semibold text-sm sm:text-base">Última actualización:</span>
+              <span class="text-white/70 text-xs sm:text-sm">{new Date(order.updated_at).toLocaleString('es-CL')}</span>
             </div>
           )}
         </div>
         
         {orderItems.length > 0 && (
-          <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-6 space-y-3">
-            <h3 class="text-white font-bold text-lg mb-4">Items del pedido:</h3>
+          <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 sm:p-6 space-y-2 sm:space-y-3">
+            <h3 class="text-white font-bold text-base sm:text-lg mb-3 sm:mb-4">Items del pedido:</h3>
             {orderItems.map((item: any) => (
-              <div class="flex justify-between items-center p-3 bg-gray-900/50 rounded-lg">
-                <div>
-                  <span class="text-white font-semibold">{item.products?.name || `Producto #${item.product_id}`}</span>
-                  <span class="text-white/70 text-sm block">Cantidad: {item.quantity}</span>
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-gray-900/50 rounded-lg gap-2 sm:gap-0">
+                <div class="flex-1 min-w-0">
+                  <span class="text-white font-semibold text-sm sm:text-base block truncate">{item.products?.name || `Producto #${item.product_id}`}</span>
+                  <span class="text-white/70 text-xs sm:text-sm block">Cantidad: {item.quantity}</span>
                 </div>
-                <span class="font-bold text-primary">${Number(item.total_price).toLocaleString('es-CL')}</span>
+                <span class="font-bold text-primary text-sm sm:text-base flex-shrink-0">${Number(item.total_price).toLocaleString('es-CL')}</span>
               </div>
             ))}
           </div>

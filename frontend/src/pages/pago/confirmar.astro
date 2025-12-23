@@ -9,20 +9,20 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
 ---
 
 <BaseLayout title="Confirmación de Pago - Mimoto">
-  <section class="max-w-2xl mx-auto px-4 py-12 md:py-16 space-y-8">
-    <div class="text-center mb-8">
-      <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Confirmando tu pago</h1>
-      <p class="text-white/80">Por favor espera mientras procesamos tu transacción...</p>
+  <section class="max-w-2xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 space-y-6 sm:space-y-8">
+    <div class="text-center mb-6 sm:mb-8">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">Confirmando tu pago</h1>
+      <p class="text-sm sm:text-base text-white/80">Por favor espera mientras procesamos tu transacción...</p>
     </div>
 
-    <div id="payment-status" class="bg-gray-900/50 border-2 border-primary rounded-xl p-8 shadow-lg space-y-6 backdrop-blur-sm">
+    <div id="payment-status" class="bg-gray-900/50 border-2 border-primary rounded-xl p-4 sm:p-6 md:p-8 shadow-lg space-y-4 sm:space-y-6 backdrop-blur-sm">
       <div class="text-center">
-        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary/10 mb-4">
-          <svg class="w-10 h-10 text-primary animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary/10 mb-3 sm:mb-4">
+          <svg class="w-8 h-8 sm:w-10 sm:h-10 text-primary animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
         </div>
-        <p class="text-white/90 text-lg">Procesando tu pago...</p>
+        <p class="text-white/90 text-base sm:text-lg">Procesando tu pago...</p>
       </div>
     </div>
   </section>
@@ -51,19 +51,19 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
         
         statusEl.innerHTML = `
           <div class="text-center">
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-yellow-500/10 mb-4">
-              <svg class="w-10 h-10 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-yellow-500/10 mb-3 sm:mb-4">
+              <svg class="w-8 h-8 sm:w-10 sm:h-10 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
               </svg>
             </div>
-            <h2 class="text-2xl font-bold text-white mb-2">Pago Cancelado</h2>
-            <p class="text-white/90 mb-4">Has cancelado el proceso de pago en Webpay.</p>
-            <p class="text-white/70 text-sm mb-4">No se ha realizado ningún cargo a tu tarjeta.</p>
-            <div class="flex gap-4 justify-center">
-              <a href="/pago?orderId=${orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
+            <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Pago Cancelado</h2>
+            <p class="text-white/90 mb-3 sm:mb-4 text-sm sm:text-base">Has cancelado el proceso de pago en Webpay.</p>
+            <p class="text-white/70 text-xs sm:text-sm mb-4">No se ha realizado ningún cargo a tu tarjeta.</p>
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <a href="/pago?orderId=${orderId}" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
                 Intentar nuevamente
               </a>
-              <a href="/" class="inline-block px-6 py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors">
+              <a href="/" class="inline-block px-4 sm:px-6 py-2 sm:py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors text-sm sm:text-base">
                 Volver al inicio
               </a>
             </div>
@@ -76,14 +76,14 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
       if (!tokenWs) {
         statusEl.innerHTML = `
           <div class="text-center">
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/10 mb-4">
-              <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-500/10 mb-3 sm:mb-4">
+              <svg class="w-8 h-8 sm:w-10 sm:h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
               </svg>
             </div>
-            <h2 class="text-2xl font-bold text-white mb-2">Error</h2>
-            <p class="text-white/90 mb-4">No se recibió el token de la transacción.</p>
-            <a href="/pago?orderId=${orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
+            <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Error</h2>
+            <p class="text-white/90 mb-3 sm:mb-4 text-sm sm:text-base">No se recibió el token de la transacción.</p>
+            <a href="/pago?orderId=${orderId}" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
               Volver al pago
             </a>
           </div>
@@ -174,18 +174,18 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
           if (result.alreadyConfirmed) {
             statusEl.innerHTML = `
             <div class="text-center">
-              <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-500/10 mb-4">
-                <svg class="w-10 h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-blue-500/10 mb-3 sm:mb-4">
+                <svg class="w-8 h-8 sm:w-10 sm:h-10 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </div>
-              <h2 class="text-2xl font-bold text-white mb-2">Pago Ya Confirmado</h2>
-              <p class="text-white/90 mb-4">Esta transacción ya fue procesada y confirmada anteriormente.</p>
-              <div class="flex gap-4 justify-center">
-                <a href="/pedido/${result.orderId || orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
+              <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Pago Ya Confirmado</h2>
+              <p class="text-white/90 mb-3 sm:mb-4 text-sm sm:text-base">Esta transacción ya fue procesada y confirmada anteriormente.</p>
+              <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                <a href="/pedido/${result.orderId || orderId}" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
                   Ver mi pedido
                 </a>
-                <a href="/" class="inline-block px-6 py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors">
+                <a href="/" class="inline-block px-4 sm:px-6 py-2 sm:py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors text-sm sm:text-base">
                   Volver al inicio
                 </a>
               </div>
@@ -246,66 +246,66 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
           
           statusEl.innerHTML = `
             <div class="text-center">
-              <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-500/10 mb-4">
-                <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-green-500/10 mb-3 sm:mb-4">
+                <svg class="w-8 h-8 sm:w-10 sm:h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                 </svg>
               </div>
-              <h2 class="text-2xl font-bold text-white mb-2">¡Pago Exitoso!</h2>
-              <p class="text-white/90 mb-4">Tu pago ha sido procesado correctamente.</p>
+              <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">¡Pago Exitoso!</h2>
+              <p class="text-white/90 mb-3 sm:mb-4 text-sm sm:text-base">Tu pago ha sido procesado correctamente.</p>
               
               <!-- Comprobante completo según requerimientos de Transbank -->
-              <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-6 space-y-3 mb-4 text-left">
-                <h3 class="text-lg font-bold text-primary mb-4 text-center">Comprobante de Pago</h3>
+              <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 sm:p-6 space-y-2 sm:space-y-3 mb-3 sm:mb-4 text-left">
+                <h3 class="text-base sm:text-lg font-bold text-primary mb-3 sm:mb-4 text-center">Comprobante de Pago</h3>
                 
                 <!-- Nombre del comercio -->
-                <div class="flex justify-between items-center pb-2 border-b border-gray-700">
-                  <span class="text-white/90 font-semibold">Comercio:</span>
-                  <span class="font-bold text-primary">MIMOTO</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center pb-2 border-b border-gray-700 gap-1 sm:gap-0">
+                  <span class="text-white/90 font-semibold text-sm sm:text-base">Comercio:</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">MIMOTO</span>
                 </div>
                 
                 <!-- Número de orden de pedido -->
-                <div class="flex justify-between">
-                  <span class="text-white/90">Número de orden:</span>
-                  <span class="font-bold text-primary">${result.buyOrder || result.orderId || 'N/A'}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/90 text-sm sm:text-base">Número de orden:</span>
+                  <span class="font-bold text-primary text-sm sm:text-base break-all">${result.buyOrder || result.orderId || 'N/A'}</span>
                 </div>
                 
                 <!-- Monto y moneda -->
-                <div class="flex justify-between">
-                  <span class="text-white/90">Monto pagado:</span>
-                  <span class="font-bold text-primary">${formatAmount(result.amount)}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/90 text-sm sm:text-base">Monto pagado:</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">${formatAmount(result.amount)}</span>
                 </div>
                 
                 <!-- Código de autorización -->
-                <div class="flex justify-between">
-                  <span class="text-white/90">Código de autorización:</span>
-                  <span class="font-bold text-primary">${result.authorizationCode || 'N/A'}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/90 text-sm sm:text-base">Código de autorización:</span>
+                  <span class="font-bold text-primary text-sm sm:text-base break-all">${result.authorizationCode || 'N/A'}</span>
                 </div>
                 
                 <!-- Fecha de la transacción -->
-                <div class="flex justify-between">
-                  <span class="text-white/90">Fecha de transacción:</span>
-                  <span class="font-bold text-primary">${formatDate(result.transactionDate)}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/90 text-sm sm:text-base">Fecha de transacción:</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">${formatDate(result.transactionDate)}</span>
                 </div>
                 
                 <!-- Tipo de pago -->
-                <div class="flex justify-between">
-                  <span class="text-white/90">Tipo de pago:</span>
-                  <span class="font-bold text-primary">${getPaymentType(result.paymentTypeCode)}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/90 text-sm sm:text-base">Tipo de pago:</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">${getPaymentType(result.paymentTypeCode)}</span>
                 </div>
                 
                 <!-- Cantidad de cuotas -->
                 ${result.installmentsNumber > 0 ? `
-                <div class="flex justify-between">
-                  <span class="text-white/90">Cuotas:</span>
-                  <span class="font-bold text-primary">${installmentsText}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/90 text-sm sm:text-base">Cuotas:</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">${installmentsText}</span>
                 </div>
                 ` : ''}
                 
                 <!-- Últimos 4 dígitos de la tarjeta -->
-                <div class="flex justify-between">
-                  <span class="text-white/90">Tarjeta terminada en:</span>
-                  <span class="font-bold text-primary">****${getCardLastDigits(result.cardDetail)}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/90 text-sm sm:text-base">Tarjeta terminada en:</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">****${getCardLastDigits(result.cardDetail)}</span>
                 </div>
                 
                 <!-- Descripción de bienes/servicios -->
@@ -321,11 +321,11 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
                 ` : ''}
               </div>
               
-              <div class="flex gap-4 justify-center">
-                <a href="/pedido/${result.orderId || orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
+              <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                <a href="/pedido/${result.orderId || orderId}" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
                   Ver mi pedido
                 </a>
-                <a href="/" class="inline-block px-6 py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors">
+                <a href="/" class="inline-block px-4 sm:px-6 py-2 sm:py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors text-sm sm:text-base">
                   Volver al inicio
                 </a>
               </div>
@@ -365,47 +365,47 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
           
           statusEl.innerHTML = `
             <div class="text-center">
-              <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-500/10 mb-4">
-                <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-500/10 mb-3 sm:mb-4">
+                <svg class="w-8 h-8 sm:w-10 sm:h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
               </div>
-              <h2 class="text-2xl font-bold text-white mb-2">Pago Rechazado</h2>
-              <p class="text-white/90 mb-2">${result.responseMessage || 'Tu pago no pudo ser procesado.'}</p>
-              <p class="text-white/70 text-sm mb-4">Código de respuesta: ${result.responseCode || 'N/A'}</p>
+              <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Pago Rechazado</h2>
+              <p class="text-white/90 mb-2 text-sm sm:text-base">${result.responseMessage || 'Tu pago no pudo ser procesado.'}</p>
+              <p class="text-white/70 text-xs sm:text-sm mb-3 sm:mb-4">Código de respuesta: ${result.responseCode || 'N/A'}</p>
               
               ${orderInfo ? `
               <!-- Información del pedido -->
-              <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-6 space-y-3 mb-4 text-left">
-                <h3 class="text-lg font-bold text-primary mb-4 text-center">Información del Pedido</h3>
+              <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 sm:p-6 space-y-2 sm:space-y-3 mb-3 sm:mb-4 text-left">
+                <h3 class="text-base sm:text-lg font-bold text-primary mb-3 sm:mb-4 text-center">Información del Pedido</h3>
                 
-                <div class="flex justify-between">
-                  <span class="text-white/90">Número de pedido:</span>
-                  <span class="font-bold text-primary">#${orderInfo.id}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/90 text-sm sm:text-base">Número de pedido:</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">#${orderInfo.id}</span>
                 </div>
                 
-                <div class="flex justify-between">
-                  <span class="text-white/90">Monto:</span>
-                  <span class="font-bold text-primary">$${Number(orderInfo.total_amount).toLocaleString('es-CL')} CLP</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/90 text-sm sm:text-base">Monto:</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">$${Number(orderInfo.total_amount).toLocaleString('es-CL')} CLP</span>
                 </div>
                 
-                <div class="flex justify-between">
-                  <span class="text-white/90">Estado:</span>
-                  <span class="font-bold text-primary">${orderInfo.status || 'Pendiente'}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
+                  <span class="text-white/90 text-sm sm:text-base">Estado:</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">${orderInfo.status || 'Pendiente'}</span>
                 </div>
               </div>
               ` : result.orderId ? `
-              <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 mb-4">
-                <p class="text-white/90">ID del pedido: <span class="font-bold text-primary">#${result.orderId}</span></p>
-                ${result.amount ? `<p class="text-white/90 mt-2">Monto: <span class="font-bold text-primary">$${Number(result.amount).toLocaleString('es-CL')} CLP</span></p>` : ''}
+              <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
+                <p class="text-white/90 text-sm sm:text-base">ID del pedido: <span class="font-bold text-primary">#${result.orderId}</span></p>
+                ${result.amount ? `<p class="text-white/90 mt-2 text-sm sm:text-base">Monto: <span class="font-bold text-primary">$${Number(result.amount).toLocaleString('es-CL')} CLP</span></p>` : ''}
               </div>
               ` : ''}
               
-              <div class="flex gap-4 justify-center">
-                <a href="/pago?orderId=${orderId || result.orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
+              <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                <a href="/pago?orderId=${orderId || result.orderId}" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
                   Intentar nuevamente
                 </a>
-                <a href="/" class="inline-block px-6 py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors">
+                <a href="/" class="inline-block px-4 sm:px-6 py-2 sm:py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors text-sm sm:text-base">
                   Volver al inicio
                 </a>
               </div>
@@ -416,18 +416,18 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
         console.error('Error confirmando pago:', error);
         statusEl.innerHTML = `
           <div class="text-center">
-            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-yellow-500/10 mb-4">
-              <svg class="w-10 h-10 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-yellow-500/10 mb-3 sm:mb-4">
+              <svg class="w-8 h-8 sm:w-10 sm:h-10 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
               </svg>
             </div>
-            <h2 class="text-2xl font-bold text-white mb-2">Error al procesar</h2>
-            <p class="text-white/90 mb-4">Ocurrió un error al confirmar tu pago. Por favor, contacta con soporte.</p>
-            <div class="flex gap-4 justify-center">
-              <a href="/pago?orderId=${orderId}" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
+            <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Error al procesar</h2>
+            <p class="text-white/90 mb-3 sm:mb-4 text-sm sm:text-base">Ocurrió un error al confirmar tu pago. Por favor, contacta con soporte.</p>
+            <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <a href="/pago?orderId=${orderId}" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
                 Volver al pago
               </a>
-              <a href="/" class="inline-block px-6 py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors">
+              <a href="/" class="inline-block px-4 sm:px-6 py-2 sm:py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors text-sm sm:text-base">
                 Volver al inicio
               </a>
             </div>

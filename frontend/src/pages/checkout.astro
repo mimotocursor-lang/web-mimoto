@@ -3,16 +3,16 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Checkout - Mimoto">
-  <section class="max-w-6xl mx-auto px-4 py-12 md:py-16 space-y-8">
-    <div class="text-center mb-8">
-      <h1 class="text-4xl md:text-5xl font-bold text-white mb-2">Checkout</h1>
-      <p class="text-white/80">Revisa tu pedido antes de confirmar</p>
+  <section class="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 space-y-6 sm:space-y-8">
+    <div class="text-center mb-6 sm:mb-8">
+      <h1 class="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">Checkout</h1>
+      <p class="text-sm sm:text-base text-white/80">Revisa tu pedido antes de confirmar</p>
     </div>
     
-    <div class="grid gap-8 md:grid-cols-[2fr,1.5fr]">
+    <div class="grid gap-6 sm:gap-8 lg:grid-cols-[2fr,1.5fr]">
       <!-- Datos del comprador -->
-      <div class="space-y-6 bg-gray-900/50 border-2 border-primary rounded-xl p-6 shadow-lg backdrop-blur-sm">
-        <h2 class="text-2xl font-bold text-white border-b-2 border-primary pb-2">Datos del comprador</h2>
+      <div class="space-y-4 sm:space-y-6 bg-gray-900/50 border-2 border-primary rounded-xl p-4 sm:p-6 shadow-lg backdrop-blur-sm">
+        <h2 class="text-xl sm:text-2xl font-bold text-white border-b-2 border-primary pb-2">Datos del comprador</h2>
         <p class="text-sm text-white/70">
           Aquí se mostrarán los datos del usuario autenticado desde Supabase. Si no estás
           logueado, serás redirigido a la página de login.
@@ -21,17 +21,17 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
       
       <!-- Resumen del pedido -->
-      <aside class="bg-gray-900/50 border-2 border-primary rounded-xl p-6 shadow-lg space-y-4 backdrop-blur-sm">
-        <h2 class="text-xl font-bold text-white border-b-2 border-primary pb-2">Resumen del pedido</h2>
-        <div id="checkout-items" class="space-y-3 text-sm"></div>
-        <div class="border-t-2 border-primary pt-4 flex justify-between items-center">
-          <span class="text-lg font-bold text-white">Total</span>
-          <span id="checkout-total" class="text-2xl font-bold text-primary">$0</span>
+      <aside class="bg-gray-900/50 border-2 border-primary rounded-xl p-4 sm:p-6 shadow-lg space-y-4 backdrop-blur-sm">
+        <h2 class="text-lg sm:text-xl font-bold text-white border-b-2 border-primary pb-2">Resumen del pedido</h2>
+        <div id="checkout-items" class="space-y-2 sm:space-y-3 text-xs sm:text-sm"></div>
+        <div class="border-t-2 border-primary pt-3 sm:pt-4 flex justify-between items-center">
+          <span class="text-base sm:text-lg font-bold text-white">Total</span>
+          <span id="checkout-total" class="text-xl sm:text-2xl font-bold text-primary">$0</span>
         </div>
         <button
           id="confirm-order-btn"
           type="button"
-          class="w-full mt-4 inline-flex items-center justify-center px-6 py-4 rounded-lg bg-primary text-white font-bold hover:bg-primary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-lg hover:scale-105"
+          class="w-full mt-3 sm:mt-4 inline-flex items-center justify-center px-4 sm:px-6 py-3 sm:py-4 rounded-lg bg-primary text-white font-bold hover:bg-primary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg text-base sm:text-lg hover:scale-105"
         >
           Confirmar compra
         </button>
