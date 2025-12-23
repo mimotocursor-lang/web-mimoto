@@ -212,9 +212,12 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           
           // Si hay payment_details que indiquen pago exitoso pero el estado es pending_payment,
           // mostrar como "Pagado" visualmente
-          const displayStatus = (paymentDetails && 
-            (paymentDetails.responseCode === 0 || paymentDetails.responseCode === '0' || paymentDetails.authorizationCode) && 
-            order.status === 'pending_payment') ? 'paid' : order.status;
+          // TAMBIÉN verificar si hay transactionDate y amount - esto indica pago exitoso
+          const hasTransactionData = paymentDetails && paymentDetails.transactionDate && paymentDetails.amount;
+          const hasPaymentSuccess = paymentDetails && 
+            (paymentDetails.responseCode === 0 || paymentDetails.responseCode === '0' || paymentDetails.authorizationCode || hasTransactionData || paymentDetails.isApproved);
+          
+          const displayStatus = (hasPaymentSuccess && order.status === 'pending_payment') ? 'paid' : order.status;
           
           // Mostrar información del cliente (usuario o invitado)
           let userDisplay = 'Invitado';
@@ -279,8 +282,10 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     function getStatusLabel(status, paymentDetails = null) {
       // Si hay payment_details que indiquen pago exitoso pero el estado es pending_payment,
       // mostrar como "Pagado (Pendiente de actualización)"
+      // TAMBIÉN verificar si hay transactionDate y amount - esto indica pago exitoso
       if (status === 'pending_payment' && paymentDetails) {
-        const isPaid = paymentDetails.responseCode === 0 || paymentDetails.responseCode === '0' || !!paymentDetails.authorizationCode;
+        const hasTransactionData = paymentDetails.transactionDate && paymentDetails.amount;
+        const isPaid = paymentDetails.responseCode === 0 || paymentDetails.responseCode === '0' || !!paymentDetails.authorizationCode || hasTransactionData || paymentDetails.isApproved;
         if (isPaid) {
           return '✅ Pagado (Pendiente de actualización)';
         }

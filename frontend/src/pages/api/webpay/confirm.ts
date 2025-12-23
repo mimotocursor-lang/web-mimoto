@@ -400,20 +400,30 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Preparar payment_details con toda la información de la transacción
+    // CRÍTICO: Guardar TODOS los datos de la transacción, incluso si responseCode es -1
     let paymentDetails: any = {
-      authorizationCode: commitResponse.authorizationCode,
+      authorizationCode: commitResponse.authorizationCode || null,
       transactionDate: commitResponse.transactionDate || new Date().toISOString(),
-      paymentTypeCode: commitResponse.paymentTypeCode,
+      paymentTypeCode: commitResponse.paymentTypeCode || null,
       installmentsNumber: commitResponse.installmentsNumber || 0,
       cardDetail: commitResponse.cardDetail || null,
-      buyOrder: commitResponse.buyOrder,
-      amount: commitResponse.amount,
-      responseCode: commitResponse.responseCode,
-      responseMessage: commitResponse.responseMessage,
-      vci: commitResponse.vci,
-      accountingDate: commitResponse.accountingDate,
-      stockDeducted: false // Se actualizará después de descontar stock
+      buyOrder: commitResponse.buyOrder || null,
+      amount: commitResponse.amount || null,
+      responseCode: commitResponse.responseCode !== undefined ? commitResponse.responseCode : null,
+      responseMessage: commitResponse.responseMessage || null,
+      vci: commitResponse.vci || null,
+      accountingDate: commitResponse.accountingDate || null,
+      stockDeducted: false, // Se actualizará después de descontar stock
+      // Agregar indicadores de pago exitoso
+      hasTransactionData: !!(commitResponse.transactionDate && commitResponse.amount),
+      isApproved: false // Se actualizará después
     };
+    
+    console.log('💾💾💾 PREPARANDO payment_details:');
+    console.log('💾 paymentDetails completo:', JSON.stringify(paymentDetails, null, 2));
+    console.log('💾 transactionDate:', paymentDetails.transactionDate);
+    console.log('💾 amount:', paymentDetails.amount);
+    console.log('💾 hasTransactionData:', paymentDetails.hasTransactionData);
 
     // DESCONTAR STOCK PRIMERO (antes de actualizar el estado)
 
@@ -560,13 +570,56 @@ export const POST: APIRoute = async ({ request }) => {
     
     if (updateResult.error) {
       console.error('❌ Error final actualizando estado del pedido:', updateResult.error);
+      console.error('❌ Intentando guardar payment_details por separado...');
+      
+      // Intentar guardar payment_details por separado si falla la actualización completa
+      const paymentDetailsUpdate = await supabase
+        .from('orders')
+        .update({
+          payment_details: paymentDetails,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', order.id);
+      
+      if (paymentDetailsUpdate.error) {
+        console.error('❌ Error guardando payment_details por separado:', paymentDetailsUpdate.error);
+      } else {
+        console.log('✅ payment_details guardado por separado exitosamente');
+      }
+      
       // Continuar aunque falle la actualización del status
     } else {
-      console.log('✅ Estado del pedido actualizado exitosamente:', {
-        orderId: order.id,
-        newStatus: newStatus,
-        paymentDetailsSaved: !!paymentDetails
-      });
+      console.log('✅ Estado del pedido actualizado exitosamente:');
+      console.log('✅ orderId:', order.id);
+      console.log('✅ newStatus:', newStatus);
+      console.log('✅ paymentDetailsSaved:', !!paymentDetails);
+      console.log('✅ paymentDetails keys:', paymentDetails ? Object.keys(paymentDetails) : []);
+      
+      // Verificar que payment_details se guardó correctamente
+      const { data: verifyPaymentDetails } = await supabase
+        .from('orders')
+        .select('payment_details')
+        .eq('id', order.id)
+        .single();
+      
+      if (verifyPaymentDetails && verifyPaymentDetails.payment_details) {
+        console.log('✅ payment_details verificado en BD:', !!verifyPaymentDetails.payment_details);
+      } else {
+        console.error('❌❌❌ payment_details NO se guardó en BD - intentando guardar de nuevo...');
+        const retryPaymentDetails = await supabase
+          .from('orders')
+          .update({
+            payment_details: paymentDetails,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', order.id);
+        
+        if (retryPaymentDetails.error) {
+          console.error('❌ Error en segundo intento de guardar payment_details:', retryPaymentDetails.error);
+        } else {
+          console.log('✅ payment_details guardado en segundo intento');
+        }
+      }
       
       // VERIFICAR Y FORZAR ACTUALIZACIÓN SI ES NECESARIO
       // Esto es CRÍTICO: si el pago fue aprobado, el estado DEBE ser 'paid'
