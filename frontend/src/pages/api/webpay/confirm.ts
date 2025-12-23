@@ -342,6 +342,21 @@ export const POST: APIRoute = async ({ request }) => {
       isApproved = true;
     }
     
+    // VERIFICACIÓN FINAL ABSOLUTA: Recalcular hasTransactionData para estar 100% seguro
+    // Esto es CRÍTICO - no importa qué diga responseCode
+    const finalHasTransactionData = !!(commitResponse.transactionDate && commitResponse.amount);
+    const finalIsApproved = finalHasTransactionData || isApproved;
+    
+    console.log('🔍🔍🔍 VERIFICACIÓN FINAL DE isApproved:');
+    console.log('🔍 isApproved (primera verificación):', isApproved);
+    console.log('🔍 finalHasTransactionData (verificación final):', finalHasTransactionData);
+    console.log('🔍 transactionDate:', commitResponse.transactionDate);
+    console.log('🔍 amount:', commitResponse.amount);
+    console.log('🔍 finalIsApproved (RESULTADO FINAL ABSOLUTO):', finalIsApproved);
+    
+    // USAR finalIsApproved para TODO - esto es lo que realmente importa
+    isApproved = finalIsApproved;
+    
     console.log('🔍🔍🔍 ANÁLISIS DETALLADO DE PAGO:');
     console.log('🔍 hasTransactionDate:', hasTransactionDate, 'valor:', commitResponse.transactionDate);
     console.log('🔍 hasAmount:', hasAmount, 'valor:', commitResponse.amount);
@@ -927,24 +942,18 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // Preparar respuesta con todos los campos disponibles
-    // CRÍTICO: Si isApproved es true (hay transactionDate y amount), success DEBE ser true
+    // CRÍTICO: isApproved ya fue actualizado con finalIsApproved arriba
+    // Si isApproved es true (hay transactionDate y amount), success DEBE ser true
     // y responseCode DEBE ser 0, incluso si Webpay devolvió -1
     
-    // VERIFICACIÓN FINAL ABSOLUTA: Si hay transactionDate y amount, el pago FUE EXITOSO
-    // Esto es CRÍTICO - no importa qué diga responseCode
-    const finalHasTransactionData = !!(commitResponse.transactionDate && commitResponse.amount);
-    const finalIsApproved = finalHasTransactionData || isApproved;
-    
     console.log('📤📤📤 PREPARANDO RESPUESTA FINAL:');
-    console.log('📤 isApproved (calculado antes):', isApproved);
-    console.log('📤 finalHasTransactionData (verificación final):', finalHasTransactionData);
+    console.log('📤 isApproved (ya actualizado con finalIsApproved):', isApproved);
     console.log('📤 transactionDate:', commitResponse.transactionDate);
     console.log('📤 amount:', commitResponse.amount);
-    console.log('📤 finalIsApproved (RESULTADO FINAL):', finalIsApproved);
     
-    const finalSuccess = finalIsApproved; // Si hay transactionDate y amount, success es true
-    const finalResponseCode = finalIsApproved ? 0 : (commitResponse.responseCode ?? -1);
-    const finalResponseMessage = finalIsApproved 
+    const finalSuccess = isApproved; // Si hay transactionDate y amount, success es true
+    const finalResponseCode = isApproved ? 0 : (commitResponse.responseCode ?? -1);
+    const finalResponseMessage = isApproved 
       ? 'Transacción aprobada' 
       : (commitResponse.responseMessage || 'Transacción rechazada');
     
@@ -977,7 +986,13 @@ export const POST: APIRoute = async ({ request }) => {
       }
     };
 
-    console.log('📤 Enviando respuesta al cliente:', JSON.stringify(responseData, null, 2));
+    console.log('📤📤📤 ENVIANDO RESPUESTA AL CLIENTE:');
+    console.log('📤 responseData.success:', responseData.success);
+    console.log('📤 responseData.responseCode:', responseData.responseCode);
+    console.log('📤 responseData.responseMessage:', responseData.responseMessage);
+    console.log('📤 responseData.transactionDate:', responseData.transactionDate);
+    console.log('📤 responseData.amount:', responseData.amount);
+    console.log('📤 JSON completo:', JSON.stringify(responseData, null, 2));
 
     return new Response(
       JSON.stringify(responseData),
