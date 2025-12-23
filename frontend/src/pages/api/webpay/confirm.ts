@@ -153,7 +153,7 @@ export const POST: APIRoute = async ({ request }) => {
     // porque payment_reference puede no existir aún o tener un formato diferente
     let { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('id, total_amount, status, payment_reference, email, user_id')
+      .select('id, total_amount, status, payment_reference, email, user_id, payment_details')
       .eq('payment_reference', token_ws)
       .single();
 
@@ -162,7 +162,7 @@ export const POST: APIRoute = async ({ request }) => {
       console.log('⚠️ No se encontró pedido con payment_reference exacto, buscando por token...');
       const { data: orders } = await supabase
         .from('orders')
-        .select('id, total_amount, status, payment_reference, email, user_id')
+        .select('id, total_amount, status, payment_reference, email, user_id, payment_details')
         .like('payment_reference', `${token_ws}%`)
         .order('created_at', { ascending: false })
         .limit(1);
@@ -181,7 +181,7 @@ export const POST: APIRoute = async ({ request }) => {
       // Buscar pedidos recientes sin payment_reference (posiblemente de invitados)
       const { data: recentOrders } = await supabase
         .from('orders')
-        .select('id, total_amount, status, payment_reference, email, user_id')
+        .select('id, total_amount, status, payment_reference, email, user_id, payment_details')
         .is('payment_reference', null)
         .eq('status', 'pending_payment')
         .order('created_at', { ascending: false })
@@ -303,85 +303,35 @@ export const POST: APIRoute = async ({ request }) => {
     console.log('📥 authorizationCode:', commitResponse.authorizationCode);
     console.log('📥 responseMessage:', commitResponse.responseMessage);
 
-    // Verificar el estado de la transacción
-    // LÓGICA AGRESIVA: Si hay datos de transacción (transactionDate, amount), el pago FUE PROCESADO
-    // Transbank solo devuelve transactionDate y amount si la transacción fue exitosa
-    const hasResponseCodeZero = commitResponse.responseCode === 0 || commitResponse.responseCode === '0';
-    const hasAuthorizationCode = !!commitResponse.authorizationCode;
+    // LÓGICA SIMPLE Y DIRECTA: Si hay transactionDate y amount, el pago FUE EXITOSO
+    // Transbank SOLO devuelve transactionDate y amount si la transacción fue exitosa
+    // NO importa si hay authorizationCode o no, si hay transactionDate y amount, el pago fue exitoso
     const hasTransactionDate = !!commitResponse.transactionDate;
     const hasAmount = !!commitResponse.amount;
     const hasTransactionData = hasTransactionDate && hasAmount;
     
-    // Verificar si hay errores explícitos
-    const responseMessage = commitResponse.responseMessage || '';
-    const hasExplicitError = responseMessage.toLowerCase().includes('error') ||
-                             responseMessage.toLowerCase().includes('rechazado') ||
-                             responseMessage.toLowerCase().includes('rejected') ||
-                             responseMessage.toLowerCase().includes('denegado') ||
-                             responseMessage.toLowerCase().includes('denied');
+    // Si hay transactionDate y amount, el pago FUE EXITOSO - punto final
+    // Esta es la regla más importante: Transbank solo devuelve estos datos si procesó el pago
+    const isApproved = hasTransactionData;
     
-    // LÓGICA PRINCIPAL: El pago es exitoso si:
-    // 1. responseCode === 0 (estándar de Transbank)
-    // 2. O si existe authorizationCode (indica que fue autorizado) - ESTO ES LO MÁS IMPORTANTE
-    // 3. O si hay transactionDate Y amount (indica que la transacción se procesó exitosamente)
-    // 4. IMPORTANTE: Si hay transactionDate y amount, el pago FUE PROCESADO, incluso si responseCode es -1
-    
-    // Si hay transactionDate y amount, el pago FUE PROCESADO - esto es definitivo
-    // Transbank solo devuelve estos datos si la transacción fue exitosa
-    let isApproved = hasResponseCodeZero || hasAuthorizationCode || hasTransactionData;
-    
-    // Si hay transactionDate y amount pero NO hay errores explícitos, el pago fue exitoso
-    // Esto es crítico porque Transbank puede devolver responseCode -1 pero con datos de transacción
-    if (hasTransactionData && !hasExplicitError) {
-      isApproved = true;
-      console.log('✅✅✅ TRANSACCIÓN PROCESADA: transactionDate y amount presentes - PAGO EXITOSO');
-    }
-    
-    console.log('✅ Análisis de aprobación DETALLADO:', {
-      hasResponseCodeZero,
-      hasAuthorizationCode,
+    console.log('🔍🔍🔍 ANÁLISIS SIMPLE DE PAGO:', {
       hasTransactionDate,
       hasAmount,
       hasTransactionData,
-      hasExplicitError,
-      isApproved_INICIAL: isApproved,
-      responseCode: commitResponse.responseCode,
-      authorizationCode: commitResponse.authorizationCode,
+      isApproved: isApproved,
       transactionDate: commitResponse.transactionDate,
       amount: commitResponse.amount,
+      responseCode: commitResponse.responseCode,
+      authorizationCode: commitResponse.authorizationCode,
       responseMessage: commitResponse.responseMessage,
       fullResponse: JSON.stringify(commitResponse, null, 2)
     });
     
-    // FORZAR isApproved a true si hay indicadores de éxito
-    // Esto es CRÍTICO: si hay datos de transacción, el pago FUE PROCESADO
-    if (hasAuthorizationCode || hasResponseCodeZero || hasTransactionData) {
-      if (!isApproved) {
-        console.log('🚨 CRÍTICO: Hay indicadores de pago exitoso pero isApproved es false. Forzando a true.');
-        console.log('🚨 Indicadores:', {
-          hasAuthorizationCode,
-          hasResponseCodeZero,
-          hasTransactionData,
-          responseCode: commitResponse.responseCode
-        });
-      }
-      isApproved = true;
-      console.log('✅✅✅ FORZANDO isApproved = true por indicadores de éxito');
+    if (isApproved) {
+      console.log('✅✅✅ PAGO EXITOSO: transactionDate y amount presentes - PROCESANDO COMO PAGADO');
+    } else {
+      console.log('❌❌❌ PAGO NO EXITOSO: No hay transactionDate o amount');
     }
-    
-    // Si hay authorizationCode, SIEMPRE es pago exitoso - esto es ABSOLUTO
-    if (hasAuthorizationCode) {
-      isApproved = true;
-      console.log('✅✅✅ authorizationCode presente - pago AUTORIZADO, isApproved = true');
-    }
-    
-    // Si hay transactionDate y amount, el pago FUE PROCESADO - esto es ABSOLUTO
-    if (hasTransactionData) {
-      isApproved = true;
-      console.log('✅✅✅ transactionDate y amount presentes - pago PROCESADO, isApproved = true');
-    }
-    
-    console.log('✅✅✅ RESULTADO FINAL DE isApproved:', isApproved);
 
     // Preparar payment_details con toda la información de la transacción
     let paymentDetails: any = {
@@ -401,50 +351,32 @@ export const POST: APIRoute = async ({ request }) => {
 
     // DESCONTAR STOCK PRIMERO (antes de actualizar el estado)
 
-    // Actualizar el estado del pedido
-    // SIEMPRE actualizar a 'paid' si el pago fue aprobado (sin importar si es invitado o logueado)
+    // Preparar payment_reference - SIMPLE: Si isApproved (hay transactionDate y amount), usar 'paid'
+    let paymentReference: string;
+    if (isApproved) {
+      // Pago exitoso - usar 'paid'
+      paymentReference = `${token_ws}-paid`;
+      console.log('✅✅✅ Payment reference para pago EXITOSO:', paymentReference);
+    } else {
+      // Pago rechazado
+      paymentReference = `${token_ws}-rejected`;
+      console.log('❌ Payment reference para pago RECHAZADO:', paymentReference);
+    }
+    
+    // Actualizar el estado del pedido - SIMPLE: Si isApproved, estado es 'paid'
     const newStatus = isApproved ? 'paid' : 'pending_payment';
     
-    console.log('🔄 Actualizando estado del pedido:', {
+    console.log('🔄 ACTUALIZANDO ESTADO DEL PEDIDO:', {
       orderId: order.id,
       oldStatus: order.status,
       newStatus: newStatus,
       isApproved: isApproved,
-      responseCode: commitResponse.responseCode,
-      authorizationCode: commitResponse.authorizationCode,
+      hasTransactionData: hasTransactionData,
+      transactionDate: commitResponse.transactionDate,
+      amount: commitResponse.amount,
       user_id: order.user_id,
       isGuest: !order.user_id
     });
-    
-    // Preparar payment_reference
-    // CRÍTICO: Si isApproved es true, NUNCA usar 'pending' o 'rejected' en payment_reference
-    // Si el pago fue aprobado, usar 'paid' o 'approved'
-    // VERIFICACIÓN ADICIONAL: Si hay transactionDate y amount, el pago FUE PROCESADO
-    const hasTransactionDataForRef = !!(commitResponse.transactionDate && commitResponse.amount);
-    
-    // Si hay datos de transacción, el pago FUE PROCESADO - forzar isApproved
-    if (hasTransactionDataForRef && !isApproved) {
-      console.log('🚨🚨🚨 CRÍTICO: Hay transactionDate y amount pero isApproved es false');
-      console.log('🚨🚨🚨 Forzando isApproved a true porque la transacción fue procesada');
-      isApproved = true;
-    }
-    
-    let paymentReference: string;
-    if (isApproved || hasTransactionDataForRef) {
-      // Pago aprobado - usar 'paid' o 'approved', NUNCA 'pending' o 'rejected'
-      paymentReference = commitResponse.responseCode !== undefined 
-        ? `${token_ws}-${commitResponse.responseCode === 0 ? 'paid' : 'approved'}` 
-        : `${token_ws}-paid`;
-      console.log('✅✅✅ Payment reference para pago APROBADO:', paymentReference);
-      console.log('✅✅✅ isApproved:', isApproved, 'hasTransactionDataForRef:', hasTransactionDataForRef);
-    } else {
-      // Pago rechazado o pendiente - SOLO si NO hay datos de transacción
-      paymentReference = commitResponse.responseCode !== undefined 
-        ? `${token_ws}-${commitResponse.responseCode}` 
-        : `${token_ws}-rejected`;
-      console.log('⚠️ Payment reference para pago RECHAZADO:', paymentReference);
-      console.log('⚠️ isApproved:', isApproved, 'hasTransactionDataForRef:', hasTransactionDataForRef);
-    }
     
     console.log('💾 Guardando en base de datos:', {
       orderId: order.id,
@@ -455,51 +387,26 @@ export const POST: APIRoute = async ({ request }) => {
       paymentDetailsStringified: JSON.stringify(paymentDetails)
     });
     
-    // ACTUALIZAR ESTADO - SIEMPRE a 'paid' si isApproved es true O si hay datos de transacción
-    // CRÍTICO: Si hay transactionDate y amount, el pago FUE PROCESADO - estado DEBE ser 'paid'
-    const hasTransactionDataForStatus = !!(commitResponse.transactionDate && commitResponse.amount);
-    
-    // Si hay datos de transacción, el pago FUE PROCESADO - forzar isApproved y estado 'paid'
-    if (hasTransactionDataForStatus && !isApproved) {
-      console.log('🚨🚨🚨 CRÍTICO: Hay transactionDate y amount pero isApproved es false');
-      console.log('🚨🚨🚨 Forzando isApproved a true porque la transacción fue procesada');
-      isApproved = true;
-    }
-    
-    // El estado DEBE ser 'paid' si isApproved es true O si hay datos de transacción
-    const finalStatus = (isApproved || hasTransactionDataForStatus) ? 'paid' : 'pending_payment';
+    // ACTUALIZAR ESTADO - SIMPLE: Si isApproved (hay transactionDate y amount), estado es 'paid'
+    const statusToUpdate = isApproved ? 'paid' : 'pending_payment';
     
     console.log('💾 ACTUALIZANDO ESTADO EN BASE DE DATOS:', {
       orderId: order.id,
-      finalStatus: finalStatus,
+      statusToUpdate: statusToUpdate,
       isApproved: isApproved,
-      hasTransactionDataForStatus: hasTransactionDataForStatus,
+      hasTransactionData: hasTransactionData,
       paymentReference: paymentReference,
       hasPaymentDetails: !!paymentDetails,
-      isGuest: !order.user_id,
-      transactionDate: commitResponse.transactionDate,
-      amount: commitResponse.amount
+      isGuest: !order.user_id
     });
     
-    // CRÍTICO: Si isApproved es true O hay datos de transacción, el estado DEBE ser 'paid' sin excepciones
-    if ((isApproved || hasTransactionDataForStatus) && finalStatus !== 'paid') {
-      console.error('🚨🚨🚨 ERROR CRÍTICO: Hay indicadores de pago exitoso pero finalStatus no es "paid"');
-      console.error('🚨🚨🚨 Forzando finalStatus a "paid"');
-      // No usar finalStatus, usar directamente 'paid'
-    }
-    
-    // Asegurar que el estado sea 'paid' si isApproved es true O si hay datos de transacción
-    const statusToUpdate = (isApproved || hasTransactionDataForStatus) ? 'paid' : 'pending_payment';
-    
-    console.log('✅✅✅ Estado final a actualizar:', statusToUpdate);
-    console.log('✅✅✅ isApproved:', isApproved, 'hasTransactionDataForStatus:', hasTransactionDataForStatus);
-    
+    // ACTUALIZAR DIRECTAMENTE - Sin complicaciones
     let updateResult = await supabase
       .from('orders')
       .update({
-        status: statusToUpdate, // NUNCA 'pending_payment' si isApproved es true
-        payment_reference: paymentReference, // NUNCA con '-pending' si isApproved es true
-        payment_details: paymentDetails, // Guardar detalles completos del pago
+        status: statusToUpdate, // 'paid' si isApproved, 'pending_payment' si no
+        payment_reference: paymentReference,
+        payment_details: paymentDetails,
         updated_at: new Date().toISOString()
       })
       .eq('id', order.id);
@@ -595,8 +502,9 @@ export const POST: APIRoute = async ({ request }) => {
         status: verifyOrder?.status,
         expectedStatus: isApproved ? 'paid' : 'pending_payment',
         isApproved: isApproved,
-        hasAuthorizationCode: hasAuthorizationCode,
-        responseCode: commitResponse.responseCode
+        hasTransactionData: hasTransactionData,
+        transactionDate: commitResponse.transactionDate,
+        amount: commitResponse.amount
       });
       
       // SI EL PAGO FUE APROBADO Y EL ESTADO NO ES 'paid', FORZAR ACTUALIZACIÓN
@@ -694,10 +602,10 @@ export const POST: APIRoute = async ({ request }) => {
         }
       }
       
-      // Si hay authorizationCode, el pago FUE AUTORIZADO - el estado DEBE ser 'paid'
+      // Si hay datos de transacción, el pago FUE PROCESADO - el estado DEBE ser 'paid'
       // ESTO ES ABSOLUTO - sin excepciones para invitados o logueados
-      if (hasAuthorizationCode && verifyOrder && verifyOrder.status !== 'paid') {
-        console.log('🚨 CRÍTICO: Hay authorizationCode pero estado no es "paid". Forzando...');
+      if (hasTransactionData && verifyOrder && verifyOrder.status !== 'paid') {
+        console.log('🚨 CRÍTICO: Hay transactionDate y amount pero estado no es "paid". Forzando...');
         console.log('🚨 Order ID:', order.id, 'User ID:', order.user_id, 'Is Guest:', !order.user_id);
         
         const forcePaidResult = await supabase
@@ -712,7 +620,7 @@ export const POST: APIRoute = async ({ request }) => {
           console.error('❌ Error crítico forzando estado a "paid":', forcePaidResult.error);
           console.error('❌ Esto es un problema grave que requiere atención inmediata');
         } else {
-          console.log('✅ Estado forzado a "paid" por authorizationCode');
+          console.log('✅ Estado forzado a "paid" por transactionDate y amount');
           
           // Verificar una vez más
           const { data: finalCheck } = await supabase
@@ -721,7 +629,7 @@ export const POST: APIRoute = async ({ request }) => {
             .eq('id', order.id)
             .single();
           
-          console.log('🔍 Verificación final por authorizationCode:', {
+          console.log('🔍 Verificación final por transactionData:', {
             orderId: finalCheck?.id,
             status: finalCheck?.status,
             isPaid: finalCheck?.status === 'paid',
