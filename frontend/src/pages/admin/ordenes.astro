@@ -493,10 +493,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             <div class="bg-primary/10 rounded-lg p-4 border-2 border-primary/30">
               <h3 class="font-bold text-lg mb-4 text-gray-900 dark:text-ktm-text">Cambiar Estado del Pedido</h3>
               <div class="flex flex-wrap gap-3">
-                ${order.status === 'pending_payment' && paymentDetails && (paymentDetails.responseCode === 0 || paymentDetails.responseCode === '0' || paymentDetails.authorizationCode) ? `
-                  <button onclick="updateOrderStatus(${order.id}, 'paid')" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
-                    ✅ Marcar como Pagado (Pago detectado)
-                  </button>
+                ${order.status === 'pending_payment' ? `
+                  ${hasPaymentReference || (paymentDetails && (paymentDetails.responseCode === 0 || paymentDetails.responseCode === '0' || paymentDetails.authorizationCode)) ? `
+                    <button onclick="updateOrderStatus(${order.id}, 'paid')" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors">
+                      ✅ Marcar como Pagado ${hasPaymentReference ? '(Referencia de pago detectada)' : '(Pago detectado)'}
+                    </button>
+                  ` : `
+                    <button onclick="updateOrderStatus(${order.id}, 'paid')" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                      ✅ Marcar como Pagado (Manual)
+                    </button>
+                  `}
                 ` : ''}
                 ${order.status === 'paid' ? `
                   <button onclick="updateOrderStatus(${order.id}, 'order_received')" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors">
@@ -517,6 +523,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
               <p class="text-xs text-gray-600 dark:text-ktm-text/70 mt-3">
                 💡 El cliente recibirá una notificación por WhatsApp/Email cuando cambies el estado.
               </p>
+              ${order.status === 'pending_payment' && hasPaymentReference && !paymentDetails ? `
+              <div class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded border border-yellow-200 dark:border-yellow-800">
+                <p class="text-xs text-yellow-800 dark:text-yellow-300">
+                  ⚠️ Esta orden tiene referencia de pago pero no hay detalles de pago guardados. 
+                  Si el pago fue exitoso, marca como "Pagado" manualmente.
+                </p>
+              </div>
+              ` : ''}
             </div>
           </div>
         `;

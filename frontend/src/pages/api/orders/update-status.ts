@@ -238,22 +238,123 @@ async function sendNotifications(
   // Enviar email (si está configurado)
   if (email) {
     try {
-      // Aquí puedes integrar con un servicio de email como Resend, SendGrid, etc.
-      // Por ahora solo logueamos
-      console.log('📧 Email que se enviaría:', {
+      const emailService = import.meta.env.EMAIL_SERVICE || 'resend'; // resend, sendgrid, smtp
+      const resendApiKey = import.meta.env.RESEND_API_KEY;
+      const sendgridApiKey = import.meta.env.SENDGRID_API_KEY;
+      const fromEmail = import.meta.env.FROM_EMAIL || 'noreply@mimoto.cl';
+      const fromName = import.meta.env.FROM_NAME || 'MIMOTO';
+
+      console.log('📧 Intentando enviar email:', {
         to: email,
-        subject: `${notification.title} - Pedido #${orderId}`,
-        body: notification.message
+        service: emailService,
+        hasResendKey: !!resendApiKey,
+        hasSendgridKey: !!sendgridApiKey
       });
-      
-      // TODO: Integrar servicio de email real
-      // await sendEmail({
-      //   to: email,
-      //   subject: `${notification.title} - Pedido #${orderId}`,
-      //   html: generateEmailTemplate(notification, orderId, amount)
-      // });
+
+      // Generar HTML del email
+      const emailHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: #ff6600; color: white; padding: 20px; text-align: center; }
+            .content { background: #f9f9f9; padding: 30px; }
+            .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+            .button { display: inline-block; background: #ff6600; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>${notification.title}</h1>
+            </div>
+            <div class="content">
+              <p>Hola${name ? ' ' + name.split(' ')[0] : ''},</p>
+              <p>${notification.message}</p>
+              <p><strong>Número de pedido:</strong> #${orderId}</p>
+              <p><strong>Monto:</strong> $${Number(amount).toLocaleString('es-CL')}</p>
+              <p>Gracias por tu compra.</p>
+              <p>Saludos,<br>El equipo de MIMOTO</p>
+            </div>
+            <div class="footer">
+              <p>Este es un email automático, por favor no responder.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Intentar enviar con Resend
+      if (emailService === 'resend' && resendApiKey) {
+        const resendUrl = 'https://api.resend.com/emails';
+        const response = await fetch(resendUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: `${fromName} <${fromEmail}>`,
+            to: [email],
+            subject: `${notification.title} - Pedido #${orderId}`,
+            html: emailHtml,
+          }),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Email enviado exitosamente con Resend:', result);
+        } else {
+          const error = await response.json();
+          console.error('❌ Error enviando email con Resend:', error);
+          throw new Error(`Resend error: ${JSON.stringify(error)}`);
+        }
+      }
+      // Intentar enviar con SendGrid
+      else if (emailService === 'sendgrid' && sendgridApiKey) {
+        const sendgridUrl = 'https://api.sendgrid.com/v3/mail/send';
+        const response = await fetch(sendgridUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${sendgridApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            personalizations: [{
+              to: [{ email: email }],
+            }],
+            from: { email: fromEmail, name: fromName },
+            subject: `${notification.title} - Pedido #${orderId}`,
+            content: [{
+              type: 'text/html',
+              value: emailHtml,
+            }],
+          }),
+        });
+
+        if (response.ok) {
+          console.log('✅ Email enviado exitosamente con SendGrid');
+        } else {
+          const error = await response.text();
+          console.error('❌ Error enviando email con SendGrid:', error);
+          throw new Error(`SendGrid error: ${error}`);
+        }
+      }
+      // Si no hay servicio configurado, solo loguear
+      else {
+        console.log('⚠️ Servicio de email no configurado. Email que se enviaría:', {
+          to: email,
+          subject: `${notification.title} - Pedido #${orderId}`,
+          body: notification.message
+        });
+        console.log('💡 Para habilitar emails, configura RESEND_API_KEY o SENDGRID_API_KEY en las variables de entorno');
+      }
     } catch (error) {
-      console.error('Error enviando email:', error);
+      console.error('❌ Error enviando email:', error);
+      // No lanzar el error para que no bloquee la actualización del estado
     }
   }
 

@@ -308,11 +308,25 @@ export const POST: APIRoute = async ({ request }) => {
       responseCode: commitResponse.responseCode
     });
     
+    // Preparar payment_reference
+    const paymentReference = commitResponse.responseCode !== undefined 
+      ? `${token_ws}-${commitResponse.responseCode}` 
+      : `${token_ws}-${isApproved ? 'approved' : 'pending'}`;
+    
+    console.log('💾 Guardando en base de datos:', {
+      orderId: order.id,
+      status: newStatus,
+      paymentReference: paymentReference,
+      hasPaymentDetails: !!paymentDetails,
+      paymentDetailsKeys: paymentDetails ? Object.keys(paymentDetails) : [],
+      paymentDetailsStringified: JSON.stringify(paymentDetails)
+    });
+    
     let updateResult = await supabase
       .from('orders')
       .update({
         status: newStatus,
-        payment_reference: `${token_ws}-${commitResponse.responseCode}`,
+        payment_reference: paymentReference,
         payment_details: paymentDetails, // Guardar detalles completos del pago
         updated_at: new Date().toISOString()
       })
