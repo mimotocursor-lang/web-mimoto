@@ -76,9 +76,9 @@ if (id) {
           </div>
           
           {order.payment_reference && (
-            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center border-t border-primary/30 pt-3 sm:pt-4 gap-2">
-              <span class="text-white/90 font-semibold text-sm sm:text-base">Referencia de pago:</span>
-              <span class="font-mono text-xs text-primary break-all text-right sm:text-left">{order.payment_reference}</span>
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start border-t border-primary/30 pt-3 sm:pt-4 gap-2">
+              <span class="text-white/90 font-semibold text-sm sm:text-base flex-shrink-0">Referencia de pago:</span>
+              <span class="font-mono text-xs sm:text-sm text-primary break-all text-left sm:text-right">{order.payment_reference}</span>
             </div>
           )}
           
@@ -86,23 +86,23 @@ if (id) {
             <div class="border-t border-primary/30 pt-3 sm:pt-4 space-y-2">
               <span class="text-white/90 font-semibold block mb-2 text-sm sm:text-base">Detalles del pago:</span>
               {order.payment_details.authorizationCode && (
-                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
-                  <span class="text-white/70 text-xs sm:text-sm">Código de autorización:</span>
-                  <span class="text-primary font-mono text-xs sm:text-sm break-all">{order.payment_details.authorizationCode}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                  <span class="text-white/70 text-xs sm:text-sm flex-shrink-0">Código de autorización:</span>
+                  <span class="text-primary font-mono text-xs sm:text-sm break-all text-left sm:text-right">{order.payment_details.authorizationCode}</span>
                 </div>
               )}
               {order.payment_details.responseCode !== undefined && (
-                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
-                  <span class="text-white/70 text-xs sm:text-sm">Código de respuesta:</span>
-                  <span class={`font-mono text-xs sm:text-sm ${order.payment_details.responseCode === 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                  <span class="text-white/70 text-xs sm:text-sm flex-shrink-0">Código de respuesta:</span>
+                  <span class={`font-mono text-xs sm:text-sm ${order.payment_details.responseCode === 0 ? 'text-green-500' : 'text-red-500'} text-left sm:text-right`}>
                     {order.payment_details.responseCode}
                   </span>
                 </div>
               )}
               {order.payment_details.transactionDate && (
-                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
-                  <span class="text-white/70 text-xs sm:text-sm">Fecha de transacción:</span>
-                  <span class="text-white/70 text-xs sm:text-sm">{new Date(order.payment_details.transactionDate).toLocaleString('es-CL')}</span>
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                  <span class="text-white/70 text-xs sm:text-sm flex-shrink-0">Fecha de transacción:</span>
+                  <span class="text-white/70 text-xs sm:text-sm text-left sm:text-right">{new Date(order.payment_details.transactionDate).toLocaleString('es-CL')}</span>
                 </div>
               )}
             </div>
@@ -125,25 +125,25 @@ if (id) {
           <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 sm:p-6 space-y-2 sm:space-y-3">
             <h3 class="text-white font-bold text-base sm:text-lg mb-3 sm:mb-4">Items del pedido:</h3>
             {orderItems.map((item: any) => (
-              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-gray-900/50 rounded-lg gap-2 sm:gap-0">
+              <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 bg-gray-900/50 rounded-lg gap-2 sm:gap-3">
                 <div class="flex-1 min-w-0">
-                  <span class="text-white font-semibold text-sm sm:text-base block truncate">{item.products?.name || `Producto #${item.product_id}`}</span>
-                  <span class="text-white/70 text-xs sm:text-sm block">Cantidad: {item.quantity}</span>
+                  <span class="text-white font-semibold text-sm sm:text-base block break-words">{item.products?.name || `Producto #${item.product_id}`}</span>
+                  <span class="text-white/70 text-xs sm:text-sm block mt-1">Cantidad: {item.quantity}</span>
                 </div>
-                <span class="font-bold text-primary text-sm sm:text-base flex-shrink-0">${Number(item.total_price).toLocaleString('es-CL')}</span>
+                <span class="font-bold text-primary text-base sm:text-lg flex-shrink-0 self-start sm:self-center">${Number(item.total_price).toLocaleString('es-CL')}</span>
               </div>
             ))}
           </div>
         )}
       </div>
     ) : (
-      <div class="bg-gray-900/50 border-2 border-red-500 rounded-xl p-8 shadow-lg backdrop-blur-sm">
+      <div class="bg-gray-900/50 border-2 border-red-500 rounded-xl p-4 sm:p-6 md:p-8 shadow-lg backdrop-blur-sm">
         <div class="text-center">
-          <h2 class="text-2xl font-bold text-white mb-2">Pedido no encontrado</h2>
-          <p class="text-white/90 mb-4">
+          <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Pedido no encontrado</h2>
+          <p class="text-white/90 mb-3 sm:mb-4 text-sm sm:text-base">
             {orderError ? `Error: ${orderError.message}` : 'No se encontró un pedido con ese ID.'}
           </p>
-          <a href="/" class="inline-block px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors">
+          <a href="/" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
             Volver al inicio
           </a>
         </div>
