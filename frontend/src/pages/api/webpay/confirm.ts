@@ -468,6 +468,92 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
+    // Descontar stock cuando el pago es exitoso (solo una vez cuando isApproved es true)
+    if (isApproved) {
+      try {
+        console.log('📦 Descontando stock de productos...');
+        
+        // Obtener items del pedido con información del producto
+        const { data: orderItemsForStock, error: itemsError } = await supabase
+          .from('order_items')
+          .select(`
+            product_id,
+            quantity,
+            products:product_id(id, stock)
+          `)
+          .eq('order_id', order.id);
+        
+        if (itemsError) {
+          console.error('❌ Error obteniendo items del pedido para descontar stock:', itemsError);
+        } else if (orderItemsForStock && orderItemsForStock.length > 0) {
+          // Descontar stock de cada producto
+          for (const item of orderItemsForStock) {
+            if (item.product_id && item.quantity) {
+              const productId = item.product_id;
+              const quantityToDeduct = item.quantity;
+              const currentStock = item.products?.stock ?? null;
+              
+              if (currentStock === null) {
+                console.warn(`⚠️ No se pudo obtener stock del producto ${productId}, obteniendo stock actual...`);
+                // Obtener el stock actual del producto
+                const { data: productData, error: productError } = await supabase
+                  .from('products')
+                  .select('stock')
+                  .eq('id', productId)
+                  .single();
+                
+                if (productError || !productData) {
+                  console.error(`❌ Error obteniendo stock del producto ${productId}:`, productError);
+                  continue;
+                }
+                
+                const actualStock = productData.stock || 0;
+                const newStock = Math.max(0, actualStock - quantityToDeduct);
+                
+                const { error: stockError } = await supabase
+                  .from('products')
+                  .update({ 
+                    stock: newStock,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', productId);
+                
+                if (stockError) {
+                  console.error(`❌ Error descontando stock del producto ${productId}:`, stockError);
+                } else {
+                  console.log(`✅ Stock descontado: ${quantityToDeduct} unidades del producto ${productId} (${actualStock} -> ${newStock})`);
+                }
+              } else {
+                console.log(`📦 Descontando ${quantityToDeduct} unidades del producto ${productId} (stock actual: ${currentStock})`);
+                
+                // Actualizar stock (asegurarse de que no sea negativo)
+                const newStock = Math.max(0, currentStock - quantityToDeduct);
+                
+                const { error: stockError } = await supabase
+                  .from('products')
+                  .update({ 
+                    stock: newStock,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', productId);
+                
+                if (stockError) {
+                  console.error(`❌ Error descontando stock del producto ${productId}:`, stockError);
+                } else {
+                  console.log(`✅ Stock actualizado: producto ${productId}, nuevo stock: ${newStock}`);
+                }
+              }
+            }
+          }
+        } else {
+          console.log('⚠️ No se encontraron items del pedido para descontar stock');
+        }
+      } catch (stockError) {
+        console.error('❌ Error al descontar stock:', stockError);
+        // No fallar la confirmación del pago si hay error al descontar stock
+      }
+    }
+
     // Obtener información adicional del pedido para mostrar en el comprobante
     // Obtener items del pedido con información del producto
     let orderItems = [];
