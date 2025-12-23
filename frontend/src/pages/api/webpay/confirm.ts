@@ -188,18 +188,8 @@ export const POST: APIRoute = async ({ request }) => {
         .limit(5);
       
       if (recentOrders && recentOrders.length > 0) {
-        // Intentar encontrar el pedido que coincida con el buyOrder de Webpay
-        const buyOrderFromWebpay = commitResponse.buyOrder;
-        if (buyOrderFromWebpay) {
-          const matchingOrder = recentOrders.find(o => String(o.id) === String(buyOrderFromWebpay));
-          if (matchingOrder) {
-            order = matchingOrder;
-            orderError = null;
-            console.log('✅ Pedido encontrado por buyOrder:', order.id);
-          }
-        }
-        
         // Si no hay coincidencia, usar el más reciente
+        // (No podemos usar buyOrder aquí porque commitResponse aún no existe)
         if (!order && recentOrders.length > 0) {
           order = recentOrders[0];
           orderError = null;
@@ -286,7 +276,23 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Confirmar la transacción con Webpay
     console.log('🔄 Confirmando transacción con Webpay, token:', token_ws);
-    const commitResponse = await webpayPlus.commit(token_ws);
+    console.log('🔄 Token length:', token_ws?.length);
+    
+    let commitResponse;
+    try {
+      commitResponse = await webpayPlus.commit(token_ws);
+    } catch (commitError: any) {
+      console.error('❌ Error al hacer commit con Webpay:', commitError);
+      console.error('❌ Error details:', JSON.stringify(commitError, null, 2));
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Error al confirmar la transacción con Webpay',
+          details: commitError.message || 'Error desconocido'
+        }),
+        { status: 500, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     if (!commitResponse) {
       console.error('❌ Webpay no devolvió respuesta');
@@ -296,12 +302,23 @@ export const POST: APIRoute = async ({ request }) => {
       );
     }
 
-    console.log('📥 Respuesta completa de Webpay:', JSON.stringify(commitResponse, null, 2));
+    // LOGS DETALLADOS DE LA RESPUESTA DE WEBPAY
+    console.log('📥📥📥 RESPUESTA COMPLETA DE WEBPAY:');
+    console.log('📥 JSON completo:', JSON.stringify(commitResponse, null, 2));
     console.log('📥 Tipo de respuesta:', typeof commitResponse);
+    console.log('📥 Es array?', Array.isArray(commitResponse));
     console.log('📥 Propiedades de commitResponse:', Object.keys(commitResponse || {}));
     console.log('📥 responseCode:', commitResponse.responseCode, 'Tipo:', typeof commitResponse.responseCode);
-    console.log('📥 authorizationCode:', commitResponse.authorizationCode);
+    console.log('📥 authorizationCode:', commitResponse.authorizationCode, 'Tipo:', typeof commitResponse.authorizationCode);
     console.log('📥 responseMessage:', commitResponse.responseMessage);
+    console.log('📥 transactionDate:', commitResponse.transactionDate, 'Tipo:', typeof commitResponse.transactionDate);
+    console.log('📥 amount:', commitResponse.amount, 'Tipo:', typeof commitResponse.amount);
+    console.log('📥 buyOrder:', commitResponse.buyOrder);
+    console.log('📥 paymentTypeCode:', commitResponse.paymentTypeCode);
+    console.log('📥 installmentsNumber:', commitResponse.installmentsNumber);
+    console.log('📥 cardDetail:', commitResponse.cardDetail);
+    console.log('📥 vci:', commitResponse.vci);
+    console.log('📥 accountingDate:', commitResponse.accountingDate);
 
     // LÓGICA SIMPLE Y DIRECTA: Si hay transactionDate y amount, el pago FUE EXITOSO
     // Transbank SOLO devuelve transactionDate y amount si la transacción fue exitosa
@@ -310,27 +327,41 @@ export const POST: APIRoute = async ({ request }) => {
     const hasAmount = !!commitResponse.amount;
     const hasTransactionData = hasTransactionDate && hasAmount;
     
+    // También verificar responseCode === 0 como indicador adicional
+    const hasResponseCodeZero = commitResponse.responseCode === 0 || commitResponse.responseCode === '0';
+    const hasAuthorizationCode = !!commitResponse.authorizationCode;
+    
     // Si hay transactionDate y amount, el pago FUE EXITOSO - punto final
     // Esta es la regla más importante: Transbank solo devuelve estos datos si procesó el pago
-    const isApproved = hasTransactionData;
+    // También considerar responseCode === 0 o authorizationCode como indicadores
+    const isApproved = hasTransactionData || hasResponseCodeZero || hasAuthorizationCode;
     
-    console.log('🔍🔍🔍 ANÁLISIS SIMPLE DE PAGO:', {
-      hasTransactionDate,
-      hasAmount,
-      hasTransactionData,
-      isApproved: isApproved,
-      transactionDate: commitResponse.transactionDate,
-      amount: commitResponse.amount,
-      responseCode: commitResponse.responseCode,
-      authorizationCode: commitResponse.authorizationCode,
-      responseMessage: commitResponse.responseMessage,
-      fullResponse: JSON.stringify(commitResponse, null, 2)
-    });
+    console.log('🔍🔍🔍 ANÁLISIS DETALLADO DE PAGO:');
+    console.log('🔍 hasTransactionDate:', hasTransactionDate, 'valor:', commitResponse.transactionDate);
+    console.log('🔍 hasAmount:', hasAmount, 'valor:', commitResponse.amount);
+    console.log('🔍 hasTransactionData:', hasTransactionData);
+    console.log('🔍 hasResponseCodeZero:', hasResponseCodeZero, 'responseCode:', commitResponse.responseCode);
+    console.log('🔍 hasAuthorizationCode:', hasAuthorizationCode, 'valor:', commitResponse.authorizationCode);
+    console.log('🔍 isApproved (RESULTADO FINAL):', isApproved);
+    console.log('🔍 fullResponse:', JSON.stringify(commitResponse, null, 2));
     
     if (isApproved) {
-      console.log('✅✅✅ PAGO EXITOSO: transactionDate y amount presentes - PROCESANDO COMO PAGADO');
+      console.log('✅✅✅ PAGO EXITOSO - PROCESANDO COMO PAGADO');
+      if (hasTransactionData) {
+        console.log('✅✅✅ Razón: transactionDate y amount presentes');
+      }
+      if (hasResponseCodeZero) {
+        console.log('✅✅✅ Razón: responseCode === 0');
+      }
+      if (hasAuthorizationCode) {
+        console.log('✅✅✅ Razón: authorizationCode presente');
+      }
     } else {
-      console.log('❌❌❌ PAGO NO EXITOSO: No hay transactionDate o amount');
+      console.log('❌❌❌ PAGO NO EXITOSO');
+      console.log('❌❌❌ No hay transactionDate:', !hasTransactionDate);
+      console.log('❌❌❌ No hay amount:', !hasAmount);
+      console.log('❌❌❌ responseCode no es 0:', commitResponse.responseCode);
+      console.log('❌❌❌ No hay authorizationCode:', !hasAuthorizationCode);
     }
 
     // Preparar payment_details con toda la información de la transacción
