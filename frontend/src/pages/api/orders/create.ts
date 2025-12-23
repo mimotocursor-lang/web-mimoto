@@ -12,6 +12,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     // Parsear el body de forma segura - SOLO UNA VEZ
     let body;
     let items;
+    let orderEmail: string | null = null; // Email para notificaciones - definido fuera del try para que esté disponible en todo el scope
     
     try {
       // En Astro, a veces request.json() falla si el body está vacío
@@ -68,7 +69,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       }
       
       items = body.items;
-      const orderEmail = body.email || null; // Email para notificaciones
+      orderEmail = body.email || null; // Email para notificaciones
       console.log('📥 Items extraídos:', items ? `Array con ${items.length} items` : 'NO HAY ITEMS');
       console.log('📥 Email extraído:', orderEmail || 'NO HAY EMAIL');
       
