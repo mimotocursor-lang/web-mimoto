@@ -16,10 +16,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     let orderEmail: string | null = null; // Email para notificaciones - definido fuera del try para que esté disponible en todo el scope
     let orderPhone: string | null = null;
     let orderRut: string | null = null;
+    let firstName: string | null = null;
+    let lastName: string | null = null;
     let addressStreet: string | null = null;
     let addressNumber: string | null = null;
     let addressApartment: string | null = null;
     let addressCity: string | null = null;
+    let addressCommune: string | null = null;
     
     try {
       // En Astro, a veces request.json() falla si el body está vacío
@@ -79,10 +82,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       orderEmail = body.email || null; // Email para notificaciones
       orderPhone = body.phone || null;
       orderRut = body.rut || null;
+      firstName = body.first_name || null;
+      lastName = body.last_name || null;
       addressStreet = body.address_street || null;
       addressNumber = body.address_number || null;
       addressApartment = body.address_apartment || null;
       addressCity = body.address_city || null;
+      addressCommune = body.address_commune || null;
       console.log('📥 Items extraídos:', items ? `Array con ${items.length} items` : 'NO HAY ITEMS');
       console.log('📥 Email extraído:', orderEmail || 'NO HAY EMAIL');
       console.log('📥 Datos del cliente:', { phone: orderPhone, rut: orderRut, city: addressCity });
@@ -180,10 +186,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
         email: orderEmail, // Email para notificaciones
         phone: orderPhone,
         rut: orderRut,
+        first_name: firstName,
+        last_name: lastName,
         address_street: addressStreet,
         address_number: addressNumber,
         address_apartment: addressApartment,
         address_city: addressCity,
+        address_commune: addressCommune,
       };
       
       // Intentar insertar con status, si falla intentar sin status (usar default)
@@ -320,10 +329,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       email: finalEmail, // Email para notificaciones
       phone: orderPhone,
       rut: orderRut,
+      first_name: firstName,
+      last_name: lastName,
       address_street: addressStreet,
       address_number: addressNumber,
       address_apartment: addressApartment,
       address_city: addressCity,
+      address_commune: addressCommune,
     };
     
     let { data: order, error: orderError } = await supabase

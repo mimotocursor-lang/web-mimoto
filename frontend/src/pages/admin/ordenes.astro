@@ -161,6 +161,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             created_at,
             updated_at,
             user_id,
+            email,
+            phone,
+            rut,
+            first_name,
+            last_name,
+            address_street,
+            address_number,
+            address_apartment,
+            address_city,
+            address_commune,
             users:user_id(email, full_name, phone)
           `)
           .order('created_at', { ascending: false });
@@ -206,8 +216,16 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             (paymentDetails.responseCode === 0 || paymentDetails.responseCode === '0' || paymentDetails.authorizationCode) && 
             order.status === 'pending_payment') ? 'paid' : order.status;
           
-          const userDisplay = order.users ? (order.users.full_name || order.users.email || 'Cliente') : 'Invitado';
-          const userEmail = order.users && order.users.email ? '<br><span class="text-xs text-gray-500">' + order.users.email + '</span>' : '';
+          // Mostrar información del cliente (usuario o invitado)
+          let userDisplay = 'Invitado';
+          let userEmail = '';
+          if (order.users) {
+            userDisplay = order.users.full_name || order.users.email || 'Cliente';
+            userEmail = order.users.email ? '<br><span class="text-xs text-gray-500">' + order.users.email + '</span>' : '';
+          } else if (order.email) {
+            userDisplay = 'Invitado';
+            userEmail = '<br><span class="text-xs text-gray-500">' + order.email + '</span>';
+          }
           const formattedDate = new Date(order.created_at).toLocaleDateString('es-CL', { 
             year: 'numeric', 
             month: 'short', 
@@ -426,9 +444,9 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
             </div>
 
             <!-- Información del cliente -->
-            ${order.users ? `
             <div class="bg-gray-50 dark:bg-ktm-surface/30 rounded-lg p-4">
               <h3 class="font-bold text-lg mb-4 text-gray-900 dark:text-ktm-text">Información del Cliente</h3>
+              ${order.users ? `
               <div class="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <span class="text-gray-600 dark:text-ktm-text/70">Nombre:</span>
@@ -436,17 +454,74 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
                 </div>
                 <div>
                   <span class="text-gray-600 dark:text-ktm-text/70">Email:</span>
-                  <span class="text-gray-900 dark:text-ktm-text ml-2">${order.users.email || 'N/A'}</span>
+                  <span class="text-gray-900 dark:text-ktm-text ml-2">${order.users.email || order.email || 'N/A'}</span>
                 </div>
-                ${order.users.phone ? `
+                ${order.users.phone || order.phone ? `
                 <div>
                   <span class="text-gray-600 dark:text-ktm-text/70">Teléfono:</span>
-                  <span class="text-gray-900 dark:text-ktm-text ml-2">${order.users.phone}</span>
+                  <span class="text-gray-900 dark:text-ktm-text ml-2">${order.users.phone || order.phone || 'N/A'}</span>
                 </div>
                 ` : ''}
               </div>
+              ` : `
+              <div class="space-y-3 text-sm">
+                <p class="text-gray-600 dark:text-ktm-text/70 font-semibold mb-2">Cliente Invitado</p>
+                <div class="grid grid-cols-2 gap-4">
+                  ${order.first_name || order.last_name ? `
+                  <div>
+                    <span class="text-gray-600 dark:text-ktm-text/70">Nombre completo:</span>
+                    <span class="text-gray-900 dark:text-ktm-text ml-2">${(order.first_name || '') + ' ' + (order.last_name || '')}</span>
+                  </div>
+                  ` : ''}
+                  ${order.rut ? `
+                  <div>
+                    <span class="text-gray-600 dark:text-ktm-text/70">RUT:</span>
+                    <span class="text-gray-900 dark:text-ktm-text ml-2">${order.rut}</span>
+                  </div>
+                  ` : ''}
+                  ${order.email ? `
+                  <div>
+                    <span class="text-gray-600 dark:text-ktm-text/70">Email:</span>
+                    <span class="text-gray-900 dark:text-ktm-text ml-2">${order.email}</span>
+                  </div>
+                  ` : ''}
+                  ${order.phone ? `
+                  <div>
+                    <span class="text-gray-600 dark:text-ktm-text/70">Teléfono:</span>
+                    <span class="text-gray-900 dark:text-ktm-text ml-2">${order.phone}</span>
+                  </div>
+                  ` : ''}
+                </div>
+                ${order.address_street || order.address_number || order.address_city || order.address_commune ? `
+                <div class="mt-4 pt-3 border-t border-gray-200 dark:border-primary/20">
+                  <p class="text-gray-600 dark:text-ktm-text/70 font-semibold mb-2">Dirección de Entrega</p>
+                  <div class="grid grid-cols-1 gap-2">
+                    ${order.address_street && order.address_number ? `
+                    <div>
+                      <span class="text-gray-600 dark:text-ktm-text/70">Dirección:</span>
+                      <span class="text-gray-900 dark:text-ktm-text ml-2">
+                        ${order.address_street} ${order.address_number}${order.address_apartment ? ', ' + order.address_apartment : ''}
+                      </span>
+                    </div>
+                    ` : ''}
+                    ${order.address_commune ? `
+                    <div>
+                      <span class="text-gray-600 dark:text-ktm-text/70">Comuna:</span>
+                      <span class="text-gray-900 dark:text-ktm-text ml-2">${order.address_commune}</span>
+                    </div>
+                    ` : ''}
+                    ${order.address_city ? `
+                    <div>
+                      <span class="text-gray-600 dark:text-ktm-text/70">Ciudad:</span>
+                      <span class="text-gray-900 dark:text-ktm-text ml-2">${order.address_city}</span>
+                    </div>
+                    ` : ''}
+                  </div>
+                </div>
+                ` : ''}
+              </div>
+              `}
             </div>
-            ` : '<p class="text-gray-600 dark:text-ktm-text/70">Cliente invitado (sin cuenta)</p>'}
 
             <!-- Comprobante de pago (si existe) -->
             ${paymentDetails ? `

@@ -94,10 +94,13 @@ CREATE TABLE IF NOT EXISTS public.orders (
   email TEXT, -- Email del cliente para esta orden (puede ser diferente al email de la cuenta)
   phone TEXT, -- Número de contacto del cliente
   rut TEXT, -- RUT del cliente
+  first_name TEXT, -- Nombre del cliente (para invitados)
+  last_name TEXT, -- Apellido del cliente (para invitados)
   address_street TEXT, -- Calle o avenida de la dirección
   address_number TEXT, -- Número de domicilio
   address_apartment TEXT, -- Departamento y piso (opcional)
   address_city TEXT, -- Ciudad de la dirección
+  address_commune TEXT, -- Comuna de la dirección
   total_amount NUMERIC(12, 2) NOT NULL,
   status public.order_status NOT NULL DEFAULT 'pending_payment',
   payment_reference TEXT,

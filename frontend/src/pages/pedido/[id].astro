@@ -18,7 +18,7 @@ if (id) {
   try {
     const { data, error } = await supabaseClient
       .from('orders')
-      .select('id, total_amount, status, payment_reference, payment_details, created_at, updated_at')
+      .select('id, total_amount, status, payment_reference, payment_details, created_at, updated_at, email, phone, rut, first_name, last_name, address_street, address_number, address_apartment, address_city, address_commune')
       .eq('id', id)
       .single();
 
@@ -57,12 +57,12 @@ if (id) {
           <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
             <span class="text-white/90 font-semibold text-sm sm:text-base">Estado:</span>
             <span class={`font-bold text-lg sm:text-xl ${
-              order.status === 'paid' ? 'text-green-500' :
+              (order.status === 'paid' || (order.payment_details && typeof order.payment_details === 'object' && (order.payment_details.responseCode === 0 || order.payment_details.authorizationCode))) ? 'text-green-500' :
               order.status === 'pending_payment' || order.status === 'pending' ? 'text-yellow-500' :
               order.status === 'cancelled' ? 'text-red-500' :
               'text-primary'
             }`}>
-              {order.status === 'paid' ? '✅ Pagado' :
+              {(order.status === 'paid' || (order.payment_details && typeof order.payment_details === 'object' && (order.payment_details.responseCode === 0 || order.payment_details.authorizationCode))) ? '✅ Pagado' :
                order.status === 'pending_payment' || order.status === 'pending' ? '⏳ Pendiente de pago' :
                order.status === 'cancelled' ? '❌ Cancelado' :
                order.status === 'waiting_confirmation' ? '⏳ Esperando confirmación' :
@@ -120,6 +120,57 @@ if (id) {
             </div>
           )}
         </div>
+        
+        {/* Información del cliente (si es invitado) */}
+        {(order.email || order.phone || order.rut || order.first_name || order.last_name || order.address_street) && (
+          <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 sm:p-6 space-y-3 sm:space-y-4">
+            <h3 class="text-white font-bold text-base sm:text-lg mb-3 sm:mb-4">Información del Cliente</h3>
+            <div class="space-y-2 sm:space-y-3">
+              {(order.first_name || order.last_name) && (
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                  <span class="text-white/70 text-xs sm:text-sm flex-shrink-0">Nombre completo:</span>
+                  <span class="text-white text-xs sm:text-sm text-left sm:text-right">{(order.first_name || '') + ' ' + (order.last_name || '')}</span>
+                </div>
+              )}
+              {order.rut && (
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                  <span class="text-white/70 text-xs sm:text-sm flex-shrink-0">RUT:</span>
+                  <span class="text-white text-xs sm:text-sm text-left sm:text-right">{order.rut}</span>
+                </div>
+              )}
+              {order.email && (
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                  <span class="text-white/70 text-xs sm:text-sm flex-shrink-0">Email:</span>
+                  <span class="text-white text-xs sm:text-sm text-left sm:text-right">{order.email}</span>
+                </div>
+              )}
+              {order.phone && (
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                  <span class="text-white/70 text-xs sm:text-sm flex-shrink-0">Teléfono:</span>
+                  <span class="text-white text-xs sm:text-sm text-left sm:text-right">{order.phone}</span>
+                </div>
+              )}
+              {(order.address_street || order.address_number || order.address_city || order.address_commune) && (
+                <div class="border-t border-primary/30 pt-3 sm:pt-4 mt-3 sm:mt-4">
+                  <span class="text-white/70 text-xs sm:text-sm font-semibold block mb-2">Dirección de entrega:</span>
+                  <div class="space-y-1">
+                    {order.address_street && order.address_number && (
+                      <div class="text-white text-xs sm:text-sm">
+                        {order.address_street} {order.address_number}{order.address_apartment ? ', ' + order.address_apartment : ''}
+                      </div>
+                    )}
+                    {order.address_commune && (
+                      <div class="text-white text-xs sm:text-sm">Comuna: {order.address_commune}</div>
+                    )}
+                    {order.address_city && (
+                      <div class="text-white text-xs sm:text-sm">Ciudad: {order.address_city}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
         
         {orderItems.length > 0 && (
           <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 sm:p-6 space-y-2 sm:space-y-3">
