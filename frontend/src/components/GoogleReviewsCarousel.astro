@@ -1,5 +1,5 @@
 ---
-// Datos de reviews de Google
+// Datos de reviews de Google - Solo 5 reviews
 const reviews = [
   {
     name: "Horacio Larrain",
@@ -26,44 +26,12 @@ const reviews = [
     reviewCount: 3
   },
   {
-    name: "mekniqo",
-    rating: 5,
-    date: "Hace 7 meses",
-    text: "Excelente servicio técnico KTM, fui muy bien atendido por sus propios dueños, se hizo una mantención x kilometraje de mi 990 adventure y se solucionó un problema de mezcla excesivamente rica, ahora se nota el cambio en la suavidad.",
-    isLocalGuide: false,
-    reviewCount: 3
-  },
-  {
-    name: "David Fandiño",
-    rating: 5,
-    date: "Hace 3 años",
-    text: "Definitivamente el mejor servicio al cliente que he recibido por parte de un taller de motos en Santiago. Hugo (la persona que me atendió) y Benjamín (el mecánico) me dieron un excelente trato. Mi moto estuvo lista en tan solo un par de días.",
-    isLocalGuide: false,
-    reviewCount: 2
-  },
-  {
-    name: "Luis Rueda",
-    rating: 5,
-    date: "Hace 2 años",
-    text: "Excelente servicio. serios y responsables. Buenos consejos de conducción.",
-    isLocalGuide: true,
-    reviewCount: 83
-  },
-  {
     name: "Vicente Villalon",
     rating: 5,
     date: "Hace un año",
     text: "Taller muy profesional y ordenado. Dejaron mi moto en perfectas condiciones. Adicionalmente la atención es de primer nivel. Muy cordiales y preocupados",
     isLocalGuide: false,
     reviewCount: 5
-  },
-  {
-    name: "mariano forti",
-    rating: 5,
-    date: "Hace un año",
-    text: "Exelente todo, vinimos de apuro a cambiar la cadena de la moto, nos atendieron rápido y de 10. Es un taller chico, pero con gente que sabe",
-    isLocalGuide: true,
-    reviewCount: 51
   },
   {
     name: "fernando sandoval",
@@ -90,7 +58,7 @@ function truncateText(text: string, maxLength: number = 150) {
     {reviews.map((review, index) => (
       <div 
         class={`google-review-card ${index === 0 ? 'active' : ''}`}
-        data-review-index={index}
+        data-index={index}
       >
         <div class="google-review-header">
           <div class="google-review-author">
@@ -135,18 +103,16 @@ function truncateText(text: string, maxLength: number = 150) {
     ))}
   </div>
   
-  <!-- Indicadores -->
   <div class="google-reviews-indicators">
     {reviews.map((_, index) => (
       <button
         class={`google-review-indicator ${index === 0 ? 'active' : ''}`}
-        data-review-index={index}
+        data-index={index}
         aria-label={`Review ${index + 1}`}
       ></button>
     ))}
   </div>
   
-  <!-- Botón para dejar review -->
   <div class="google-review-cta">
     <a 
       href="https://www.google.com/maps/place/Mimoto/@-33.416667,-70.583333?entry=ttu"
@@ -171,42 +137,30 @@ function truncateText(text: string, maxLength: number = 150) {
     position: relative;
     min-height: 280px;
     width: 100%;
-    overflow: visible;
   }
 
   .google-review-card {
     display: none;
     width: 100%;
-    /* Light mode */
     background: rgba(255, 255, 255, 0.98);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(0, 0, 0, 0.15);
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-    opacity: 0;
-    transform: translateX(20px);
-    transition: opacity 0.6s ease-in-out, transform 0.6s ease-in-out;
+    transition: opacity 0.3s ease;
   }
-  
-  /* La primera card con clase active debe ser visible desde el inicio */
+
+  /* Solo la card activa debe ser visible */
   .google-review-card.active {
     display: block !important;
     opacity: 1 !important;
-    transform: translateX(0) !important;
   }
 
-  /* Dark mode - más opaco para mejor contraste */
   .dark .google-review-card {
     background: rgba(30, 41, 59, 0.98);
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-  }
-
-  .google-review-card.active {
-    display: block !important;
-    opacity: 1 !important;
-    transform: translateX(0) !important;
   }
 
   .google-review-header {
@@ -244,7 +198,6 @@ function truncateText(text: string, maxLength: number = 150) {
 
   .google-review-name {
     font-weight: bold;
-    /* Light mode */
     color: #1a1a1a;
     font-size: 14px;
     display: flex;
@@ -253,7 +206,6 @@ function truncateText(text: string, maxLength: number = 150) {
     margin-bottom: 4px;
   }
 
-  /* Dark mode - texto más claro para contraste */
   .dark .google-review-name {
     color: #ffffff;
   }
@@ -279,48 +231,40 @@ function truncateText(text: string, maxLength: number = 150) {
 
   .google-review-count {
     font-size: 11px;
-    /* Light mode */
     color: rgba(0, 0, 0, 0.6);
   }
 
-  /* Dark mode */
   .dark .google-review-count {
     color: rgba(255, 255, 255, 0.7);
   }
 
   .google-review-date {
     font-size: 11px;
-    /* Light mode */
     color: rgba(0, 0, 0, 0.6);
     white-space: nowrap;
     flex-shrink: 0;
   }
 
-  /* Dark mode */
   .dark .google-review-date {
     color: rgba(255, 255, 255, 0.7);
   }
 
   .google-review-text {
-    /* Light mode */
     color: rgba(0, 0, 0, 0.85);
     font-size: 13px;
     line-height: 1.6;
     margin-bottom: 12px;
   }
 
-  /* Dark mode - texto más claro */
   .dark .google-review-text {
     color: rgba(255, 255, 255, 0.95);
   }
 
   .google-review-footer {
-    /* Light mode */
     border-top: 1px solid rgba(0, 0, 0, 0.1);
     padding-top: 12px;
   }
 
-  /* Dark mode */
   .dark .google-review-footer {
     border-top: 1px solid rgba(255, 255, 255, 0.15);
   }
@@ -351,25 +295,21 @@ function truncateText(text: string, maxLength: number = 150) {
     height: 8px;
     border-radius: 50%;
     border: none;
-    /* Light mode */
     background: rgba(0, 0, 0, 0.2);
     cursor: pointer;
     transition: background 0.3s, transform 0.3s;
     padding: 0;
   }
 
-  /* Dark mode */
   .dark .google-review-indicator {
     background: rgba(255, 255, 255, 0.3);
   }
 
   .google-review-indicator:hover {
-    /* Light mode */
     background: rgba(0, 0, 0, 0.4);
     transform: scale(1.2);
   }
 
-  /* Dark mode */
   .dark .google-review-indicator:hover {
     background: rgba(255, 255, 255, 0.5);
   }
@@ -387,7 +327,6 @@ function truncateText(text: string, maxLength: number = 150) {
   .google-review-button {
     display: inline-block;
     padding: 10px 20px;
-    /* Light mode - más visible */
     background: rgba(255, 102, 0, 0.9);
     border: 1px solid rgba(255, 102, 0, 1);
     border-radius: 8px;
@@ -398,7 +337,6 @@ function truncateText(text: string, maxLength: number = 150) {
     transition: all 0.3s;
   }
 
-  /* Dark mode - botón más visible */
   .dark .google-review-button {
     background: rgba(255, 102, 0, 0.8);
     border: 1px solid rgba(255, 102, 0, 1);
@@ -407,50 +345,30 @@ function truncateText(text: string, maxLength: number = 150) {
   }
 
   .google-review-button:hover {
-    /* Light mode */
     background: rgba(255, 102, 0, 1);
     border-color: rgba(255, 102, 0, 1);
     box-shadow: 0 4px 12px rgba(255, 102, 0, 0.4);
     transform: translateY(-2px);
   }
 
-  /* Dark mode */
   .dark .google-review-button:hover {
     background: rgba(255, 102, 0, 1);
     border-color: rgba(255, 102, 0, 1);
     box-shadow: 0 4px 12px rgba(255, 102, 0, 0.4);
   }
 
-  /* Responsive - reducir espacios en móviles */
   @media (max-width: 768px) {
     .google-reviews-carousel-container {
       max-width: 100%;
       width: 100%;
-      display: block;
-      visibility: visible;
     }
 
     .google-reviews-carousel {
       min-height: 280px;
-      width: 100%;
-      display: block;
-      position: relative;
-      overflow: visible;
     }
 
     .google-review-card {
       padding: 14px;
-    }
-    
-    /* En responsive, las cards inactivas deben estar ocultas */
-    .google-review-card:not(.active) {
-      display: none !important;
-    }
-    
-    .google-review-card.active {
-      display: block !important;
-      opacity: 1 !important;
-      transform: translateX(0) !important;
     }
 
     .google-review-header {
@@ -478,18 +396,15 @@ function truncateText(text: string, maxLength: number = 150) {
     }
 
     .google-reviews-indicators {
-      margin-top: 8px;
-      margin-bottom: 4px;
-      display: flex;
-      visibility: visible;
-      opacity: 1;
+      margin-top: 4px;
+      margin-bottom: 0;
     }
 
     .google-review-cta {
-      margin-top: 4px;
-      display: block;
-      visibility: visible;
-      opacity: 1;
+      margin-top: 0;
+      margin-bottom: 0;
+      padding-top: 0;
+      padding-bottom: 0;
     }
 
     .google-review-button {
@@ -500,252 +415,87 @@ function truncateText(text: string, maxLength: number = 150) {
 </style>
 
 <script>
-  // Esperar a que el DOM esté completamente cargado
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initCarousel);
-  } else {
-    // DOM ya está listo
-    setTimeout(initCarousel, 100);
-  }
-  
-  function initCarousel() {
-    const cards = document.querySelectorAll('.google-review-card');
-    const indicators = document.querySelectorAll('.google-review-indicator');
+  // Inicializar cada instancia del carrusel por separado
+  function initCarousel(container: HTMLElement) {
+    const cards = container.querySelectorAll('.google-review-card');
+    const indicators = container.querySelectorAll('.google-review-indicator');
     
-    // Asegurar que siempre haya al menos una card visible
-    if (cards.length === 0) return;
-    
-    // Si solo hay una card, asegurarse de que esté visible
-    if (cards.length === 1) {
-      const singleCard = cards[0] as HTMLElement;
-      singleCard.classList.add('active');
-      singleCard.style.position = 'relative';
-      singleCard.style.visibility = 'visible';
-      singleCard.style.opacity = '1';
-      if (indicators.length > 0) {
-        indicators[0].classList.add('active');
-      }
+    if (cards.length === 0) {
+      console.warn('⚠️ No se encontraron cards en este contenedor');
       return;
     }
     
     let currentIndex = 0;
     let intervalId: ReturnType<typeof setInterval> | null = null;
     
-    // Función segura para mostrar review con manejo de errores
-    const safeShowReview = (index: number) => {
-      try {
-        // Asegurar que el índice esté en rango válido usando módulo
-        // Manejar índices negativos y mayores al array
-        let validIndex = index;
-        if (validIndex < 0) {
-          validIndex = cards.length - 1; // Si es negativo, ir al último
-        } else if (validIndex >= cards.length) {
-          validIndex = 0; // Si es mayor, volver al primero
-        } else {
-          validIndex = validIndex % cards.length; // Módulo para loop
-        }
+    console.log(`✅ Inicializando carrusel con ${cards.length} reviews`);
+    
+      function show(index: number) {
+        // Asegurar que el índice esté en rango válido
+        let idx = index;
+        if (idx < 0) idx = 0;
+        if (idx >= cards.length) idx = cards.length - 1;
+        idx = idx % cards.length;
         
-        // Asegurar que validIndex esté en rango válido
-        validIndex = Math.max(0, Math.min(validIndex, cards.length - 1));
-        
-        console.log(`🔄 Mostrando review ${validIndex + 1} de ${cards.length} (índice recibido: ${index}, índice válido: ${validIndex})`);
-        
-        // Primero activar la nueva card ANTES de desactivar la anterior
-        // Esto evita que quede vacío momentáneamente
-        if (cards[validIndex]) {
-          const newCard = cards[validIndex] as HTMLElement;
-          newCard.classList.add('active');
-          // Forzar visibilidad
-          newCard.style.display = 'block';
-          newCard.style.opacity = '1';
-          newCard.style.visibility = 'visible';
-        }
-        
-        // Luego ocultar las demás cards
-        cards.forEach((card, i) => {
-          if (i !== validIndex) {
-            const inactiveCard = card as HTMLElement;
-            inactiveCard.classList.remove('active');
-            inactiveCard.style.display = 'none';
-          }
+        // Ocultar TODAS las cards primero
+        cards.forEach((card) => {
+          card.classList.remove('active');
         });
+        
+        // Mostrar solo la card activa
+        const activeCard = cards[idx] as HTMLElement;
+        if (activeCard) {
+          activeCard.classList.add('active');
+        }
         
         // Actualizar indicadores
-        indicators.forEach((indicator, i) => {
-          if (i === validIndex) {
-            indicator.classList.add('active');
+        indicators.forEach((ind, i) => {
+          if (i === idx) {
+            ind.classList.add('active');
           } else {
-            indicator.classList.remove('active');
+            ind.classList.remove('active');
           }
         });
         
-        currentIndex = validIndex;
-        
-        // Verificar que la card activa sea visible
-        const activeCard = cards[validIndex] as HTMLElement;
-        if (activeCard) {
-          if (!activeCard.classList.contains('active')) {
-            console.warn('⚠️ La card no tiene la clase active, corrigiendo...');
-            activeCard.classList.add('active');
-          }
-          // Asegurar visibilidad
-          activeCard.style.display = 'block';
-          activeCard.style.opacity = '1';
-          activeCard.style.visibility = 'visible';
-        }
-      } catch (error) {
-        console.error('❌ Error en showReview:', error);
-        // Fallback: activar la primera card
-        if (cards.length > 0) {
-          const firstCard = cards[0] as HTMLElement;
-          firstCard.classList.add('active');
-          firstCard.style.display = 'block';
-          firstCard.style.opacity = '1';
-          firstCard.style.visibility = 'visible';
-          
-          cards.forEach((card, i) => {
-            if (i !== 0) {
-              const inactiveCard = card as HTMLElement;
-              inactiveCard.classList.remove('active');
-              inactiveCard.style.display = 'none';
-            }
-          });
-          
-          if (indicators.length > 0) {
-            indicators[0].classList.add('active');
-            indicators.forEach((indicator, i) => {
-              if (i !== 0) {
-                indicator.classList.remove('active');
-              }
-            });
-          }
-          currentIndex = 0;
-        }
+        currentIndex = idx;
       }
-    };
     
-    // Asegurar que la primera card esté activa desde el inicio
-    const initialActiveCard = document.querySelector('.google-review-card.active');
-    if (initialActiveCard) {
-      // Encontrar el índice de la card activa
-      cards.forEach((card, i) => {
-        if (card === initialActiveCard) {
-          currentIndex = i;
-        }
-      });
-      // Asegurar que la card activa sea visible
-      safeShowReview(currentIndex);
-    } else {
-      // Si no hay ninguna activa, activar la primera
-      if (cards.length > 0) {
-        currentIndex = 0;
-        safeShowReview(0);
-      }
-    }
+    // Mostrar la primera card inmediatamente y empezar el slider
+    show(0);
     
-    console.log(`✅ Carrusel inicializado con ${cards.length} reviews. Índice inicial: ${currentIndex}`);
-    
-    // Cambiar review cada 5 segundos - loop infinito
+    // Intervalo cada 5 segundos - loop infinito (empieza inmediatamente)
     intervalId = setInterval(() => {
-      // Incrementar índice y usar módulo para loop infinito
-      // Esto garantiza que cuando llegue a cards.length, vuelva a 0 automáticamente
       currentIndex = (currentIndex + 1) % cards.length;
-      
-      console.log(`⏭️ Siguiente review: ${currentIndex + 1} de ${cards.length} (índice: ${currentIndex})`);
-      
-      // Mostrar el review
-      safeShowReview(currentIndex);
+      show(currentIndex);
     }, 5000);
     
-    // Permitir click en indicadores
-    indicators.forEach((indicator, index) => {
-      indicator.addEventListener('click', () => {
-        // Validar índice antes de asignar
-        const validIndex = Math.max(0, Math.min(index, cards.length - 1));
-        currentIndex = validIndex;
-        safeShowReview(currentIndex);
-        // Reiniciar el intervalo después de un click manual
-        if (intervalId) {
-          clearInterval(intervalId);
-        }
+    // Click en indicadores
+    indicators.forEach((ind, idx) => {
+      ind.addEventListener('click', () => {
+        if (intervalId) clearInterval(intervalId);
+        show(idx);
         intervalId = setInterval(() => {
-          currentIndex = currentIndex + 1;
-          
-          // Si llegamos al final del array, volver a 0 (loop infinito)
-          if (currentIndex >= cards.length) {
-            currentIndex = 0;
-          }
-          
-          const nextIndex = currentIndex % cards.length;
-          safeShowReview(nextIndex);
-          currentIndex = nextIndex;
+          currentIndex = (currentIndex + 1) % cards.length;
+          show(currentIndex);
         }, 5000);
       });
     });
-    
-    // Asegurar que siempre haya una card visible (fallback múltiple)
-    const ensureActiveCard = () => {
-      const activeCard = document.querySelector('.google-review-card.active');
-      if (!activeCard && cards.length > 0) {
-        console.warn('⚠️ No hay card activa, activando la primera...');
-        currentIndex = 0;
-        safeShowReview(0);
-      }
-    };
-    
-    // Verificar inmediatamente
-    ensureActiveCard();
-    
-    // Verificar después de un breve delay
-    setTimeout(ensureActiveCard, 100);
-    
-    // Verificar después de que el DOM esté completamente cargado
-    setTimeout(ensureActiveCard, 500);
-    
-    // Verificar periódicamente que siempre haya una card visible
-    setInterval(() => {
-      const activeCard = document.querySelector('.google-review-card.active');
-      if (!activeCard && cards.length > 0) {
-        console.warn('⚠️ Verificación periódica: No hay card activa, activando la primera...');
-        currentIndex = 0;
-        safeShowReview(0);
-      }
-    }, 2000); // Verificar cada 2 segundos
-    
-    // Verificar después de 1 segundo para asegurar que todo esté estable
-    setTimeout(() => {
-      const activeCard = document.querySelector('.google-review-card.active');
-      if (activeCard) {
-        const cardEl = activeCard as HTMLElement;
-        cardEl.style.position = 'relative';
-        cardEl.style.visibility = 'visible';
-        cardEl.style.opacity = '1';
-        cardEl.style.zIndex = '10';
-        cardEl.style.display = 'block';
-      } else {
-        console.warn('⚠️ Después de 1 segundo: No hay card activa, activando la primera...');
-        currentIndex = 0;
-        safeShowReview(0);
-      }
-    }, 1000);
-    
-    // Verificar periódicamente para asegurar que siempre haya una card visible
-    const checkInterval = setInterval(() => {
-      const activeCard = document.querySelector('.google-review-card.active');
-      if (!activeCard && cards.length > 0) {
-        console.log('⚠️ No hay card activa detectada, reactivando...');
-        safeShowReview(currentIndex);
-      }
-      // Verificar también que la card activa sea visible
-      if (activeCard) {
-        const computedStyle = window.getComputedStyle(activeCard);
-        if (computedStyle.visibility === 'hidden' || computedStyle.opacity === '0') {
-          console.log('⚠️ Card activa no es visible, corrigiendo...');
-          activeCard.classList.remove('active');
-          safeShowReview(currentIndex);
-        }
-      }
-    }, 1000);
   }
+  
+  // Inicializar todos los carruseles cuando el DOM esté listo
+  function initAllCarousels() {
+    const containers = document.querySelectorAll('.google-reviews-carousel-container');
+    containers.forEach((container) => {
+      initCarousel(container as HTMLElement);
+    });
+  }
+  
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAllCarousels);
+  } else {
+    initAllCarousels();
+  }
+  
+  // Respaldo
+  setTimeout(initAllCarousels, 100);
 </script>
-
