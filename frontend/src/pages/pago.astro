@@ -376,8 +376,10 @@ if (orderId) {
           console.log('🔄 URL de retorno:', returnUrl);
 
           // Iniciar transacción de Webpay
-          console.log('📡 Llamando a /api/webpay/init...');
-          const response = await fetch('/api/webpay/init', {
+          // Llamar al backend NestJS para inicializar la transacción
+          const backendUrl = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost:3001';
+          console.log('📡 Llamando a backend para inicializar Webpay...');
+          const response = await fetch(`${backendUrl}/api/webpay/init`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

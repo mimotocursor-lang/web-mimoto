@@ -38,9 +38,18 @@ try {
   
   if (accesoriosError) {
     console.error('Error cargando accesorios:', accesoriosError);
+    // Diagnóstico mejorado para errores de conexión
+    if (accesoriosError.message?.includes('ENOTFOUND') || accesoriosError.message?.includes('getaddrinfo')) {
+      console.error('🔍 Error de DNS: No se puede conectar a Supabase');
+      console.error('  Verifica tu archivo .env y la URL de Supabase');
+    }
   }
-} catch (err) {
+} catch (err: any) {
   console.error('Error inesperado cargando accesorios:', err);
+  if (err.message?.includes('ENOTFOUND') || err.message?.includes('getaddrinfo')) {
+    console.error('🔍 Error de DNS: No se puede conectar a Supabase');
+    console.error('  Verifica tu archivo .env y la URL de Supabase');
+  }
   accesoriosError = err;
 }
 
@@ -57,9 +66,18 @@ try {
   
   if (repuestosError) {
     console.error('Error cargando repuestos:', repuestosError);
+    // Diagnóstico mejorado para errores de conexión
+    if (repuestosError.message?.includes('ENOTFOUND') || repuestosError.message?.includes('getaddrinfo')) {
+      console.error('🔍 Error de DNS: No se puede conectar a Supabase');
+      console.error('  Verifica tu archivo .env y la URL de Supabase');
+    }
   }
-} catch (err) {
+} catch (err: any) {
   console.error('Error inesperado cargando repuestos:', err);
+  if (err.message?.includes('ENOTFOUND') || err.message?.includes('getaddrinfo')) {
+    console.error('🔍 Error de DNS: No se puede conectar a Supabase');
+    console.error('  Verifica tu archivo .env y la URL de Supabase');
+  }
   repuestosError = err;
 }
 

@@ -100,7 +100,10 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 segundos
         
-        const response = await fetch('/api/webpay/confirm', {
+        // Llamar al backend NestJS para confirmar la transacción
+        // IMPORTANTE: El commit SOLO se hace en el backend
+        const backendUrl = import.meta.env.PUBLIC_BACKEND_URL || 'http://localhost:3001';
+        const response = await fetch(`${backendUrl}/api/webpay/confirm`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -120,28 +123,27 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
         }
 
         const result = await response.json();
-        console.log('📋 Resultado de confirmación:', {
-          success: result.success,
-          paymentApproved: result.paymentApproved,
-          responseCode: result.responseCode,
-          responseMessage: result.responseMessage,
-          orderId: result.orderId
+        console.log('📋 Resultado de confirmación del backend:', {
+          status: result.status,
+          response: result.response
         });
 
-        // El frontend solo confía en lo que el backend le dice
-        // NO interpreta responseCode, authorizationCode, transactionDate, etc.
-        // Usa solo el campo claro paymentApproved o success
-        const isPaymentApproved = result.paymentApproved === true || result.success === true;
+        /**
+         * El frontend SOLO muestra lo que el backend le dice
+         * NO interpreta responseCode, authorizationCode, transactionDate, etc.
+         * Usa solo el campo claro 'status' que viene del backend
+         */
+        const status = result.status; // 'approved' | 'rejected' | 'cancelled'
         
-        console.log('🔍 Evaluación de pago (solo basado en backend):', {
-          paymentApproved: result.paymentApproved,
-          success: result.success,
-          isPaymentApproved: isPaymentApproved
+        console.log('🔍 Estado del pago (solo basado en backend):', {
+          status: status
         });
 
-        if (isPaymentApproved) {
+        // Mostrar resultado según status del backend
+        if (status === 'approved') {
           // Verificar si ya fue confirmado anteriormente
-          if (result.alreadyConfirmed) {
+          const response = result.response || {};
+          if (response.alreadyConfirmed) {
             statusEl.innerHTML = `
             <div class="text-center">
               <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-blue-500/10 mb-3 sm:mb-4">
@@ -210,8 +212,10 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
             return 'N/A';
           };
           
-          const installmentsText = result.installmentsNumber > 0 
-            ? `${result.installmentsNumber} cuota${result.installmentsNumber > 1 ? 's' : ''}`
+          // Pago exitoso - Mostrar información completa según requerimientos de Transbank
+          const response = result.response || {};
+          const installmentsText = response.installmentsNumber > 0 
+            ? `${response.installmentsNumber} cuota${response.installmentsNumber > 1 ? 's' : ''}`
             : 'Sin cuotas';
           
           statusEl.innerHTML = `
@@ -237,35 +241,35 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
                 <!-- Número de orden de pedido -->
                 <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                   <span class="text-white/90 text-sm sm:text-base">Número de orden:</span>
-                  <span class="font-bold text-primary text-sm sm:text-base break-all">${result.buyOrder || result.orderId || 'N/A'}</span>
+                  <span class="font-bold text-primary text-sm sm:text-base break-all">${response.buyOrder || response.orderId || 'N/A'}</span>
                 </div>
                 
                 <!-- Monto y moneda -->
                 <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                   <span class="text-white/90 text-sm sm:text-base">Monto pagado:</span>
-                  <span class="font-bold text-primary text-sm sm:text-base">${formatAmount(result.amount)}</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">${formatAmount(response.amount)}</span>
                 </div>
                 
                 <!-- Código de autorización -->
                 <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                   <span class="text-white/90 text-sm sm:text-base">Código de autorización:</span>
-                  <span class="font-bold text-primary text-sm sm:text-base break-all">${result.authorizationCode || 'N/A'}</span>
+                  <span class="font-bold text-primary text-sm sm:text-base break-all">${response.authorizationCode || 'N/A'}</span>
                 </div>
                 
                 <!-- Fecha de la transacción -->
                 <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                   <span class="text-white/90 text-sm sm:text-base">Fecha de transacción:</span>
-                  <span class="font-bold text-primary text-sm sm:text-base">${formatDate(result.transactionDate)}</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">${formatDate(response.transactionDate)}</span>
                 </div>
                 
                 <!-- Tipo de pago -->
                 <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                   <span class="text-white/90 text-sm sm:text-base">Tipo de pago:</span>
-                  <span class="font-bold text-primary text-sm sm:text-base">${getPaymentType(result.paymentTypeCode)}</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">${getPaymentType(response.paymentTypeCode)}</span>
                 </div>
                 
                 <!-- Cantidad de cuotas -->
-                ${result.installmentsNumber > 0 ? `
+                ${response.installmentsNumber > 0 ? `
                 <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                   <span class="text-white/90 text-sm sm:text-base">Cuotas:</span>
                   <span class="font-bold text-primary text-sm sm:text-base">${installmentsText}</span>
@@ -275,15 +279,15 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
                 <!-- Últimos 4 dígitos de la tarjeta -->
                 <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
                   <span class="text-white/90 text-sm sm:text-base">Tarjeta terminada en:</span>
-                  <span class="font-bold text-primary text-sm sm:text-base">****${getCardLastDigits(result.cardDetail)}</span>
+                  <span class="font-bold text-primary text-sm sm:text-base">****${getCardLastDigits(response.cardDetail)}</span>
                 </div>
                 
                 <!-- Descripción de bienes/servicios -->
-                ${result.orderItems && result.orderItems.length > 0 ? `
+                ${response.orderItems && response.orderItems.length > 0 ? `
                 <div class="pt-2 border-t border-gray-700">
                   <span class="text-white/90 font-semibold block mb-2">Productos:</span>
                   <ul class="space-y-1">
-                    ${result.orderItems.map(item => `
+                    ${response.orderItems.map(item => `
                       <li class="text-white/80 text-sm">• ${item.name || item.product_name || 'Producto'} - ${item.quantity || 1} unidad(es) - $${Number(item.price || 0).toLocaleString('es-CL')}</li>
                     `).join('')}
                   </ul>
@@ -292,7 +296,7 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
               </div>
               
               <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-                <a href="/pedido/${result.orderId || orderId}" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
+                <a href="/pedido/${response.orderId || orderId}" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
                   Ver mi pedido
                 </a>
                 <a href="/" class="inline-block px-4 sm:px-6 py-2 sm:py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors text-sm sm:text-base">
@@ -302,36 +306,14 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
             </div>
           `;
           }
-        } else {
-          // Pago rechazado - Mostrar información del pedido sin token
+        } else if (status === 'rejected') {
+          // Pago rechazado - Mostrar información del pedido
+          const response = result.response || {};
           console.log('❌ Pago rechazado, detalles:', {
-            responseCode: result.responseCode,
-            responseMessage: result.responseMessage,
-            orderId: result.orderId,
-            amount: result.amount
+            responseCode: response.responseCode,
+            responseMessage: response.responseMessage,
+            orderId: response.orderId
           });
-          
-          // Obtener información del pedido para mostrar
-          let orderInfo = null;
-          try {
-            if (typeof supabase !== 'undefined' && result.orderId) {
-              const supabaseUrl = window.PUBLIC_SUPABASE_URL || 'https://prizpqahcluomioxnmex.supabase.co';
-              const supabaseAnonKey = window.PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InByaXpwcWFoY2x1b21pb3hubWV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3OTIxNjIsImV4cCI6MjA3MzM2ODE2Mn0.7qJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJqJq';
-              const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
-              
-              const { data: order, error: orderError } = await supabaseClient
-                .from('orders')
-                .select('id, total_amount, status, created_at')
-                .eq('id', result.orderId)
-                .single();
-              
-              if (!orderError && order) {
-                orderInfo = order;
-              }
-            }
-          } catch (e) {
-            console.log('⚠️ No se pudo obtener información del pedido:', e);
-          }
           
           statusEl.innerHTML = `
             <div class="text-center">
@@ -341,38 +323,41 @@ const { orderId, token_ws, TBK_TOKEN, TBK_ID_SESION, TBK_ORDEN_COMPRA } = Astro.
                 </svg>
               </div>
               <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Pago Rechazado</h2>
-              <p class="text-white/90 mb-2 text-sm sm:text-base">${result.responseMessage || 'Tu pago no pudo ser procesado.'}</p>
-              <p class="text-white/70 text-xs sm:text-sm mb-3 sm:mb-4">Código de respuesta: ${result.responseCode || 'N/A'}</p>
+              <p class="text-white/90 mb-2 text-sm sm:text-base">${response.responseMessage || 'Tu pago no pudo ser procesado.'}</p>
+              <p class="text-white/70 text-xs sm:text-sm mb-3 sm:mb-4">Código de respuesta: ${response.responseCode || 'N/A'}</p>
               
-              ${orderInfo ? `
-              <!-- Información del pedido -->
-              <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-4 sm:p-6 space-y-2 sm:space-y-3 mb-3 sm:mb-4 text-left">
-                <h3 class="text-base sm:text-lg font-bold text-primary mb-3 sm:mb-4 text-center">Información del Pedido</h3>
-                
-                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
-                  <span class="text-white/90 text-sm sm:text-base">Número de pedido:</span>
-                  <span class="font-bold text-primary text-sm sm:text-base">#${orderInfo.id}</span>
-                </div>
-                
-                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
-                  <span class="text-white/90 text-sm sm:text-base">Monto:</span>
-                  <span class="font-bold text-primary text-sm sm:text-base">$${Number(orderInfo.total_amount).toLocaleString('es-CL')} CLP</span>
-                </div>
-                
-                <div class="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
-                  <span class="text-white/90 text-sm sm:text-base">Estado:</span>
-                  <span class="font-bold text-primary text-sm sm:text-base">${orderInfo.status || 'Pendiente'}</span>
-                </div>
-              </div>
-              ` : result.orderId ? `
+              ${response.orderId ? `
               <div class="bg-gray-800/50 border-2 border-primary/30 rounded-lg p-3 sm:p-4 mb-3 sm:mb-4">
-                <p class="text-white/90 text-sm sm:text-base">ID del pedido: <span class="font-bold text-primary">#${result.orderId}</span></p>
-                ${result.amount ? `<p class="text-white/90 mt-2 text-sm sm:text-base">Monto: <span class="font-bold text-primary">$${Number(result.amount).toLocaleString('es-CL')} CLP</span></p>` : ''}
+                <p class="text-white/90 text-sm sm:text-base">ID del pedido: <span class="font-bold text-primary">#${response.orderId}</span></p>
+                ${response.amount ? `<p class="text-white/90 mt-2 text-sm sm:text-base">Monto: <span class="font-bold text-primary">$${Number(response.amount).toLocaleString('es-CL')} CLP</span></p>` : ''}
               </div>
               ` : ''}
               
               <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-                <a href="/pago?orderId=${orderId || result.orderId}" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
+                <a href="/pago?orderId=${orderId || response.orderId}" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
+                  Intentar nuevamente
+                </a>
+                <a href="/" class="inline-block px-4 sm:px-6 py-2 sm:py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors text-sm sm:text-base">
+                  Volver al inicio
+                </a>
+              </div>
+            </div>
+          `;
+        } else if (status === 'cancelled') {
+          // Pago cancelado - Ya está manejado arriba con TBK_TOKEN
+          // Este caso no debería llegar aquí, pero por seguridad
+          statusEl.innerHTML = `
+            <div class="text-center">
+              <div class="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-yellow-500/10 mb-3 sm:mb-4">
+                <svg class="w-8 h-8 sm:w-10 sm:h-10 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+              </div>
+              <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Pago Cancelado</h2>
+              <p class="text-white/90 mb-3 sm:mb-4 text-sm sm:text-base">Has cancelado el proceso de pago en Webpay.</p>
+              <p class="text-white/70 text-xs sm:text-sm mb-4">No se ha realizado ningún cargo a tu tarjeta.</p>
+              <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+                <a href="/pago?orderId=${orderId}" class="inline-block px-4 sm:px-6 py-2 sm:py-3 bg-primary text-white rounded-lg hover:bg-primary-600 transition-colors text-sm sm:text-base">
                   Intentar nuevamente
                 </a>
                 <a href="/" class="inline-block px-4 sm:px-6 py-2 sm:py-3 border-2 border-primary text-primary rounded-lg hover:bg-primary/10 transition-colors text-sm sm:text-base">

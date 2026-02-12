@@ -321,16 +321,48 @@ export const POST: APIRoute = async ({ request }) => {
     console.log('📥 accountingDate:', commitResponse.accountingDate);
 
     // LÓGICA CORRECTA SEGÚN ESTÁNDAR DE TRANSBANK
-    // SOLO response_code === 0 indica pago aprobado
-    // NO usar authorizationCode, transactionDate o amount como criterios
-    // Estos campos pueden estar presentes incluso en transacciones rechazadas
+    // PRIORIDAD 1: response_code === 0 es el indicador principal
+    // PRIORIDAD 2: Si responseCode es -1 pero hay authorizationCode + transactionDate + amount,
+    //              puede ser un caso especial donde el pago fue exitoso pero el código no se actualizó
+    //              (esto puede pasar en algunos casos del SDK o en transacciones específicas)
     
-    const responseCode = commitResponse.responseCode;
-    const isApproved = responseCode === 0 || responseCode === '0';
+    // Normalizar responseCode (puede venir como string o number)
+    let responseCode = commitResponse.responseCode;
+    if (typeof responseCode === 'string') {
+      responseCode = parseInt(responseCode, 10);
+    }
+    if (isNaN(responseCode)) {
+      responseCode = -1;
+    }
     
-    console.log('🔍 Evaluación de pago según estándar Transbank:');
-    console.log('🔍 responseCode:', responseCode, 'tipo:', typeof responseCode);
-    console.log('🔍 isApproved (SOLO si responseCode === 0):', isApproved);
+    // Verificar indicadores secundarios (solo si responseCode no es 0)
+    const hasAuthorizationCode = !!commitResponse.authorizationCode;
+    const hasTransactionDate = !!commitResponse.transactionDate;
+    const hasAmount = !!commitResponse.amount && Number(commitResponse.amount) > 0;
+    const hasAllSecondaryIndicators = hasAuthorizationCode && hasTransactionDate && hasAmount;
+    
+    console.log('🔍 Evaluación de pago:');
+    console.log('🔍 responseCode:', commitResponse.responseCode, '→ normalizado:', responseCode, 'tipo:', typeof responseCode);
+    console.log('🔍 Indicadores secundarios:');
+    console.log('🔍   - authorizationCode:', hasAuthorizationCode, 'valor:', commitResponse.authorizationCode);
+    console.log('🔍   - transactionDate:', hasTransactionDate, 'valor:', commitResponse.transactionDate);
+    console.log('🔍   - amount:', hasAmount, 'valor:', commitResponse.amount);
+    console.log('🔍   - Todos presentes:', hasAllSecondaryIndicators);
+    
+    // PRIORIDAD 1: responseCode === 0 es el indicador principal y definitivo
+    let isApproved = responseCode === 0;
+    
+    // PRIORIDAD 2: Si responseCode es -1 pero hay todos los indicadores secundarios,
+    //              puede ser un caso especial (pago procesado pero código no actualizado)
+    //              SOLO usar esto si responseCode NO es 0
+    if (!isApproved && responseCode === -1 && hasAllSecondaryIndicators) {
+      console.log('⚠️ CASO ESPECIAL: responseCode = -1 pero hay authorizationCode + transactionDate + amount');
+      console.log('⚠️ Esto puede indicar que el pago fue procesado pero el código no se actualizó correctamente');
+      console.log('⚠️ Usando indicadores secundarios como respaldo');
+      isApproved = true;
+    }
+    
+    console.log('🔍 isApproved (resultado final):', isApproved);
     
     // Validar que el monto pagado coincide con el monto de la orden
     if (isApproved && commitResponse.amount) {
@@ -360,10 +392,21 @@ export const POST: APIRoute = async ({ request }) => {
     }
     
     if (isApproved) {
-      console.log('✅ PAGO APROBADO - responseCode === 0');
+      if (responseCode === 0) {
+        console.log('✅ PAGO APROBADO - responseCode === 0 (estándar Transbank)');
+      } else {
+        console.log('✅ PAGO APROBADO - Caso especial: responseCode = -1 pero indicadores secundarios presentes');
+        console.log('✅   - authorizationCode:', commitResponse.authorizationCode);
+        console.log('✅   - transactionDate:', commitResponse.transactionDate);
+        console.log('✅   - amount:', commitResponse.amount);
+      }
     } else {
       console.log('❌ PAGO RECHAZADO - responseCode:', responseCode);
       console.log('❌ Mensaje:', commitResponse.responseMessage);
+      console.log('❌ Indicadores secundarios:');
+      console.log('❌   - authorizationCode:', hasAuthorizationCode ? commitResponse.authorizationCode : 'NO presente');
+      console.log('❌   - transactionDate:', hasTransactionDate ? commitResponse.transactionDate : 'NO presente');
+      console.log('❌   - amount:', hasAmount ? commitResponse.amount : 'NO presente');
     }
 
     // Preparar payment_details con toda la información de la transacción

@@ -17,6 +17,16 @@ try {
   
   if (bannersError) {
     console.error('Error cargando banners hero:', bannersError);
+    
+    // Diagnóstico mejorado para errores de conexión
+    if (bannersError.message?.includes('ENOTFOUND') || bannersError.message?.includes('getaddrinfo')) {
+      console.error('🔍 Diagnóstico de conexión:');
+      console.error('  - El DNS no puede resolver el host de Supabase');
+      console.error('  - Verifica que PUBLIC_SUPABASE_URL en .env sea correcta');
+      console.error('  - Verifica que el proyecto de Supabase exista');
+      console.error('  - Verifica tu conexión a internet');
+    }
+    
     // Si falla, intentar cargar todos los banners activos sin filtrar por tipo
     const { data: allBanners, error: allBannersError } = await supabaseClient
       .from('banners')
@@ -40,8 +50,12 @@ try {
   if (banners.length > 3) {
     banners = banners.slice(0, 3);
   }
-} catch (err) {
+} catch (err: any) {
   console.error('Error en carga de banners:', err);
+  if (err.message?.includes('ENOTFOUND') || err.message?.includes('getaddrinfo')) {
+    console.error('🔍 Error de DNS: No se puede conectar a Supabase');
+    console.error('  Verifica tu archivo .env y la URL de Supabase');
+  }
   banners = [];
 }
 

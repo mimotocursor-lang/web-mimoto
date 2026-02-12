@@ -128,8 +128,7 @@ const isPaymentApproved = responseCodeIsZero || successIsTrue || hasAuthorizatio
 
 **Código problemático:**
 ```typescript
-const hasTransactionDate = !!commitResponse.transactionDate;
-const hasAmount = !!commitResponse.amount;
+ const hasAmount = !!commitResponse.amount;
 const hasTransactionData = hasTransactionDate && hasAmount;
 const hasResponseCodeZero = commitResponse.responseCode === 0 || commitResponse.responseCode === '0';
 const hasAuthorizationCode = !!commitResponse.authorizationCode;
